@@ -1,0 +1,31 @@
+# Secrets
+.env
+.env.local
+
+# Generated / downloaded data
+raw_data/*
+!raw_data/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Model artifacts
+*.pkl
+*.onnx
+*.joblib
+model/artifacts/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
