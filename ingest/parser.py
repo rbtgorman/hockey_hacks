@@ -67,34 +67,76 @@ def _parse_mmss(s: str) -> int:
         return 0
 
 
-def _normalize_coords(x: float | None, y: float | None, home_team_id: int,
-                       event_team_id: int | None, period: int) -> tuple[
+def _normalize_coords(x: float | None, y: float | None,
+                       attacks_positive: bool) -> tuple[
                        Optional[float], Optional[float], Optional[float], Optional[float]]:
     """Return (x_raw, y_raw, x_norm, y_norm).
 
-    Teams switch ends between periods. We normalize so the shooter always attacks +x.
-    This makes distance and angle calculations consistent.
+    `attacks_positive` is determined empirically per (game, period, team) from the
+    distribution of that team's shot x-coords — see _infer_attack_sides().
 
-    NOTE: Without explicit "home defends which side in P1" data from the API, we use
-    the convention: in periods 1 & 3, home team defends the negative-x side (shoots toward +x).
-    In period 2 and playoff OT, teams switch. This matches standard NHL conventions
-    but should be verified against a known game during QA.
+    If attacks_positive is True: shot was taken attacking +x, keep as-is.
+    If False: flip both axes so the shot ends up on the +x side.
     """
-    if x is None or y is None or event_team_id is None:
+    if x is None or y is None:
         return x, y, None, None
 
-    # Determine if the shooting team is attacking toward +x in this period
-    home_attacks_positive_this_period = (period % 2 == 1)  # odd periods: home shoots +x
-    shooter_is_home = (event_team_id == home_team_id)
-    shooter_attacks_positive = (
-        home_attacks_positive_this_period if shooter_is_home
-        else (not home_attacks_positive_this_period)
-    )
-
-    if shooter_attacks_positive:
-        return x, y, float(x), float(y)
+    if attacks_positive:
+        return float(x), float(y), float(x), float(y)
     else:
-        return x, y, float(-x), float(-y)
+        return float(x), float(y), float(-x), float(-y)
+
+
+def _infer_attack_sides(plays: list, home_team_id: int, away_team_id: int) -> dict:
+    """Determine which x-side each team attacked in each period.
+
+    Returns dict: (period, team_id) -> attacks_positive_bool
+
+    Method: for each (period, team), take the mean xCoord of their shot attempts.
+    Real shots cluster tightly in the offensive zone (x > 25 or x < -25 typically),
+    so the sign of the mean is a reliable indicator. We use only SOG/goal/missed
+    (not blocked, because blocks can happen anywhere).
+
+    Fallback: if a team has 0 shots in a period, we use the opposite of the home
+    team's attack side (since they're at opposite ends), and if we don't know either,
+    we default to home-attacks-positive — but this only matters for edge cases like
+    a shutout period with no shots from one side, which is rare enough to accept.
+    """
+    # Collect shot x-coords per (period, team)
+    buckets: dict[tuple[int, int], list[float]] = {}
+    for play in plays:
+        if play.get("typeDescKey") not in ("shot-on-goal", "goal", "missed-shot"):
+            continue
+        details = play.get("details") or {}
+        x = details.get("xCoord")
+        team = details.get("eventOwnerTeamId")
+        period = (play.get("periodDescriptor") or {}).get("number")
+        if x is None or team is None or period is None:
+            continue
+        buckets.setdefault((int(period), int(team)), []).append(float(x))
+
+    # Decide per (period, team)
+    decisions: dict[tuple[int, int], bool] = {}
+    for (period, team), xs in buckets.items():
+        if not xs:
+            continue
+        mean_x = sum(xs) / len(xs)
+        # If mean x is positive, team attacked +x this period
+        decisions[(period, team)] = mean_x > 0
+
+    # Fill gaps: if one team in a period has no shots, it must be attacking
+    # the opposite side of whichever team does.
+    all_periods = {p for (p, _t) in buckets.keys()}
+    for p in all_periods:
+        home_known = (p, home_team_id) in decisions
+        away_known = (p, away_team_id) in decisions
+        if home_known and not away_known:
+            decisions[(p, away_team_id)] = not decisions[(p, home_team_id)]
+        elif away_known and not home_known:
+            decisions[(p, home_team_id)] = not decisions[(p, away_team_id)]
+        # If neither known, leave missing — caller falls back to a default
+
+    return decisions
 
 
 def _distance_angle(x_norm: float | None, y_norm: float | None) -> tuple[
@@ -249,6 +291,10 @@ def parse_pbp(payload: dict) -> ParseResult:
     result = ParseResult(game=game)
     plays = payload.get("plays", [])
 
+    # PRE-PASS: figure out which x-side each team attacked in each period.
+    # This replaces the unreliable "home team attacks +x in odd periods" convention.
+    attack_sides = _infer_attack_sides(plays, home_id, away_id)
+
     # Running score state (so we can report score BEFORE each shot)
     home_running = 0
     away_running = 0
@@ -282,9 +328,21 @@ def parse_pbp(payload: dict) -> ParseResult:
                 is_home = (team_id == home_id)
                 defending = away_id if is_home else home_id
 
-                x_raw, y_raw, x_norm, y_norm = _normalize_coords(
-                    x, y, home_id, team_id, period
+                # Look up which side this team attacked this period (inferred from data).
+                # Fallback if this team had no shots (extremely rare): assume the
+                # team attacks the side opposite what home defends, with home-attacks-+x
+                # as the ultimate default. Won't matter in practice since this path
+                # only triggers for teams with 0 shots in a period.
+                attacks_positive = attack_sides.get(
+                    (period, team_id),
+                    # fallback: flip the other team's known side if we can
+                    not attack_sides.get(
+                        (period, defending),
+                        period % 2 == 0  # last resort matches old convention
+                    )
                 )
+
+                x_raw, y_raw, x_norm, y_norm = _normalize_coords(x, y, attacks_positive)
                 dist, ang = _distance_angle(x_norm, y_norm)
                 strength, empty_net_global, _hs, _as = _parse_situation(situation, shooter_is_home=is_home)
 

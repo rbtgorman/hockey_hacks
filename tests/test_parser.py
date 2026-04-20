@@ -220,6 +220,64 @@ def main():
     for w in result.parse_warnings:
         print(f"  - {w}")
 
+    # =================================================================
+    # Regression test for the real bug we hit in prod:
+    # game 2022020001 had home team shooting at the NEGATIVE x net in P1.
+    # Build a payload where home's shots are all at negative x — the parser
+    # must auto-detect this and normalize correctly.
+    # =================================================================
+    print("\n=== REGRESSION: home attacks -x in P1 ===")
+    INVERTED = {
+        "id": 9999999999, "season": 20222023, "gameType": 2,
+        "gameDate": "2022-10-07", "gameState": "FINAL",
+        "homeTeam": {"id": 21, "abbrev": "HOM", "score": 1},
+        "awayTeam": {"id": 22, "abbrev": "AWY", "score": 0},
+        "plays": [
+            # Home team takes 3 shots at negative-x net in P1
+            {"eventId": 1, "periodDescriptor": {"number": 1, "periodType": "REG"},
+             "timeInPeriod": "02:00", "situationCode": "1551",
+             "typeDescKey": "shot-on-goal",
+             "details": {"xCoord": -74, "yCoord": -5, "shotType": "wrist",
+                         "shootingPlayerId": 1, "goalieInNetId": 2,
+                         "eventOwnerTeamId": 21}},
+            {"eventId": 2, "periodDescriptor": {"number": 1, "periodType": "REG"},
+             "timeInPeriod": "04:00", "situationCode": "1551",
+             "typeDescKey": "shot-on-goal",
+             "details": {"xCoord": -81, "yCoord": 15, "shotType": "snap",
+                         "shootingPlayerId": 1, "goalieInNetId": 2,
+                         "eventOwnerTeamId": 21}},
+            {"eventId": 3, "periodDescriptor": {"number": 1, "periodType": "REG"},
+             "timeInPeriod": "06:00", "situationCode": "1551",
+             "typeDescKey": "goal",
+             "details": {"xCoord": -85, "yCoord": 0, "shotType": "wrist",
+                         "scoringPlayerId": 1, "goalieInNetId": 2,
+                         "eventOwnerTeamId": 21}},
+            # Away team takes 2 shots at positive-x net in P1
+            {"eventId": 4, "periodDescriptor": {"number": 1, "periodType": "REG"},
+             "timeInPeriod": "08:00", "situationCode": "1551",
+             "typeDescKey": "shot-on-goal",
+             "details": {"xCoord": 72, "yCoord": 2, "shotType": "slap",
+                         "shootingPlayerId": 3, "goalieInNetId": 4,
+                         "eventOwnerTeamId": 22}},
+            {"eventId": 5, "periodDescriptor": {"number": 1, "periodType": "REG"},
+             "timeInPeriod": "10:00", "situationCode": "1551",
+             "typeDescKey": "shot-on-goal",
+             "details": {"xCoord": 76, "yCoord": -2, "shotType": "wrist",
+                         "shootingPlayerId": 3, "goalieInNetId": 4,
+                         "eventOwnerTeamId": 22}},
+        ],
+    }
+    r2 = parse_pbp(INVERTED)
+    # All five shots should have reasonable distances (< 50 ft, since they're
+    # all in close). Before the fix, the home shots would register as ~170 ft.
+    for idx, s in enumerate(r2.shots):
+        ok = s.distance_ft is not None and s.distance_ft < 60
+        mark = "OK" if ok else "FAIL"
+        print(f"  [{mark}] inv shot {idx}: team={s.shooter_team_id} "
+              f"x_raw={s.x_raw} x_norm={s.x_norm} dist={s.distance_ft:.1f}")
+        if not ok:
+            failures += 1
+
     print(f"\n{'=' * 40}")
     if failures == 0:
         print(f"ALL CHECKS PASSED")
