@@ -219,7 +219,12 @@ def reliability_table(model: lgb.LGBMClassifier, df: pd.DataFrame, n_bins: int =
 
 
 def permutation_importance_on_test(model, test_df, n_repeats=3, seed=42):
-    """Measure AUC drop when each feature is shuffled on the test set."""
+    """Measure AUC drop when each feature is shuffled on the test set.
+
+    Preserves pandas categorical metadata during shuffle — LightGBM requires the
+    same set of categories at predict time as at train time, and a naive
+    rng.permutation on a categorical column loses the dtype.
+    """
     rng = np.random.default_rng(seed)
     X, y = test_df[ALL_FEATURES].copy(), test_df[TARGET]
     base_probs = model.predict_proba(X)[:, 1]
@@ -230,7 +235,13 @@ def permutation_importance_on_test(model, test_df, n_repeats=3, seed=42):
         drops = []
         for _ in range(n_repeats):
             Xp = X.copy()
-            Xp[col] = rng.permutation(Xp[col].values)
+            shuffled_vals = rng.permutation(Xp[col].values)
+            if col in CATEGORICAL_FEATURES:
+                # Rebuild categorical with the original category set preserved
+                Xp[col] = pd.Categorical(shuffled_vals,
+                                         categories=X[col].cat.categories)
+            else:
+                Xp[col] = shuffled_vals
             shuffled_probs = model.predict_proba(Xp)[:, 1]
             drops.append(base_auc - roc_auc_score(y, shuffled_probs))
         results.append({"feature": col,
@@ -266,17 +277,14 @@ def main():
     print(f"\nMax |predicted - actual| in any decile: {max_gap:.4f}")
     print("A well-calibrated xG model has all gaps < 0.02.")
 
-    # Importance — two kinds
+    # Importance (gain) — always works
     print("\n--- LightGBM gain importance (what the TREES used) ---")
     gain = pd.DataFrame({"feature": ALL_FEATURES, "gain": model.feature_importances_})
     gain = gain.sort_values("gain", ascending=False)
     print(gain.head(15).to_string(index=False))
 
-    print("\n--- Permutation importance on TEST set (what the MODEL relies on) ---")
-    perm, base_auc = permutation_importance_on_test(model, test)
-    print(perm.head(15).to_string(index=False, float_format=lambda v: f"{v:.4f}"))
-
-    # Save artifacts
+    # Save artifacts NOW — before permutation importance, which is the fragile step.
+    # If permutation crashes we still have the model + meta on disk.
     if not args.dry_run:
         joblib.dump(model, ARTIFACT_DIR / "xg_v1.pkl")
         meta = {
@@ -301,8 +309,18 @@ def main():
             json.dump(meta, f, indent=2)
         rel.to_csv(ARTIFACT_DIR / "xg_v1_reliability.csv", index=False)
         gain.to_csv(ARTIFACT_DIR / "xg_v1_gain_importance.csv", index=False)
-        perm.to_csv(ARTIFACT_DIR / "xg_v1_perm_importance.csv", index=False)
-        print(f"\nArtifacts saved to {ARTIFACT_DIR}/")
+        print(f"\nCore artifacts saved to {ARTIFACT_DIR}/")
+
+    # Permutation importance LAST, wrapped in try/except so a failure doesn't nuke the run
+    print("\n--- Permutation importance on TEST set (what the MODEL relies on) ---")
+    try:
+        perm, base_auc = permutation_importance_on_test(model, test)
+        print(perm.head(15).to_string(index=False, float_format=lambda v: f"{v:.4f}"))
+        if not args.dry_run:
+            perm.to_csv(ARTIFACT_DIR / "xg_v1_perm_importance.csv", index=False)
+            print(f"Permutation importance saved.")
+    except Exception as e:
+        print(f"Permutation importance failed but model is saved. Error: {type(e).__name__}: {e}")
 
     print("\nDone.")
 
