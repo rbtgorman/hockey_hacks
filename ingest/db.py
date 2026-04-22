@@ -132,3 +132,81 @@ def already_ingested_games(conn) -> set[int]:
             WHERE kind = 'pbp' AND status = 'ok'
         """)
         return {r[0] for r in cur.fetchall()}
+
+
+# =====================================================================
+# Stage A additions — shifts and game rosters
+# =====================================================================
+
+def insert_shifts(cur, shifts) -> int:
+    """Bulk insert shift rows. Idempotent via UNIQUE (game_id, player_id, period, start_seconds)."""
+    rows = [
+        (s.game_id, s.player_id, s.team_id, s.period,
+         s.start_seconds, s.end_seconds, s.shift_number, Json(s.raw_json))
+        for s in shifts
+    ]
+    if not rows:
+        return 0
+    execute_values(cur, """
+        INSERT INTO shifts (
+            game_id, player_id, team_id, period,
+            start_seconds, end_seconds, shift_number, raw_json
+        ) VALUES %s
+        ON CONFLICT (game_id, player_id, period, start_seconds) DO NOTHING
+    """, rows)
+    return cur.rowcount
+
+
+def insert_rosters(cur, rosters) -> int:
+    """Bulk insert game_roster rows. Idempotent via PK (game_id, player_id)."""
+    rows = [
+        (r.game_id, r.player_id, r.team_id, r.sweater,
+         r.position, r.is_starter, r.is_scratch)
+        for r in rosters
+    ]
+    if not rows:
+        return 0
+    execute_values(cur, """
+        INSERT INTO game_rosters (
+            game_id, player_id, team_id, sweater,
+            position, is_starter, is_scratch
+        ) VALUES %s
+        ON CONFLICT (game_id, player_id) DO UPDATE SET
+            is_starter = EXCLUDED.is_starter,
+            is_scratch = EXCLUDED.is_scratch,
+            position   = COALESCE(EXCLUDED.position, game_rosters.position)
+    """, rows)
+    return cur.rowcount
+
+
+def upsert_player_updates(cur, updates) -> int:
+    """Backfill player dim with names/positions. Idempotent."""
+    rows = [(u.player_id, u.full_name, u.position) for u in updates if u.player_id]
+    if not rows:
+        return 0
+    execute_values(cur, """
+        INSERT INTO players (player_id, full_name, position)
+        VALUES %s
+        ON CONFLICT (player_id) DO UPDATE SET
+            full_name = COALESCE(EXCLUDED.full_name, players.full_name),
+            position  = COALESCE(EXCLUDED.position, players.position)
+    """, rows)
+    return cur.rowcount
+
+
+def already_ingested_shifts(conn) -> set[int]:
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT CAST(target_key AS BIGINT) FROM ingest_log
+            WHERE kind = 'shifts' AND status = 'ok'
+        """)
+        return {r[0] for r in cur.fetchall()}
+
+
+def already_ingested_rosters(conn) -> set[int]:
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT CAST(target_key AS BIGINT) FROM ingest_log
+            WHERE kind = 'rosters' AND status = 'ok'
+        """)
+        return {r[0] for r in cur.fetchall()}
