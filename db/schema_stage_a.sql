@@ -70,6 +70,11 @@ END $$;
 -- =====================================================================
 -- Sanity view — shots joined to on-ice skaters
 -- Useful for Stage B; validates the temporal join works
+--
+-- Uses half-open interval [start_seconds, end_seconds) for the shift join:
+-- the shift INCLUDES its start second but EXCLUDES its end second. Without
+-- this, line changes get double-counted because both the leaving and arriving
+-- players are recorded as "active" at the transition second.
 -- =====================================================================
 CREATE OR REPLACE VIEW v_shots_with_onice AS
 SELECT
@@ -89,6 +94,6 @@ LEFT JOIN shifts sh
     ON sh.game_id = s.game_id
    AND sh.period  = s.period
    AND sh.start_seconds <= s.game_seconds
-   AND sh.end_seconds   >= s.game_seconds
+   AND sh.end_seconds   >  s.game_seconds   -- half-open: excludes the end second
 GROUP BY s.shot_id, s.game_id, s.period, s.game_seconds, s.is_goal,
          s.shooter_id, s.goalie_id, s.shooter_team_id, s.defending_team_id;
