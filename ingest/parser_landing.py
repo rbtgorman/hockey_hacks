@@ -1,17 +1,37 @@
-"""Parse NHL gamecenter/{id}/landing response for roster and starter info.
+"""Parse NHL gamecenter/{id}/boxscore response for roster and starter info.
 
-The landing endpoint returns a rich payload. We care about:
-  - matchup.homeTeam.forwards, defensemen, goalies
-  - matchup.awayTeam.forwards, defensemen, goalies
-  - summary.iceSurface.homeTeam.forwards / awayTeam.* (starting lineup info)
-  - matchup.goalieComparison.homeTeam.starter (who's starting in net)
+History: originally built for /landing, but as of the 2024-25 NHL API
+overhaul /landing no longer contains player data — it only has scoring,
+penalties, three-stars. Rosters live in /boxscore.
 
-Response varies slightly by game state (FINAL vs LIVE vs FUT). We parse
-defensively and only emit rows for fields we actually find.
+Expected structure of /boxscore (verified against live 2024-25 data):
+{
+  "id": 2024020001,
+  "homeTeam": {"id": int, "abbrev": str, "score": int, ...},
+  "awayTeam": {"id": int, "abbrev": str, ...},
+  "playerByGameStats": {
+    "homeTeam": {
+      "forwards": [
+        {"playerId": 8477492, "sweaterNumber": 29,
+         "name": {"default": "N. MacKinnon"},
+         "position": "C", "goals": 0, "assists": 1, ...},
+        ...
+      ],
+      "defense": [...],              // NOTE: "defense", not "defensemen"
+      "goalies": [...]
+    },
+    "awayTeam": {... same shape ...}
+  },
+  ...
+}
 
-Expected fields per player record:
-  playerId, sweaterNumber, position, firstName.default, lastName.default,
-  ...plus optional: isCaptain, isAlternateCaptain, etc.
+Starter detection: goalies in /boxscore typically have `starter: true` on the
+starting goalie. If that field is absent, we fall back to "first goalie listed"
+heuristic (usually correct but not guaranteed).
+
+Player names: in /boxscore they're under `name.default` not `firstName.default`
++ `lastName.default` like /landing used to be. Format is "F. Lastname"
+(e.g., "N. MacKinnon") — we use it as-is.
 """
 from __future__ import annotations
 
@@ -20,19 +40,32 @@ from typing import Optional
 
 
 POSITION_MAP = {
-    # sometimes the API returns "R" or "Right Wing" etc.; normalize
     "C": "C", "L": "L", "R": "R", "D": "D", "G": "G",
-    "CENTER": "C", "LEFTWING": "L", "RIGHTWING": "R",
-    "LEFT WING": "L", "RIGHT WING": "R",
-    "DEFENSE": "D", "DEFENCE": "D", "GOALIE": "G",
-    "GOAL": "G",
+    "LW": "L", "RW": "R",
+    "CENTER": "C", "LEFT WING": "L", "RIGHT WING": "R",
+    "DEFENSE": "D", "DEFENCE": "D", "GOALIE": "G", "GOAL": "G",
 }
 
 
 def _norm_position(p: str | None) -> str | None:
     if not p:
         return None
-    return POSITION_MAP.get(p.upper().strip(), p.upper().strip())
+    return POSITION_MAP.get(str(p).upper().strip(), str(p).upper().strip())
+
+
+def _extract_name(p: dict) -> str | None:
+    """Handle name field variants across endpoints/seasons."""
+    # /boxscore 2024-25 uses name.default = "F. Lastname"
+    name_block = p.get("name")
+    if isinstance(name_block, dict) and name_block.get("default"):
+        return name_block["default"]
+    # Older /landing format used firstName + lastName
+    fn = p.get("firstName")
+    ln = p.get("lastName")
+    first = fn.get("default") if isinstance(fn, dict) else fn
+    last = ln.get("default") if isinstance(ln, dict) else ln
+    combined = " ".join(filter(None, [first, last]))
+    return combined or None
 
 
 @dataclass
@@ -48,7 +81,6 @@ class RosterRow:
 
 @dataclass
 class PlayerUpdate:
-    """Backfill for the players table."""
     player_id: int
     full_name: Optional[str]
     position: Optional[str]
@@ -62,27 +94,27 @@ class LandingParseResult:
     warnings: list[str] = field(default_factory=list)
 
 
-def _iter_team_players(team_block: dict | None):
-    """Yield player dicts from a team block (has 'forwards', 'defensemen', 'goalies')."""
+def _iter_players(team_block: dict | None):
+    """Yield (player_dict, group_name) pairs from a playerByGameStats team block."""
     if not isinstance(team_block, dict):
         return
-    for group in ("forwards", "defensemen", "goalies"):
+    # /boxscore uses "defense" not "defensemen"; handle both for safety.
+    for group in ("forwards", "defense", "defensemen", "goalies"):
         lst = team_block.get(group)
         if isinstance(lst, list):
+            normalized = "D" if group in ("defense", "defensemen") else group
             for p in lst:
-                yield p, group
+                yield p, normalized
 
 
 def parse_landing(payload: dict, game_id: int) -> LandingParseResult:
+    """Parse a /boxscore response. Function name kept for compatibility."""
     result = LandingParseResult(game_id=game_id)
 
-    # --- Rosters come from summary.iceSurface (more reliable than matchup.* sections) ---
-    ice_surface = (payload.get("summary") or {}).get("iceSurface") or {}
-    home_team_block = ice_surface.get("homeTeam")
-    away_team_block = ice_surface.get("awayTeam")
-
-    home_team_id = (payload.get("homeTeam") or {}).get("id")
-    away_team_id = (payload.get("awayTeam") or {}).get("id")
+    home_team = payload.get("homeTeam") or {}
+    away_team = payload.get("awayTeam") or {}
+    home_team_id = home_team.get("id")
+    away_team_id = away_team.get("id")
 
     if home_team_id is None or away_team_id is None:
         result.warnings.append(
@@ -90,28 +122,43 @@ def parse_landing(payload: dict, game_id: int) -> LandingParseResult:
         )
         return result
 
-    # Figure out starting goalies from matchup.goalieComparison if present
-    starting_goalies: set[int] = set()
-    goalie_cmp = (payload.get("matchup") or {}).get("goalieComparison") or {}
-    for side in ("homeTeam", "awayTeam"):
-        starter = (goalie_cmp.get(side) or {}).get("starter")
-        if isinstance(starter, dict) and starter.get("playerId"):
-            starting_goalies.add(int(starter["playerId"]))
+    pbgs = payload.get("playerByGameStats")
+    if not isinstance(pbgs, dict):
+        result.warnings.append(
+            f"no 'playerByGameStats' in payload. Top-level keys: {list(payload.keys())}"
+        )
+        return result
 
-    # If not available, fall back to "first goalie in team.goalies" as starter
-    # (better than nothing; parser warnings will note this)
-    for team_block, team_id in [(home_team_block, home_team_id),
-                                 (away_team_block, away_team_id)]:
+    home_block = pbgs.get("homeTeam")
+    away_block = pbgs.get("awayTeam")
+
+    for team_block, team_id in [(home_block, home_team_id), (away_block, away_team_id)]:
         if team_block is None:
+            result.warnings.append(f"no playerByGameStats block for team_id={team_id}")
             continue
 
+        # Identify starter(s)
         goalies_list = team_block.get("goalies") or []
-        if not starting_goalies and goalies_list:
-            # fallback: first goalie listed for each team
-            if isinstance(goalies_list[0], dict) and goalies_list[0].get("playerId"):
-                starting_goalies.add(int(goalies_list[0]["playerId"]))
+        explicit_starter_ids: set[int] = set()
+        for g in goalies_list:
+            if not isinstance(g, dict):
+                continue
+            if g.get("starter") is True:
+                pid = g.get("playerId")
+                if pid is not None:
+                    explicit_starter_ids.add(int(pid))
 
-        for p, group in _iter_team_players(team_block):
+        fallback_starter_id: int | None = None
+        if not explicit_starter_ids and goalies_list:
+            first = goalies_list[0]
+            if isinstance(first, dict) and first.get("playerId") is not None:
+                fallback_starter_id = int(first["playerId"])
+                result.warnings.append(
+                    f"team {team_id}: no explicit goalie starter flag, "
+                    f"assuming first goalie listed (playerId={fallback_starter_id})"
+                )
+
+        for p, group in _iter_players(team_block):
             if not isinstance(p, dict):
                 continue
             pid = p.get("playerId")
@@ -119,17 +166,18 @@ def parse_landing(payload: dict, game_id: int) -> LandingParseResult:
                 continue
             pid = int(pid)
 
-            # position
-            pos = _norm_position(p.get("positionCode") or p.get("position"))
+            pos = _norm_position(p.get("position") or p.get("positionCode"))
             if pos is None:
-                # group fallback: forwards -> F, defensemen -> D, goalies -> G
-                pos = {"forwards": "F", "defensemen": "D", "goalies": "G"}.get(group)
+                pos = {"forwards": "F", "D": "D", "goalies": "G"}.get(group)
 
             sweater = p.get("sweaterNumber")
             sweater = int(sweater) if sweater is not None else None
 
             is_goalie = (pos == "G") or (group == "goalies")
-            is_starter = (pid in starting_goalies) if is_goalie else False
+            if is_goalie:
+                is_starter = (pid in explicit_starter_ids) or (pid == fallback_starter_id)
+            else:
+                is_starter = False
 
             result.rosters.append(RosterRow(
                 game_id=game_id,
@@ -141,14 +189,15 @@ def parse_landing(payload: dict, game_id: int) -> LandingParseResult:
                 is_scratch=bool(p.get("isScratch", False)),
             ))
 
-            # Player backfill
-            first = (p.get("firstName") or {}).get("default") if isinstance(p.get("firstName"), dict) else p.get("firstName")
-            last = (p.get("lastName") or {}).get("default") if isinstance(p.get("lastName"), dict) else p.get("lastName")
-            full_name = " ".join(filter(None, [first, last])) or None
             result.player_updates.append(PlayerUpdate(
                 player_id=pid,
-                full_name=full_name,
+                full_name=_extract_name(p),
                 position=pos,
             ))
+
+    if not result.rosters:
+        result.warnings.append(
+            "parsed 0 rosters despite having playerByGameStats block"
+        )
 
     return result

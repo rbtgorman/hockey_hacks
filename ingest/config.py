@@ -13,7 +13,8 @@ NHL_STATS_BASE = "https://api.nhle.com/stats/rest/en"
 
 SCHEDULE_URL = NHL_WEB_BASE + "/schedule/{date}"           # date = YYYY-MM-DD
 PBP_URL      = NHL_WEB_BASE + "/gamecenter/{game_id}/play-by-play"
-LANDING_URL  = NHL_WEB_BASE + "/gamecenter/{game_id}/landing"  # rosters, starters
+LANDING_URL  = NHL_WEB_BASE + "/gamecenter/{game_id}/landing"   # scoring/penalties/stars only (2024-25+)
+BOXSCORE_URL = NHL_WEB_BASE + "/gamecenter/{game_id}/boxscore"  # rosters + starters live here
 SHIFTS_URL   = NHL_STATS_BASE + "/shiftcharts?cayenneExp=gameId={game_id}"
 EDGE_SKATER  = NHL_WEB_BASE + "/edge/skater-detail/{player_id}/{season}/{game_type}"
 EDGE_GOALIE  = NHL_WEB_BASE + "/edge/goalie-detail/{player_id}/{season}/{game_type}"
