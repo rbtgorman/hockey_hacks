@@ -68,10 +68,16 @@ SEASON_WEIGHTS = {
     "20222023": 3.0,
 }
 
-# Minimum sample sizes for INCLUSION IN THE BETA FIT.
-# Players below these thresholds still get priors (shrunken heavily toward the mean),
-# they just don't influence the K estimate.
-MIN_SHOTS_FOR_SKATER_FIT = 50
+# Minimum sample sizes for INCLUSION IN THE BETA FIT (i.e., used to estimate K).
+# Players below these thresholds still get priors written to the table (they just
+# get heavily shrunk toward the league mean) -- they just don't influence the
+# population variance estimate.
+#
+# Skater min was 50 in v0.1 of this script; that produced K=42 because small-sample
+# noise inflated the population variance. 200 is roughly where individual shooting
+# % becomes signal-dominated (see diagnostics in chat history). Players below 200
+# shots are still in the table.
+MIN_SHOTS_FOR_SKATER_FIT = 200
 MIN_SHOTS_FOR_GOALIE_FIT_OVERALL = 200
 MIN_SHOTS_FOR_GOALIE_FIT_BUCKETED = 100
 
@@ -249,11 +255,23 @@ def aggregate_skater_counts(shots: pd.DataFrame, strength_filter: str | None) ->
 
     Returns columns: player_id, weighted_shots, weighted_goals, raw_shots, raw_goals.
     Drops shooter_id NULLs and 'unknown' strength rows.
+
+    Special case: PK shooting % is dominated by empty-net "shots" (when the trailing
+    team pulls their goalie, the leading team's PK shifts get credited with empty-net
+    goals). Those events represent team tactics, not individual shooting talent, and
+    skew the PK shooting prior to ~24% (real-PK rate is ~9%). For the PK bucket only,
+    we drop empty-net shots. 5v5 and PP keep them since they're rare there and the
+    rates are dominated by real attempts.
+
+    Empty-net shots are kept in the 'all' bucket too -- they're real shots, just not
+    representative of PK talent specifically.
     """
     df = shots.dropna(subset=["shooter_id"])
     df = df[df["shooter_strength"] != "unknown"]
     if strength_filter is not None:
         df = df[df["shooter_strength"] == strength_filter]
+    if strength_filter == "PK":
+        df = df[df["empty_net"] != True]  # noqa: E712 -- pandas bool column
 
     g = df.groupby("shooter_id", as_index=False).agg(
         weighted_shots=("weight", "sum"),
