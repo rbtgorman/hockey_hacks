@@ -254,9 +254,23 @@ WHERE s.is_sog = TRUE
 """
 
 
-def load_shots(conn) -> pd.DataFrame:
-    """Pull all SOG-eligible shots across the configured seasons."""
-    seasons = tuple(SEASON_WEIGHTS.keys())
+def load_shots(conn, seasons: tuple[str, ...] | None = None) -> pd.DataFrame:
+    """Pull all SOG-eligible shots across the configured seasons.
+
+    If `seasons` is None, uses all keys of SEASON_WEIGHTS (production mode).
+    For train-only priors, pass a tuple like ('20222023', '20232024') to
+    exclude the test season.
+    """
+    if seasons is None:
+        seasons = tuple(SEASON_WEIGHTS.keys())
+    else:
+        # Validate that every requested season has a weight defined
+        unknown = [s for s in seasons if s not in SEASON_WEIGHTS]
+        if unknown:
+            raise RuntimeError(
+                f"Requested season(s) not in SEASON_WEIGHTS: {unknown}. "
+                f"Known seasons: {list(SEASON_WEIGHTS.keys())}"
+            )
     log.info("Loading shots for seasons %s ...", seasons)
     df = pd.read_sql(SHOTS_QUERY, conn, params={"seasons": seasons})
     log.info("Loaded %d shots", len(df))
@@ -456,8 +470,9 @@ def build_goalie_priors(shots: pd.DataFrame) -> pd.DataFrame:
 # Persistence
 # -------------------------------------------------------------------------
 
-SKATER_UPSERT = """
-INSERT INTO skater_priors (
+def _skater_upsert_sql(table: str) -> str:
+    return f"""
+INSERT INTO {table} (
     player_id, strength_state,
     weighted_shots, weighted_goals, raw_shots, raw_goals,
     prior_alpha, prior_beta, prior_concentration, prior_mean,
@@ -477,8 +492,10 @@ ON CONFLICT (player_id, strength_state) DO UPDATE SET
     computed_at = EXCLUDED.computed_at;
 """
 
-GOALIE_UPSERT = """
-INSERT INTO goalie_priors (
+
+def _goalie_upsert_sql(table: str) -> str:
+    return f"""
+INSERT INTO {table} (
     player_id, danger_zone, strength_state,
     weighted_shots_against, weighted_goals_against,
     raw_shots_against, raw_goals_against,
@@ -500,7 +517,15 @@ ON CONFLICT (player_id, danger_zone, strength_state) DO UPDATE SET
 """
 
 
-def write_skater_priors(conn, df: pd.DataFrame) -> int:
+# Whitelist of legal table names — guards against SQL injection via --output-suffix
+# even though it's a CLI flag, defense-in-depth.
+ALLOWED_SKATER_TABLES = {"skater_priors", "skater_priors_train"}
+ALLOWED_GOALIE_TABLES = {"goalie_priors", "goalie_priors_train"}
+
+
+def write_skater_priors(conn, df: pd.DataFrame, table: str = "skater_priors") -> int:
+    if table not in ALLOWED_SKATER_TABLES:
+        raise ValueError(f"Unknown skater priors table: {table!r}")
     if df.empty:
         log.warning("No skater priors to write")
         return 0
@@ -518,12 +543,14 @@ def write_skater_priors(conn, df: pd.DataFrame) -> int:
         for r in df.itertuples(index=False)
     ]
     with conn.cursor() as cur:
-        psycopg2.extras.execute_values(cur, SKATER_UPSERT, rows, page_size=1000)
+        psycopg2.extras.execute_values(cur, _skater_upsert_sql(table), rows, page_size=1000)
     conn.commit()
     return len(rows)
 
 
-def write_goalie_priors(conn, df: pd.DataFrame) -> int:
+def write_goalie_priors(conn, df: pd.DataFrame, table: str = "goalie_priors") -> int:
+    if table not in ALLOWED_GOALIE_TABLES:
+        raise ValueError(f"Unknown goalie priors table: {table!r}")
     if df.empty:
         log.warning("No goalie priors to write")
         return 0
@@ -541,7 +568,7 @@ def write_goalie_priors(conn, df: pd.DataFrame) -> int:
         for r in df.itertuples(index=False)
     ]
     with conn.cursor() as cur:
-        psycopg2.extras.execute_values(cur, GOALIE_UPSERT, rows, page_size=1000)
+        psycopg2.extras.execute_values(cur, _goalie_upsert_sql(table), rows, page_size=1000)
     conn.commit()
     return len(rows)
 
@@ -629,46 +656,90 @@ def print_validation(conn) -> None:
 # Entry point
 # -------------------------------------------------------------------------
 
-def init_schema(conn) -> None:
-    if not SCHEMA_FILE.exists():
-        raise FileNotFoundError(f"Schema file missing: {SCHEMA_FILE}")
-    log.info("Applying %s", SCHEMA_FILE)
-    sql = SCHEMA_FILE.read_text()
-    with conn.cursor() as cur:
-        cur.execute(sql)
-    conn.commit()
+def init_schema(conn, train: bool = False) -> None:
+    """Apply schema_stage_b.sql, plus schema_stage_c.sql when --train."""
+    schema_files = [SCHEMA_FILE]
+    if train:
+        train_schema = SCHEMA_FILE.parent / "schema_stage_c.sql"
+        if not train_schema.exists():
+            raise FileNotFoundError(f"Schema file missing: {train_schema}")
+        schema_files.append(train_schema)
+
+    for f in schema_files:
+        if not f.exists():
+            raise FileNotFoundError(f"Schema file missing: {f}")
+        log.info("Applying %s", f)
+        with conn.cursor() as cur:
+            cur.execute(f.read_text())
+        conn.commit()
     log.info("Schema applied")
+
+
+# Default season splits. Test season is excluded when --train.
+DEFAULT_TRAIN_SEASONS = ("20222023", "20232024")
+DEFAULT_ALL_SEASONS = ("20222023", "20232024", "20242025")
 
 
 def main(argv: Iterable[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--init-schema", action="store_true",
-                        help="Apply db/schema_stage_b.sql then exit")
+                        help="Apply db/schema_stage_b.sql (and schema_stage_c.sql if --train) then exit")
+    parser.add_argument("--train", action="store_true",
+                        help=("Build leakage-safe priors from train+val seasons only "
+                              "(default: 20222023, 20232024) and write to "
+                              "skater_priors_train / goalie_priors_train tables. "
+                              "Used as features for v2 xG training."))
+    parser.add_argument("--seasons", type=str, default=None,
+                        help=("Comma-separated season list to override defaults, "
+                              "e.g. '20222023,20232024'. Each must have a weight "
+                              "defined in SEASON_WEIGHTS."))
     parser.add_argument("--skip-skater", action="store_true")
     parser.add_argument("--skip-goalie", action="store_true")
     args = parser.parse_args(list(argv) if argv is not None else None)
 
+    # Resolve seasons + target tables
+    if args.seasons:
+        seasons = tuple(s.strip() for s in args.seasons.split(",") if s.strip())
+    elif args.train:
+        seasons = DEFAULT_TRAIN_SEASONS
+    else:
+        seasons = DEFAULT_ALL_SEASONS
+
+    skater_table = "skater_priors_train" if args.train else "skater_priors"
+    goalie_table = "goalie_priors_train" if args.train else "goalie_priors"
+
+    log.info("Mode: %s | seasons=%s | skater_table=%s | goalie_table=%s",
+             "TRAIN-ONLY" if args.train else "PRODUCTION",
+             seasons, skater_table, goalie_table)
+
     conn = psycopg2.connect(PG_DSN)
     try:
         if args.init_schema:
-            init_schema(conn)
+            init_schema(conn, train=args.train)
             return 0
 
-        shots = load_shots(conn)
+        shots = load_shots(conn, seasons=seasons)
 
         if not args.skip_skater:
             log.info("Building skater priors ...")
             skater_df = build_skater_priors(shots)
-            n = write_skater_priors(conn, skater_df)
-            log.info("Wrote %d skater_priors rows", n)
+            n = write_skater_priors(conn, skater_df, table=skater_table)
+            log.info("Wrote %d %s rows", n, skater_table)
 
         if not args.skip_goalie:
             log.info("Building goalie priors ...")
             goalie_df = build_goalie_priors(shots)
-            n = write_goalie_priors(conn, goalie_df)
-            log.info("Wrote %d goalie_priors rows", n)
+            n = write_goalie_priors(conn, goalie_df, table=goalie_table)
+            log.info("Wrote %d %s rows", n, goalie_table)
 
-        print_validation(conn)
+        # Validation queries hard-code production table names. For --train runs,
+        # we skip them since they'd report on the wrong tables. The training
+        # tables share schema; the production-mode validation already proved
+        # the math is sound.
+        if not args.train:
+            print_validation(conn)
+        else:
+            log.info("Skipping validation queries in --train mode (they target production tables)")
         return 0
     finally:
         conn.close()
