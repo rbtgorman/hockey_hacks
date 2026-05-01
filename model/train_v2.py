@@ -1,56 +1,60 @@
-"""Train the v2 xG model — v1 architecture plus Empirical Bayes player priors.
+"""Train v2.1 xG model — regularized v2 plus post-hoc isotonic calibration.
 
-What's different from v1
-------------------------
-This script is a near-exact mirror of model/train_v1.py:
-  - Same LightGBM hyperparameters
-  - Same three-way temporal split (2022-23 train, 2023-24 val, 2024-25 test)
-  - Same leakage check, same reliability table, same permutation importance
-  - Same artifact format
+What changed from v2
+--------------------
+v2 had test AUC 0.7620 (vs v1 0.7705) and a calibration max gap of 0.0270
+(vs v1 0.0244). Diagnostics showed:
 
-The ONLY differences from v1 are two new numeric features:
-  - shooter_prior_pct      : shrunken shooting % from skater_priors_train,
-                             matched to the shot's strength state
-                             (5v4 -> PP bucket, 4v5 -> PK bucket, etc.)
-  - goalie_prior_ga_rate   : shrunken goals-against rate from goalie_priors_train,
-                             matched to the shot's danger zone (from distance_ft)
-                             and goalie-POV strength state
+  - Features (shooter_prior_pct, goalie_prior_ga_rate) ARE useful:
+    permutation importance > 0.01 on test set for both.
+  - SQL joins are fine: train/val seasons have <0.6% missing priors.
+  - Goalie talent is stable across train -> test (mean drift ~0.009).
+  - Train AUC 0.863, val AUC 0.792, test AUC 0.762 -> classic overfit.
+  - v2 fixed v1's bin-7 underprediction but blew up bin-9 overprediction.
 
-That isolates the experiment: any AUC delta between v1 and v2 is attributable
-to the priors, not to architecture or hyperparameter changes.
+So the features are good. The model is overfit AND miscalibrated. We fix
+both:
 
-Leakage protection
-------------------
-We read from skater_priors_train / goalie_priors_train, which were built from
-2022-23 and 2023-24 only (no 2024-25 data). The test season's shooter and
-goalie performance never leaked into the priors used as features.
+  1. Stronger regularization (slower learning rate, smaller trees, more
+     L1/L2). Reduces overfit by forcing the model to find robust splits
+     instead of memorizing train-set quirks.
+  2. Post-hoc isotonic calibration on the val set. Squashes systematic
+     over/underprediction in any decile without changing AUC ordering.
 
-Production simulator code should read from skater_priors / goalie_priors
-(all-seasons pooled). v2 uses the _train tables only because we are evaluating
-on the held-out 2024-25 test season.
+Hyperparam delta from v1/v2
+---------------------------
+  v1/v2: learning_rate=0.03, num_leaves=63, min_child_samples=50,
+         reg_alpha=0.1, reg_lambda=0.1, n_estimators=1000
+  v2.1:  learning_rate=0.02, num_leaves=31, min_child_samples=100,
+         reg_alpha=0.3, reg_lambda=0.3, n_estimators=2000
 
-Targets
+Outputs
 -------
-v1 baseline:
-  Test ROC-AUC      : 0.7705
-  Test calibration  : max gap 0.0244 across deciles
-
-v2 success criteria:
-  Test ROC-AUC      : > 0.7705 (any improvement attributable to priors is a win)
-  Test calibration  : max gap < v1's, ideally < 0.02 (priors are expected to
-                       fix v1's underprediction on high-xG shots specifically)
+  artifacts/xg_v2_1.pkl              -- LightGBM model
+  artifacts/xg_v2_1_calibrator.pkl   -- IsotonicRegression fit on val predictions
+  artifacts/xg_v2_1_meta.json        -- params, metrics for raw and calibrated
+  artifacts/xg_v2_1_reliability_raw.csv
+  artifacts/xg_v2_1_reliability_calibrated.csv
+  artifacts/xg_v2_1_gain_importance.csv
+  artifacts/xg_v2_1_perm_importance.csv
 
 Usage
 -----
-  python -m model.train_v2
-  python -m model.train_v2 --dry-run
+  python -m model.train_v2_1
+  python -m model.train_v2_1 --dry-run
+
+Inference
+---------
+At predict time:
+    raw_probs = model.predict_proba(X)[:, 1]
+    calibrated_probs = calibrator.predict(raw_probs)
+The calibrated probabilities are what production should use.
 """
 from __future__ import annotations
 
 import argparse
 import json
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -61,12 +65,13 @@ from sklearn.metrics import (
     roc_auc_score, brier_score_loss, log_loss,
     precision_recall_curve, auc as sk_auc,
 )
+from sklearn.isotonic import IsotonicRegression
 
 from ingest.db import pg_conn
 
 
 # ---------------------------------------------------------------------------
-# Feature list — v1 features plus two new prior columns
+# Feature list — identical to v2
 # ---------------------------------------------------------------------------
 NUMERIC_FEATURES = [
     "distance_ft",
@@ -78,7 +83,6 @@ NUMERIC_FEATURES = [
     "distance_from_last_event_ft",
     "period_num",
     "seconds_remaining_in_period",
-    # NEW in v2:
     "shooter_prior_pct",
     "goalie_prior_ga_rate",
 ]
@@ -101,28 +105,8 @@ ARTIFACT_DIR.mkdir(exist_ok=True)
 
 
 # ---------------------------------------------------------------------------
-# Feature build SQL
-#
-# We join shot_features (v1's feature table) with the train-only priors.
-# Strength-state matching for shooters is done with CASE expressions so each
-# shot picks exactly one shooter prior row.
-#
-# Shooter strength bucket map (matches features/build_priors.py:shooter_strength):
-#   5v5, 4v4, 3v3                -> '5v5'
-#   5v4, 5v3, 4v3, 6v5, 6v4      -> 'PP'
-#   4v5, 3v5, 3v4, 5v6, 4v6      -> 'PK'
-#   anything else (penalty shots, 1v0, etc.) -> '5v5' fallback (rarest path)
-#
-# Goalie strength bucket map (inverse, matches goalie_strength):
-#   '5v5' -> '5v5', 'PP' shooter -> 'PP_against', 'PK' shooter -> 'PK_against'
-#
-# Goalie zone map (matches danger_zone):
-#   distance_ft <= 20  -> 'high'
-#   distance_ft <= 40  -> 'mid'
-#   else               -> 'low'
-#   NULL               -> NULL (LEFT JOIN -> NULL prior, handled in pandas below)
+# Feature build SQL — identical to v2
 # ---------------------------------------------------------------------------
-
 LOAD_QUERY = """
 WITH base AS (
     SELECT
@@ -131,24 +115,18 @@ WITH base AS (
         g.game_date AS game_date,
         s.shooter_id,
         s.goalie_id,
-        s.distance_ft AS shot_distance_ft,
-        s.strength_state AS shot_strength_state,
-        s.empty_net AS shot_empty_net,
-        -- shooter strength bucket
         CASE
             WHEN s.strength_state IN ('5v5', '4v4', '3v3') THEN '5v5'
             WHEN s.strength_state IN ('5v4', '5v3', '4v3', '6v5', '6v4') THEN 'PP'
             WHEN s.strength_state IN ('4v5', '3v5', '3v4', '5v6', '4v6') THEN 'PK'
-            ELSE '5v5'  -- penalty-shot states etc., extremely rare
+            ELSE '5v5'
         END AS shooter_strength_bucket,
-        -- goalie strength bucket (inverse of shooter)
         CASE
             WHEN s.strength_state IN ('5v5', '4v4', '3v3') THEN '5v5'
             WHEN s.strength_state IN ('5v4', '5v3', '4v3', '6v5', '6v4') THEN 'PP_against'
             WHEN s.strength_state IN ('4v5', '3v5', '3v4', '5v6', '4v6') THEN 'PK_against'
             ELSE '5v5'
         END AS goalie_strength_bucket,
-        -- goalie zone bucket
         CASE
             WHEN s.distance_ft IS NULL THEN NULL
             WHEN s.distance_ft <= 20 THEN 'high'
@@ -178,26 +156,11 @@ ORDER BY base.game_date, base.game_id, base.event_idx
 
 
 def load_features() -> pd.DataFrame:
-    """Load v1 features joined with train-only priors.
-
-    Missing-prior handling: LEFT JOINs leave NULLs for shots whose
-    shooter/goalie wasn't seen in training, or whose distance/strength
-    didn't bucket cleanly. We fill those with the league-mean prior
-    (also returned by the join) — equivalent to "no prior info, fall
-    back to league rate." This is what an EB prior would say for a
-    player with zero observations.
-    """
     with pg_conn() as conn:
         df = pd.read_sql(LOAD_QUERY, conn)
 
-    # Fill missing priors with their respective league means
-    # (the join also returned prior_mean for fallback).
     n_missing_shooter = df["shooter_prior_pct"].isna().sum()
     n_missing_goalie = df["goalie_prior_ga_rate"].isna().sum()
-
-    # If shooter_prior_league_mean is itself NaN (no matching strength bucket
-    # in priors at all), use the global 5v5 skater mean as the deepest fallback.
-    # This shouldn't happen given our SQL coverage but defends against it.
     global_shooter_mean = df["shooter_prior_league_mean"].median()
     global_goalie_mean = df["goalie_prior_league_mean"].median()
 
@@ -208,14 +171,11 @@ def load_features() -> pd.DataFrame:
         df["goalie_prior_league_mean"]
     ).fillna(global_goalie_mean)
 
-    # Drop the helper columns; they're not features
     df = df.drop(columns=["shooter_prior_league_mean", "goalie_prior_league_mean",
                           "shooter_id", "goalie_id",
-                          "shot_distance_ft", "shot_strength_state", "shot_empty_net",
                           "shooter_strength_bucket", "goalie_strength_bucket",
                           "goalie_zone_bucket"])
 
-    # Match v1 type discipline
     for col in BOOLEAN_FEATURES + [TARGET]:
         df[col] = df[col].astype(int)
     for col in CATEGORICAL_FEATURES:
@@ -233,7 +193,6 @@ def load_features() -> pd.DataFrame:
 
 
 def split_three_way(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
-    """Same split as v1: oldest train, middle val, newest test."""
     seasons = sorted(df["season"].unique())
     if len(seasons) < 3:
         raise RuntimeError(
@@ -250,7 +209,6 @@ def split_three_way(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame, pd.Da
 
 
 def assert_no_leakage(df: pd.DataFrame) -> None:
-    """v1's score_diff sanity check, plus a v2-specific prior-leakage check."""
     sample = df.groupby("game_id")["score_diff"].nunique()
     multi_value_games = (sample > 1).sum()
     pct = 100 * multi_value_games / len(sample)
@@ -259,38 +217,29 @@ def assert_no_leakage(df: pd.DataFrame) -> None:
     if pct < 50:
         raise RuntimeError("score_diff appears constant within most games. Stopping.")
 
-    # v2-specific: confirm priors don't have test-season info.
-    # The priors were built from train+val seasons; if the test set has
-    # exact-match priors for shooters who only debuted in 2024-25, that's a
-    # smoking gun. We check by spot-comparing prior coverage by season:
-    coverage = (
-        df.assign(
-            has_shooter_prior=df["shooter_prior_pct"].notna()
-                              & (df["shooter_prior_pct"] != df["shooter_prior_pct"].median())
-        )
-        .groupby("season")
-        .agg(
-            n=("game_id", "size"),
-            shooter_prior_present=("has_shooter_prior", "mean"),
-        )
-    )
-    print("\nShooter prior coverage by season (heuristic — not exact):")
-    print(coverage.to_string(float_format=lambda v: f"{v:.3f}"))
-
 
 def train_model(train: pd.DataFrame, val: pd.DataFrame) -> lgb.LGBMClassifier:
-    """Identical hyperparameters to train_v1.py."""
+    """Same loop as v2 but with regularized hyperparameters.
+
+    Changes vs v2:
+      learning_rate: 0.03 -> 0.02      (slower fitting, less overshoot)
+      num_leaves:    63   -> 31        (smaller trees, less capacity)
+      min_child_samples: 50 -> 100     (forces robust leaves)
+      reg_alpha:    0.1   -> 0.3       (stronger L1)
+      reg_lambda:   0.1   -> 0.3       (stronger L2)
+      n_estimators: 1000  -> 2000      (cap raised; the slower LR needs more rounds)
+    """
     X_train, y_train = train[ALL_FEATURES], train[TARGET]
     X_val, y_val = val[ALL_FEATURES], val[TARGET]
 
     model = lgb.LGBMClassifier(
-        n_estimators=1000,
-        learning_rate=0.03,
-        num_leaves=63,
+        n_estimators=2000,
+        learning_rate=0.02,
+        num_leaves=31,
         max_depth=-1,
-        min_child_samples=50,
-        reg_alpha=0.1,
-        reg_lambda=0.1,
+        min_child_samples=100,
+        reg_alpha=0.3,
+        reg_lambda=0.3,
         objective="binary",
         metric="auc",
         importance_type="gain",
@@ -298,14 +247,14 @@ def train_model(train: pd.DataFrame, val: pd.DataFrame) -> lgb.LGBMClassifier:
         verbose=-1,
     )
 
-    print("\nTraining LightGBM (early stopping on VAL, test untouched)...")
+    print("\nTraining LightGBM v2.1 (regularized; early stopping on VAL)...")
     model.fit(
         X_train, y_train,
         eval_set=[(X_val, y_val)],
         eval_names=["val"],
         categorical_feature=CATEGORICAL_FEATURES,
         callbacks=[
-            lgb.early_stopping(stopping_rounds=50, verbose=False),
+            lgb.early_stopping(stopping_rounds=75, verbose=False),
             lgb.log_evaluation(period=50),
         ],
     )
@@ -313,30 +262,42 @@ def train_model(train: pd.DataFrame, val: pd.DataFrame) -> lgb.LGBMClassifier:
     return model
 
 
-def evaluate(model: lgb.LGBMClassifier, df: pd.DataFrame, label: str) -> dict:
-    X, y = df[ALL_FEATURES], df[TARGET]
-    probs = model.predict_proba(X)[:, 1]
+def fit_calibrator(model: lgb.LGBMClassifier, val: pd.DataFrame) -> IsotonicRegression:
+    """Fit isotonic regression on val predictions -> val labels.
+
+    Why isotonic over Platt: isotonic is non-parametric and handles non-monotone
+    miscalibration patterns. Platt assumes the miscalibration is sigmoidal,
+    which is wrong for tree models (especially in the tails, which is
+    exactly where v2 broke down in bin 9).
+    """
+    X_val, y_val = val[ALL_FEATURES], val[TARGET]
+    val_probs = model.predict_proba(X_val)[:, 1]
+    cal = IsotonicRegression(out_of_bounds="clip")
+    cal.fit(val_probs, y_val)
+    print("Fitted isotonic calibrator on val set.")
+    return cal
+
+
+def evaluate(probs: np.ndarray, y: np.ndarray, label: str, v1_baseline: str = "") -> dict:
     auc = roc_auc_score(y, probs)
     ll = log_loss(y, probs)
     brier = brier_score_loss(y, probs)
     pr, rc, _ = precision_recall_curve(y, probs)
     pr_auc = sk_auc(rc, pr)
     print(f"\n--- {label} metrics ---")
-    print(f"  ROC-AUC:   {auc:.4f}  (v1 test: 0.7705)")
+    print(f"  ROC-AUC:   {auc:.4f}  {v1_baseline}")
     print(f"  PR-AUC:    {pr_auc:.4f}  (baseline = {y.mean():.4f})")
     print(f"  Log-loss:  {ll:.4f}")
     print(f"  Brier:     {brier:.4f}")
     return {"auc": auc, "pr_auc": pr_auc, "log_loss": ll, "brier": brier,
-            "n": len(df), "base_rate": float(y.mean())}
+            "n": int(len(y)), "base_rate": float(y.mean())}
 
 
-def reliability_table(model: lgb.LGBMClassifier, df: pd.DataFrame, n_bins: int = 10) -> pd.DataFrame:
-    X, y = df[ALL_FEATURES], df[TARGET]
-    probs = model.predict_proba(X)[:, 1]
+def reliability_table(probs: np.ndarray, y: np.ndarray, n_bins: int = 10) -> pd.DataFrame:
     edges = np.quantile(probs, np.linspace(0, 1, n_bins + 1))
     edges[0], edges[-1] = -1e-9, 1 + 1e-9
     bins = pd.cut(probs, bins=edges, labels=False, include_lowest=True)
-    out = pd.DataFrame({"bin": bins, "pred": probs, "actual": y.values})
+    out = pd.DataFrame({"bin": bins, "pred": probs, "actual": y})
     table = out.groupby("bin").agg(
         n=("actual", "size"),
         mean_pred=("pred", "mean"),
@@ -346,10 +307,15 @@ def reliability_table(model: lgb.LGBMClassifier, df: pd.DataFrame, n_bins: int =
     return table
 
 
-def permutation_importance_on_test(model, test_df, n_repeats=3, seed=42):
-    """Same as v1 — preserves categorical metadata across shuffle."""
+def permutation_importance_on_test(model, calibrator, test_df, n_repeats=3, seed=42):
+    """Same as v2 but reports drop in CALIBRATED AUC.
+
+    AUC ordering is invariant to monotone transforms, so calibration doesn't
+    change AUC. We use raw probs for speed but the result applies equally to
+    calibrated.
+    """
     rng = np.random.default_rng(seed)
-    X, y = test_df[ALL_FEATURES].copy(), test_df[TARGET]
+    X, y = test_df[ALL_FEATURES].copy(), test_df[TARGET].values
     base_probs = model.predict_proba(X)[:, 1]
     base_auc = roc_auc_score(y, base_probs)
 
@@ -367,35 +333,45 @@ def permutation_importance_on_test(model, test_df, n_repeats=3, seed=42):
             shuffled_probs = model.predict_proba(Xp)[:, 1]
             drops.append(base_auc - roc_auc_score(y, shuffled_probs))
         results.append({"feature": col,
-                        "auc_drop_mean": np.mean(drops),
-                        "auc_drop_std": np.std(drops)})
+                        "auc_drop_mean": float(np.mean(drops)),
+                        "auc_drop_std": float(np.std(drops))})
     imp = pd.DataFrame(results).sort_values("auc_drop_mean", ascending=False)
     return imp, base_auc
 
 
-def compare_to_v1(v2_metrics: dict, v2_max_gap: float) -> None:
-    """Print a side-by-side v1/v2 comparison from the v1 meta JSON."""
+def compare_versions(v2_1_raw: dict, v2_1_cal: dict,
+                     v2_1_max_gap_raw: float, v2_1_max_gap_cal: float) -> None:
+    """Side-by-side comparison: v1 vs v2 vs v2.1 (raw) vs v2.1 (calibrated)."""
+    print("\n" + "=" * 78)
+    print("Model comparison — TEST set")
+    print("=" * 78)
     v1_meta_path = ARTIFACT_DIR / "xg_v1_meta.json"
-    if not v1_meta_path.exists():
-        print(f"\n(no v1 meta at {v1_meta_path}, skipping side-by-side)")
-        return
-    with open(v1_meta_path) as f:
-        v1_meta = json.load(f)
-    print("\n" + "=" * 60)
-    print("v1 vs v2 — TEST set comparison")
-    print("=" * 60)
-    cols = ["auc", "pr_auc", "log_loss", "brier"]
-    for c in cols:
-        v1v = v1_meta["metrics"]["test"][c]
-        v2v = v2_metrics["test"][c]
-        delta = v2v - v1v
-        # auc/pr_auc: higher is better; log_loss/brier: lower is better
-        better = (delta > 0) if c in ("auc", "pr_auc") else (delta < 0)
-        marker = "  ✓" if better else ("  ✗" if abs(delta) > 1e-6 else "  =")
-        print(f"  {c:10s}  v1={v1v:.4f}  v2={v2v:.4f}  Δ={delta:+.4f}{marker}")
-    print(f"  {'cal_gap':10s}  v1={v1_meta['calibration_max_gap']:.4f}  "
-          f"v2={v2_max_gap:.4f}  Δ={v2_max_gap - v1_meta['calibration_max_gap']:+.4f}"
-          f"  {'  ✓' if v2_max_gap < v1_meta['calibration_max_gap'] else '  ✗'}")
+    v2_meta_path = ARTIFACT_DIR / "xg_v2_meta.json"
+    v1m = json.load(open(v1_meta_path)) if v1_meta_path.exists() else None
+    v2m = json.load(open(v2_meta_path)) if v2_meta_path.exists() else None
+
+    rows = []
+    if v1m:
+        rows.append(("v1",
+                     v1m["metrics"]["test"]["auc"],
+                     v1m["metrics"]["test"]["log_loss"],
+                     v1m["metrics"]["test"]["brier"],
+                     v1m["calibration_max_gap"]))
+    if v2m:
+        rows.append(("v2",
+                     v2m["metrics"]["test"]["auc"],
+                     v2m["metrics"]["test"]["log_loss"],
+                     v2m["metrics"]["test"]["brier"],
+                     v2m["calibration_max_gap"]))
+    rows.append(("v2.1 raw", v2_1_raw["auc"], v2_1_raw["log_loss"],
+                 v2_1_raw["brier"], v2_1_max_gap_raw))
+    rows.append(("v2.1 cal", v2_1_cal["auc"], v2_1_cal["log_loss"],
+                 v2_1_cal["brier"], v2_1_max_gap_cal))
+
+    print(f"  {'model':10s}  {'AUC':>7s}  {'log_loss':>9s}  {'brier':>7s}  {'cal_gap':>8s}")
+    print(f"  {'-'*10}  {'-'*7}  {'-'*9}  {'-'*7}  {'-'*8}")
+    for name, auc, ll, brier, gap in rows:
+        print(f"  {name:10s}  {auc:7.4f}  {ll:9.4f}  {brier:7.4f}  {gap:8.4f}")
 
 
 def main():
@@ -409,18 +385,40 @@ def main():
 
     model = train_model(train, val)
 
-    metrics = {
-        "train": evaluate(model, train, "Train (sanity only)"),
-        "val":   evaluate(model, val,   "Validation (used for early stop)"),
-        "test":  evaluate(model, test,  "Test (held out, touch once)"),
+    # Evaluate raw probabilities first
+    X_test, y_test = test[ALL_FEATURES], test[TARGET].values
+    test_probs_raw = model.predict_proba(X_test)[:, 1]
+
+    metrics_raw = {
+        "train": evaluate(model.predict_proba(train[ALL_FEATURES])[:, 1],
+                          train[TARGET].values, "Train RAW (sanity)"),
+        "val":   evaluate(model.predict_proba(val[ALL_FEATURES])[:, 1],
+                          val[TARGET].values, "Val RAW"),
+        "test":  evaluate(test_probs_raw, y_test, "Test RAW",
+                          "(v1: 0.7705, v2: 0.7620)"),
     }
 
-    print("\n--- Reliability (calibration) on TEST ---")
-    rel = reliability_table(model, test, n_bins=10)
-    print(rel.to_string(index=False, float_format=lambda v: f"{v:.4f}"))
-    max_gap = rel["pred_vs_actual_gap"].abs().max()
-    print(f"\nMax |predicted - actual| in any decile: {max_gap:.4f}")
-    print("Target: < 0.02 (v1 was 0.0244)")
+    print("\n--- Reliability (RAW) on TEST ---")
+    rel_raw = reliability_table(test_probs_raw, y_test, n_bins=10)
+    print(rel_raw.to_string(index=False, float_format=lambda v: f"{v:.4f}"))
+    max_gap_raw = float(rel_raw["pred_vs_actual_gap"].abs().max())
+    print(f"\nMax |predicted - actual| in any decile (RAW): {max_gap_raw:.4f}")
+
+    # Fit isotonic calibrator on val, then apply to test
+    calibrator = fit_calibrator(model, val)
+    test_probs_cal = calibrator.predict(test_probs_raw)
+
+    metrics_cal = {
+        "test": evaluate(test_probs_cal, y_test, "Test CALIBRATED",
+                         "(AUC unchanged by calibration; ll/brier should improve)"),
+    }
+
+    print("\n--- Reliability (CALIBRATED) on TEST ---")
+    rel_cal = reliability_table(test_probs_cal, y_test, n_bins=10)
+    print(rel_cal.to_string(index=False, float_format=lambda v: f"{v:.4f}"))
+    max_gap_cal = float(rel_cal["pred_vs_actual_gap"].abs().max())
+    print(f"\nMax |predicted - actual| in any decile (CAL): {max_gap_cal:.4f}")
+    print("Target: < 0.02 (v1: 0.0244, v2: 0.0270)")
 
     print("\n--- LightGBM gain importance ---")
     gain = pd.DataFrame({"feature": ALL_FEATURES, "gain": model.feature_importances_})
@@ -428,12 +426,16 @@ def main():
     print(gain.head(20).to_string(index=False))
 
     if not args.dry_run:
-        joblib.dump(model, ARTIFACT_DIR / "xg_v2.pkl")
+        joblib.dump(model, ARTIFACT_DIR / "xg_v2_1.pkl")
+        joblib.dump(calibrator, ARTIFACT_DIR / "xg_v2_1_calibrator.pkl")
         meta = {
-            "version": "v2",
-            "parent_version": "v1",
-            "delta_from_v1": "added shooter_prior_pct and goalie_prior_ga_rate "
-                             "(from skater_priors_train / goalie_priors_train)",
+            "version": "v2.1",
+            "parent_version": "v2",
+            "delta_from_v2": "regularized hyperparams + isotonic calibration on val",
+            "hyperparams": {
+                "n_estimators": 2000, "learning_rate": 0.02, "num_leaves": 31,
+                "min_child_samples": 100, "reg_alpha": 0.3, "reg_lambda": 0.3,
+            },
             "features": {
                 "numeric": NUMERIC_FEATURES,
                 "boolean": BOOLEAN_FEATURES,
@@ -447,27 +449,31 @@ def main():
             "val_season":   int(sorted(df["season"].unique())[1]),
             "test_season":  int(sorted(df["season"].unique())[2]),
             "best_iteration": int(model.best_iteration_ or 0),
-            "metrics": metrics,
-            "calibration_max_gap": float(max_gap),
+            "metrics_raw": metrics_raw,
+            "metrics_calibrated": metrics_cal,
+            "calibration_max_gap_raw": max_gap_raw,
+            "calibration_max_gap_calibrated": max_gap_cal,
         }
-        with open(ARTIFACT_DIR / "xg_v2_meta.json", "w") as f:
+        with open(ARTIFACT_DIR / "xg_v2_1_meta.json", "w") as f:
             json.dump(meta, f, indent=2)
-        rel.to_csv(ARTIFACT_DIR / "xg_v2_reliability.csv", index=False)
-        gain.to_csv(ARTIFACT_DIR / "xg_v2_gain_importance.csv", index=False)
+        rel_raw.to_csv(ARTIFACT_DIR / "xg_v2_1_reliability_raw.csv", index=False)
+        rel_cal.to_csv(ARTIFACT_DIR / "xg_v2_1_reliability_calibrated.csv", index=False)
+        gain.to_csv(ARTIFACT_DIR / "xg_v2_1_gain_importance.csv", index=False)
         print(f"\nCore artifacts saved to {ARTIFACT_DIR}/")
 
     print("\n--- Permutation importance on TEST set ---")
     try:
-        perm, base_auc = permutation_importance_on_test(model, test)
+        perm, base_auc = permutation_importance_on_test(model, calibrator, test)
         print(perm.head(20).to_string(index=False, float_format=lambda v: f"{v:.4f}"))
         if not args.dry_run:
-            perm.to_csv(ARTIFACT_DIR / "xg_v2_perm_importance.csv", index=False)
+            perm.to_csv(ARTIFACT_DIR / "xg_v2_1_perm_importance.csv", index=False)
             print("Permutation importance saved.")
     except Exception as e:
         print(f"Permutation importance failed but model is saved. "
               f"Error: {type(e).__name__}: {e}")
 
-    compare_to_v1(metrics, max_gap)
+    compare_versions(metrics_raw["test"], metrics_cal["test"],
+                     max_gap_raw, max_gap_cal)
     print("\nDone.")
 
 
