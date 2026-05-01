@@ -75,9 +75,14 @@ SEASON_WEIGHTS = {
 #
 # Skater min was 50 in v0.1 of this script; that produced K=42 because small-sample
 # noise inflated the population variance. 200 is roughly where individual shooting
-# % becomes signal-dominated (see diagnostics in chat history). Players below 200
-# shots are still in the table.
+# % becomes signal-dominated. Players below that threshold are still in the table.
+#
+# PK has a separate, lower threshold because PK ice time is concentrated in a small
+# subset of players -- only ~5 players league-wide hit 200 PK shots over three
+# seasons. Using 50 for PK gives a usable population (~50-100 players) for K fitting
+# at the cost of some additional variance noise.
 MIN_SHOTS_FOR_SKATER_FIT = 200
+MIN_SHOTS_FOR_SKATER_FIT_PK = 50
 MIN_SHOTS_FOR_GOALIE_FIT_OVERALL = 200
 MIN_SHOTS_FOR_GOALIE_FIT_BUCKETED = 100
 
@@ -164,24 +169,47 @@ def fit_beta_prior(
 ) -> BetaPriorFit:
     """Fit Beta(alpha, beta) to player rates by method of moments.
 
-    Uses only players with `total_col >= min_sample` to estimate the
-    between-player variance (so 1-shot noise doesn't blow up the variance).
+    Two-step fit:
+      1. Estimate the population MEAN from the full eligible population
+         (any player with at least `total_col` >= 1 shot). This is the
+         league rate and is well-estimated by total goals / total shots.
+      2. Estimate the CONCENTRATION K from only high-volume players
+         (`total_col` >= min_sample) so small-sample noise doesn't
+         inflate the between-player variance.
+
+    Why this matters: in earlier versions, both mean and K were estimated
+    from the same min_sample-filtered population. For PK shooting, only
+    5 players had >= 200 shots over three seasons, and those 5 are by
+    definition the league's PK ice-time leaders -- who are above-average
+    shooters. The "mean" came out as the elite-PK-shooter mean, not the
+    league PK mean. Decoupling fixes that.
 
     Method of moments for Beta:
         mean = alpha / (alpha + beta)
         var  = (alpha * beta) / ((alpha + beta)^2 * (alpha + beta + 1))
-    Solving for K = alpha + beta gives:
+    Solving for K = alpha + beta given a target mean and variance:
         K = mean * (1 - mean) / var - 1
     """
+    # Step 1: mean from the full population (weight by trial count to get
+    # the actual league rate, not the average of player rates which is
+    # biased toward low-volume players)
+    full_pop = counts[counts[total_col] > 0]
+    if len(full_pop) == 0:
+        raise RuntimeError(f"No players with any {total_col} for Beta fit")
+    total_successes = float(full_pop[success_col].sum())
+    total_trials = float(full_pop[total_col].sum())
+    m = total_successes / total_trials
+    m = float(np.clip(m, 1e-6, 1 - 1e-6))
+
+    # Step 2: K from the high-volume subpopulation (so small-sample noise
+    # doesn't dominate the variance estimate)
     eligible = counts[counts[total_col] >= min_sample].copy()
     if len(eligible) < 5:
         raise RuntimeError(
-            f"Too few players with {total_col} >= {min_sample} for Beta fit "
+            f"Too few players with {total_col} >= {min_sample} for K estimation "
             f"(have {len(eligible)} eligible)"
         )
-
     rates = (eligible[success_col] / eligible[total_col]).clip(1e-6, 1 - 1e-6)
-    m = float(rates.mean())
     v = float(rates.var(ddof=1))
 
     # If observed variance >= max possible Beta variance, fall back to a wide prior.
@@ -290,9 +318,15 @@ def build_skater_priors(shots: pd.DataFrame) -> pd.DataFrame:
     Returns a DataFrame matching the skater_priors schema, ready to upsert.
     """
     rows: list[pd.DataFrame] = []
-    buckets = [("5v5", "5v5"), ("PP", "PP"), ("PK", "PK"), ("all", None)]
+    # (label, strength_filter, k_fit_min_sample)
+    buckets = [
+        ("5v5", "5v5", MIN_SHOTS_FOR_SKATER_FIT),
+        ("PP",  "PP",  MIN_SHOTS_FOR_SKATER_FIT),
+        ("PK",  "PK",  MIN_SHOTS_FOR_SKATER_FIT_PK),
+        ("all", None,  MIN_SHOTS_FOR_SKATER_FIT),
+    ]
 
-    for label, filt in buckets:
+    for label, filt, k_min in buckets:
         agg = aggregate_skater_counts(shots, filt)
         if len(agg) == 0:
             log.warning("No shots in skater bucket %s; skipping", label)
@@ -300,7 +334,7 @@ def build_skater_priors(shots: pd.DataFrame) -> pd.DataFrame:
 
         prior = fit_beta_prior(
             agg, success_col="weighted_goals", total_col="weighted_shots",
-            min_sample=MIN_SHOTS_FOR_SKATER_FIT,
+            min_sample=k_min,
         )
         log.info(
             "Skater prior [%s]: K=%.1f mean=%.4f (n_eligible=%d / total=%d)",
