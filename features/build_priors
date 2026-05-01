@@ -1,46 +1,131 @@
-"""Build skater and goalie priors with Empirical Bayes shrinkage.
+"""Build skater and goalie priors with Empirical Bayes (Beta-Binomial) shrinkage.
 
 Outputs two tables:
-  - skater_priors: shooting % stratified by strength state (5v5, PP, PK)
-  - goalie_priors: goals-against rate stratified by danger zone × strength state
+  - skater_priors:  shooting % stratified by strength state (5v5, PP, PK, all)
+  - goalie_priors:  goals-against rate stratified by danger zone x strength state
 
-Method:
-  1. Aggregate per-player counts across seasons with 5/4/3 recency weighting
-     (most recent season counts ~1.67x as much as oldest, mirroring BallparkPal).
-  2. Fit a Beta(alpha, beta) prior to the population using method of moments.
-  3. Compute shrunken rate per player = (k_alpha + obs_goals) / (k_alpha + k_beta + obs_shots).
-  4. Validate: small-sample players should be pulled toward population mean,
-     large-sample players should retain their raw rate.
+Method
+------
+1. Aggregate per-player counts across seasons with 5/4/3 recency weighting
+   (most recent season counts ~1.67x as much as the oldest, mirroring BallparkPal).
+2. Fit a Beta(alpha, beta) prior to the population using method of moments.
+3. Shrunken rate per player = (alpha + obs_goals) / (alpha + beta + obs_shots).
+4. Persist with raw + shrunken values so downstream code can verify shrinkage.
 
-Run:
-    python -m features.build_priors --init-schema
-    python -m features.build_priors
-    python -m features.build_priors --verify-only    # skip computation, just check
+Stratification
+--------------
+Skaters: '5v5', 'PP', 'PK', 'all'  (4v4 and 3v3 are folded into 5v5)
+Goalies: zone in {'high', 'mid', 'low', 'all'} x strength in {'5v5', 'PP_against', 'PK_against', 'all'}
+
+Run
+---
+  python -m features.build_priors --init-schema   # one time, applies schema_stage_b.sql
+  python -m features.build_priors                  # populate priors
+
+Leakage warning for downstream consumers
+----------------------------------------
+This script pools ALL THREE seasons (2022-23, 2023-24, 2024-25). For training the v2
+xG model, the test season (2024-25) must be excluded from the priors used at training
+time, OR an expanding-window version of this script must be used. See train_v2.py.
 """
+
 from __future__ import annotations
 
 import argparse
+import logging
+import os
 import sys
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
+import psycopg2
+import psycopg2.extras
+from dotenv import load_dotenv
 
-from ingest.db import pg_conn, init_schema
-from pathlib import Path
+# -------------------------------------------------------------------------
+# Config
+# -------------------------------------------------------------------------
 
+load_dotenv()
 
-# Recency weights — most recent season counts more
-# 5/4/3 mirrors BallparkPal's published weighting
+PG_DSN = os.environ.get("PG_DSN") or (
+    "host={host} port={port} dbname={db} user={user} password={pw}".format(
+        host=os.environ.get("PGHOST", "localhost"),
+        port=os.environ.get("PGPORT", "5432"),
+        db=os.environ.get("PGDATABASE", "hockeyviz"),
+        user=os.environ.get("PGUSER", "postgres"),
+        pw=os.environ.get("PGPASSWORD", ""),
+    )
+)
+
+# Map season-string to recency weight.  5/4/3 mirrors BallparkPal.
 SEASON_WEIGHTS = {
-    20242025: 5.0,
-    20232024: 4.0,
-    20222023: 3.0,
+    "20242025": 5.0,
+    "20232024": 4.0,
+    "20222023": 3.0,
 }
 
+# Minimum sample sizes for INCLUSION IN THE BETA FIT.
+# Players below these thresholds still get priors (shrunken heavily toward the mean),
+# they just don't influence the K estimate.
+MIN_SHOTS_FOR_SKATER_FIT = 50
+MIN_SHOTS_FOR_GOALIE_FIT_OVERALL = 200
+MIN_SHOTS_FOR_GOALIE_FIT_BUCKETED = 100
 
-# Danger zone definitions (distance in feet)
-def classify_zone(distance_ft: float | None) -> str:
+SCHEMA_FILE = Path(__file__).resolve().parent.parent / "db" / "schema_stage_b.sql"
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s %(levelname)s %(message)s",
+    datefmt="%H:%M:%S",
+)
+log = logging.getLogger("build_priors")
+
+
+# -------------------------------------------------------------------------
+# Strength state helpers
+# -------------------------------------------------------------------------
+
+def shooter_strength(state: str | None) -> str:
+    """Bucket a shooter-POV strength state into {5v5, PP, PK, unknown}.
+
+    4v4 and 3v3 are treated as 5v5 for prior purposes.  This is a deliberate
+    simplification: those situations are rare and have similar shooting rates
+    to even strength on aggregate.  Stage B may revisit.
+    """
+    if not state:
+        return "unknown"
+    s = state.strip().lower().replace(" ", "")
+    # Strength state is shooter-POV: '5v4' -> shooter has 5, defender has 4 -> shooter on PP
+    mapping = {
+        "5v5": "5v5", "4v4": "5v5", "3v3": "5v5",
+        "5v4": "PP",  "5v3": "PP",  "4v3": "PP",
+        "6v5": "PP",  "6v4": "PP",  # extra attacker situations
+        "4v5": "PK",  "3v5": "PK",  "3v4": "PK",
+        "5v6": "PK",  "4v6": "PK",
+    }
+    return mapping.get(s, "unknown")
+
+
+def goalie_strength(state: str | None) -> str:
+    """Bucket a shot's strength state into a goalie-POV label.
+
+    Inverts the shooter perspective: a 5v4 shot (shooter on PP) means the
+    goalie is on the PK -> 'PP_against'.
+    """
+    s = shooter_strength(state)
+    return {"PP": "PP_against", "PK": "PK_against", "5v5": "5v5"}.get(s, "unknown")
+
+
+def danger_zone(distance_ft: float | None) -> str:
+    """Classify a shot's distance into a danger zone.
+
+    Thresholds chosen to roughly match published "high/mid/low danger" zones
+    used by Natural Stat Trick and similar.
+    """
     if distance_ft is None:
         return "unknown"
     if distance_ft <= 20:
@@ -50,418 +135,492 @@ def classify_zone(distance_ft: float | None) -> str:
     return "low"
 
 
-# Strength state mapping for skaters (shooter perspective)
-def shooter_strength(state: str | None) -> str:
-    """Collapse raw strength state into PP/PK/5v5 buckets from shooter POV.
-
-    The strength_state in shots is already shooter-POV (e.g. 5v4 means shooter team
-    has more skaters). We collapse into three categories.
-    """
-    if not state:
-        return "unknown"
-    if state in ("5v5", "4v4", "3v3"):
-        return "5v5"  # treat all even-strength as 5v5 for prior purposes
-    # Extract digits
-    parts = state.split("v")
-    if len(parts) != 2:
-        return "unknown"
-    try:
-        own = int(parts[0])
-        opp = int(parts[1])
-    except ValueError:
-        return "unknown"
-    if own > opp:
-        return "PP"
-    if own < opp:
-        return "PK"
-    return "5v5"
-
-
-def goalie_strength(state: str | None) -> str:
-    """Strength state from defending goalie's POV.
-
-    Note: shot.strength_state is shooter-POV. So for the goalie facing the shot,
-    a 5v4 shot means the goalie's team is on the PK (4v5).
-    """
-    s = shooter_strength(state)
-    return {"PP": "PK_against", "PK": "PP_against", "5v5": "5v5",
-            "unknown": "unknown"}.get(s, "unknown")
-
+# -------------------------------------------------------------------------
+# Beta prior fitting
+# -------------------------------------------------------------------------
 
 @dataclass
 class BetaPriorFit:
-    """Output of fitting Beta(alpha, beta) to a population of rates."""
+    """Fitted Beta(alpha, beta) population prior."""
     alpha: float
     beta: float
     concentration: float    # alpha + beta = K
     mean: float             # alpha / K
-    min_sample_for_fit: int
+    n_players_used: int
+    min_sample: int
 
 
-def fit_beta_prior(counts: pd.DataFrame, success_col: str, total_col: str,
-                   min_sample: int = 50) -> BetaPriorFit:
-    """Fit Beta(alpha, beta) by method of moments to player-level rates.
+def fit_beta_prior(
+    counts: pd.DataFrame,
+    success_col: str,
+    total_col: str,
+    min_sample: int,
+) -> BetaPriorFit:
+    """Fit Beta(alpha, beta) to player rates by method of moments.
 
-    Filters to players with at least `min_sample` trials so the fit isn't
-    dominated by 1-shot noise.
+    Uses only players with `total_col >= min_sample` to estimate the
+    between-player variance (so 1-shot noise doesn't blow up the variance).
 
-    Method-of-moments for Beta:
-        mean    = alpha / (alpha + beta)
-        var     = (alpha * beta) / ((alpha + beta)^2 * (alpha + beta + 1))
-
-    From those two moments we solve for alpha and beta.
+    Method of moments for Beta:
+        mean = alpha / (alpha + beta)
+        var  = (alpha * beta) / ((alpha + beta)^2 * (alpha + beta + 1))
+    Solving for K = alpha + beta gives:
+        K = mean * (1 - mean) / var - 1
     """
     eligible = counts[counts[total_col] >= min_sample].copy()
     if len(eligible) < 5:
         raise RuntimeError(
-            f"Too few players with sample >= {min_sample} for Beta fit "
-            f"(have {len(eligible)})"
+            f"Too few players with {total_col} >= {min_sample} for Beta fit "
+            f"(have {len(eligible)} eligible)"
         )
 
-    rates = eligible[success_col] / eligible[total_col]
-    rates = rates.clip(1e-6, 1 - 1e-6)  # guard against exactly 0 or 1
-    m = rates.mean()
-    v = rates.var(ddof=1)
+    rates = (eligible[success_col] / eligible[total_col]).clip(1e-6, 1 - 1e-6)
+    m = float(rates.mean())
+    v = float(rates.var(ddof=1))
 
-    # The "common var" (i.e., expected variance if all players had the population mean)
-    # is m*(1-m)/avg_n. The "between-player variance" is total_var - common_var.
-    # But the simpler MoM approach below is fine for our purposes.
-    if v >= m * (1 - m):
-        # Variance >= max possible for a Beta — fall back to a wide prior
+    # If observed variance >= max possible Beta variance, fall back to a wide prior.
+    max_var = m * (1 - m)
+    if v >= max_var or v <= 0:
         K = 50.0
     else:
-        K = (m * (1 - m) / v) - 1
-        K = max(K, 5.0)  # don't let K go absurdly small
+        K = (m * (1 - m) / v) - 1.0
+        K = max(K, 5.0)  # floor to avoid an absurdly diffuse prior
 
     alpha = m * K
-    beta = (1 - m) * K
-    return BetaPriorFit(alpha=alpha, beta=beta, concentration=K,
-                        mean=m, min_sample_for_fit=min_sample)
+    beta = (1.0 - m) * K
+    return BetaPriorFit(
+        alpha=alpha, beta=beta, concentration=K, mean=m,
+        n_players_used=len(eligible), min_sample=min_sample,
+    )
 
 
-def shrink_rate(successes: float, trials: float, prior: BetaPriorFit) -> float:
-    """Apply Beta-Binomial shrinkage to a single player rate."""
-    return (successes + prior.alpha) / (trials + prior.concentration)
+def shrunken(successes: float, trials: float, prior: BetaPriorFit) -> float:
+    """Beta-Binomial posterior mean."""
+    return (successes + prior.alpha) / (trials + prior.alpha + prior.beta)
 
 
-# =====================================================================
-# Pipeline: load weighted shots, aggregate, fit priors, write to DB
-# =====================================================================
+# -------------------------------------------------------------------------
+# Data loading
+# -------------------------------------------------------------------------
 
-LOAD_SHOTS_SQL = """
-    SELECT
-        s.shooter_id,
-        s.goalie_id,
-        s.is_goal::int AS is_goal,
-        s.is_sog::int AS is_sog,
-        s.distance_ft,
-        s.strength_state,
-        g.season
-    FROM shots s
-    JOIN games g ON g.game_id = s.game_id
-    WHERE s.is_sog = TRUE      -- only count shots on goal (goals + saves)
-      AND s.shooter_id IS NOT NULL
-      AND s.goalie_id IS NOT NULL  -- exclude empty-net (no save attempt)
+SHOTS_QUERY = """
+SELECT
+    s.shooter_id,
+    s.goalie_id,
+    s.distance_ft,
+    s.strength_state,
+    s.is_goal,
+    s.is_sog,
+    s.empty_net,
+    g.season
+FROM shots s
+JOIN games g ON g.game_id = s.game_id
+WHERE s.is_sog = TRUE
+  AND g.season IN %(seasons)s
 """
 
 
-def load_shots() -> pd.DataFrame:
-    print("Loading shots from DB...")
-    with pg_conn() as conn:
-        df = pd.read_sql(LOAD_SHOTS_SQL, conn)
-    print(f"Loaded {len(df):,} shots-on-goal with goalie present")
+def load_shots(conn) -> pd.DataFrame:
+    """Pull all SOG-eligible shots across the configured seasons."""
+    seasons = tuple(SEASON_WEIGHTS.keys())
+    log.info("Loading shots for seasons %s ...", seasons)
+    df = pd.read_sql(SHOTS_QUERY, conn, params={"seasons": seasons})
+    log.info("Loaded %d shots", len(df))
 
-    df["weight"] = df["season"].map(SEASON_WEIGHTS).fillna(0.0)
-    df["zone"] = df["distance_ft"].apply(classify_zone)
-    df["shooter_strength"] = df["strength_state"].apply(shooter_strength)
-    df["goalie_strength"] = df["strength_state"].apply(goalie_strength)
+    # Apply recency weight per shot
+    df["weight"] = df["season"].astype(str).map(SEASON_WEIGHTS).astype(float)
+    if df["weight"].isna().any():
+        bad = df[df["weight"].isna()]["season"].unique()
+        raise RuntimeError(f"Unmapped season(s) found in shots: {bad}")
+
+    # Bucket strength
+    df["shooter_strength"] = df["strength_state"].map(shooter_strength)
+    df["goalie_strength"] = df["strength_state"].map(goalie_strength)
+    df["zone"] = df["distance_ft"].map(danger_zone)
     return df
 
 
-def build_skater_priors(df: pd.DataFrame) -> pd.DataFrame:
-    """For each shooter × strength bucket, compute weighted counts and shrunken rate."""
-    out_rows = []
+# -------------------------------------------------------------------------
+# Skater priors
+# -------------------------------------------------------------------------
 
-    for strength_bucket in ["5v5", "PP", "PK", "all"]:
-        if strength_bucket == "all":
-            sub = df.copy()
-        else:
-            sub = df[df["shooter_strength"] == strength_bucket]
+def aggregate_skater_counts(shots: pd.DataFrame, strength_filter: str | None) -> pd.DataFrame:
+    """Aggregate weighted shots/goals per shooter, optionally filtered to a strength bucket.
 
-        if len(sub) == 0:
-            print(f"  No shots for shooter strength '{strength_bucket}', skipping.")
+    Returns columns: player_id, weighted_shots, weighted_goals, raw_shots, raw_goals.
+    Drops shooter_id NULLs and 'unknown' strength rows.
+    """
+    df = shots.dropna(subset=["shooter_id"])
+    df = df[df["shooter_strength"] != "unknown"]
+    if strength_filter is not None:
+        df = df[df["shooter_strength"] == strength_filter]
+
+    g = df.groupby("shooter_id", as_index=False).agg(
+        weighted_shots=("weight", "sum"),
+        weighted_goals=("is_goal", lambda s: float((s.astype(int) * df.loc[s.index, "weight"]).sum())),
+        raw_shots=("is_goal", "size"),
+        raw_goals=("is_goal", lambda s: int(s.sum())),
+    )
+    g = g.rename(columns={"shooter_id": "player_id"})
+    g["player_id"] = g["player_id"].astype("int64")
+    return g
+
+
+def build_skater_priors(shots: pd.DataFrame) -> pd.DataFrame:
+    """Build skater_priors rows for all strength buckets.
+
+    Returns a DataFrame matching the skater_priors schema, ready to upsert.
+    """
+    rows: list[pd.DataFrame] = []
+    buckets = [("5v5", "5v5"), ("PP", "PP"), ("PK", "PK"), ("all", None)]
+
+    for label, filt in buckets:
+        agg = aggregate_skater_counts(shots, filt)
+        if len(agg) == 0:
+            log.warning("No shots in skater bucket %s; skipping", label)
             continue
 
-        sub = sub.assign(
-            wshots=sub["weight"],
-            wgoals=sub["weight"] * sub["is_goal"],
+        prior = fit_beta_prior(
+            agg, success_col="weighted_goals", total_col="weighted_shots",
+            min_sample=MIN_SHOTS_FOR_SKATER_FIT,
         )
-        agg = sub.groupby("shooter_id", as_index=False).agg(
-            weighted_shots=("wshots", "sum"),
-            weighted_goals=("wgoals", "sum"),
-            raw_shots=("is_sog", "sum"),
-            raw_goals=("is_goal", "sum"),
+        log.info(
+            "Skater prior [%s]: K=%.1f mean=%.4f (n_eligible=%d / total=%d)",
+            label, prior.concentration, prior.mean, prior.n_players_used, len(agg),
         )
 
-        # Use raw counts for the prior fit (cleanest)
-        prior = fit_beta_prior(agg, "raw_goals", "raw_shots", min_sample=50)
-        print(f"  Skater prior [{strength_bucket}]: K={prior.concentration:.1f}, "
-              f"mean={prior.mean:.4f}, fit on {(agg['raw_shots']>=50).sum()} players")
-
-        agg["raw_shooting_pct"] = agg["raw_goals"] / agg["raw_shots"].replace(0, np.nan)
-        # Shrinkage uses WEIGHTED counts (most recent season heavier)
-        agg["shrunken_shooting_pct"] = agg.apply(
-            lambda r: shrink_rate(r["weighted_goals"], r["weighted_shots"], prior),
-            axis=1,
-        )
-        agg["strength_state"] = strength_bucket
+        agg["strength_state"] = label
         agg["prior_alpha"] = prior.alpha
         agg["prior_beta"] = prior.beta
         agg["prior_concentration"] = prior.concentration
         agg["prior_mean"] = prior.mean
+        agg["raw_shooting_pct"] = np.where(
+            agg["weighted_shots"] > 0,
+            agg["weighted_goals"] / agg["weighted_shots"],
+            np.nan,
+        )
+        agg["shrunken_shooting_pct"] = (
+            (agg["weighted_goals"] + prior.alpha)
+            / (agg["weighted_shots"] + prior.concentration)
+        )
+        rows.append(agg)
 
-        out_rows.append(agg)
-
-    result = pd.concat(out_rows, ignore_index=True)
-    result = result.rename(columns={"shooter_id": "player_id"})
-    return result
+    return pd.concat(rows, ignore_index=True)
 
 
-def build_goalie_priors(df: pd.DataFrame) -> pd.DataFrame:
-    """For each goalie × zone × strength bucket, compute weighted counts and shrunken GA rate."""
-    out_rows = []
+# -------------------------------------------------------------------------
+# Goalie priors
+# -------------------------------------------------------------------------
 
-    zone_buckets = ["high", "mid", "low", "all"]
-    strength_buckets = ["5v5", "PP_against", "PK_against", "all"]
+def aggregate_goalie_counts(
+    shots: pd.DataFrame, zone_filter: str | None, strength_filter: str | None,
+) -> pd.DataFrame:
+    """Aggregate weighted shots-against / goals-against per goalie."""
+    df = shots.dropna(subset=["goalie_id"])
+    df = df[df["goalie_strength"] != "unknown"]
+    df = df[df["zone"] != "unknown"]
+    # Exclude empty-net shots from goalie priors (no goalie was actually facing them)
+    df = df[df["empty_net"] != True]  # noqa: E712 — pandas bool column
 
-    for zone in zone_buckets:
-        for strength in strength_buckets:
-            sub = df.copy()
-            if zone != "all":
-                sub = sub[sub["zone"] == zone]
-            if strength != "all":
-                sub = sub[sub["goalie_strength"] == strength]
+    if zone_filter is not None:
+        df = df[df["zone"] == zone_filter]
+    if strength_filter is not None:
+        df = df[df["goalie_strength"] == strength_filter]
 
-            if len(sub) == 0:
+    if len(df) == 0:
+        return pd.DataFrame(columns=[
+            "player_id", "weighted_shots_against", "weighted_goals_against",
+            "raw_shots_against", "raw_goals_against",
+        ])
+
+    g = df.groupby("goalie_id", as_index=False).agg(
+        weighted_shots_against=("weight", "sum"),
+        weighted_goals_against=("is_goal", lambda s: float((s.astype(int) * df.loc[s.index, "weight"]).sum())),
+        raw_shots_against=("is_goal", "size"),
+        raw_goals_against=("is_goal", lambda s: int(s.sum())),
+    )
+    g = g.rename(columns={"goalie_id": "player_id"})
+    g["player_id"] = g["player_id"].astype("int64")
+    return g
+
+
+def build_goalie_priors(shots: pd.DataFrame) -> pd.DataFrame:
+    """Build goalie_priors rows for all (zone, strength) buckets."""
+    rows: list[pd.DataFrame] = []
+    zones = [("high", "high"), ("mid", "mid"), ("low", "low"), ("all", None)]
+    strengths = [("5v5", "5v5"), ("PP_against", "PP_against"),
+                 ("PK_against", "PK_against"), ("all", None)]
+
+    for zone_label, zone_filt in zones:
+        for str_label, str_filt in strengths:
+            agg = aggregate_goalie_counts(shots, zone_filt, str_filt)
+            if len(agg) == 0:
+                log.warning("No shots in goalie bucket zone=%s strength=%s; skipping",
+                            zone_label, str_label)
                 continue
 
-            sub = sub.assign(
-                wshots=sub["weight"],
-                wgoals=sub["weight"] * sub["is_goal"],
-            )
-            agg = sub.groupby("goalie_id", as_index=False).agg(
-                weighted_shots_against=("wshots", "sum"),
-                weighted_goals_against=("wgoals", "sum"),
-                raw_shots_against=("is_sog", "sum"),
-                raw_goals_against=("is_goal", "sum"),
-            )
-
-            # Need a higher min_sample for goalies — they face many shots
-            min_sample = 100 if zone != "all" or strength != "all" else 200
+            min_n = (MIN_SHOTS_FOR_GOALIE_FIT_OVERALL
+                     if (zone_label == "all" and str_label == "all")
+                     else MIN_SHOTS_FOR_GOALIE_FIT_BUCKETED)
             try:
-                prior = fit_beta_prior(agg, "raw_goals_against",
-                                        "raw_shots_against", min_sample=min_sample)
+                prior = fit_beta_prior(
+                    agg, success_col="weighted_goals_against",
+                    total_col="weighted_shots_against",
+                    min_sample=min_n,
+                )
             except RuntimeError as e:
-                print(f"  Skipping goalie prior [zone={zone}, strength={strength}]: {e}")
+                log.warning("Skipping goalie bucket zone=%s strength=%s: %s",
+                            zone_label, str_label, e)
                 continue
-
-            print(f"  Goalie prior [zone={zone}, strength={strength}]: K={prior.concentration:.1f}, "
-                  f"mean={prior.mean:.4f}, "
-                  f"fit on {(agg['raw_shots_against']>=min_sample).sum()} goalies")
-
-            agg["raw_ga_rate"] = agg["raw_goals_against"] / agg["raw_shots_against"].replace(0, np.nan)
-            agg["shrunken_ga_rate"] = agg.apply(
-                lambda r: shrink_rate(r["weighted_goals_against"],
-                                       r["weighted_shots_against"], prior),
-                axis=1,
+            log.info(
+                "Goalie prior [zone=%s strength=%s]: K=%.1f mean_GA=%.4f (n_eligible=%d / total=%d)",
+                zone_label, str_label, prior.concentration, prior.mean,
+                prior.n_players_used, len(agg),
             )
-            agg["danger_zone"] = zone
-            agg["strength_state"] = strength
+
+            agg["danger_zone"] = zone_label
+            agg["strength_state"] = str_label
             agg["prior_alpha"] = prior.alpha
             agg["prior_beta"] = prior.beta
             agg["prior_concentration"] = prior.concentration
             agg["prior_mean"] = prior.mean
+            agg["raw_ga_rate"] = np.where(
+                agg["weighted_shots_against"] > 0,
+                agg["weighted_goals_against"] / agg["weighted_shots_against"],
+                np.nan,
+            )
+            agg["shrunken_ga_rate"] = (
+                (agg["weighted_goals_against"] + prior.alpha)
+                / (agg["weighted_shots_against"] + prior.concentration)
+            )
+            rows.append(agg)
 
-            out_rows.append(agg)
-
-    if not out_rows:
+    if not rows:
         return pd.DataFrame()
-    result = pd.concat(out_rows, ignore_index=True)
-    result = result.rename(columns={"goalie_id": "player_id"})
-    return result
+    return pd.concat(rows, ignore_index=True)
 
 
-# =====================================================================
-# DB writers
-# =====================================================================
+# -------------------------------------------------------------------------
+# Persistence
+# -------------------------------------------------------------------------
 
-def write_skater_priors(df: pd.DataFrame) -> None:
-    rows = df[[
-        "player_id", "strength_state",
-        "weighted_shots", "weighted_goals", "raw_shots", "raw_goals",
-        "prior_alpha", "prior_beta", "prior_concentration", "prior_mean",
-        "raw_shooting_pct", "shrunken_shooting_pct",
-    ]].to_dict("records")
-    if not rows:
-        return
-    with pg_conn() as conn, conn.cursor() as cur:
-        cur.execute("TRUNCATE TABLE skater_priors;")
-        from psycopg2.extras import execute_values
-        execute_values(cur, """
-            INSERT INTO skater_priors (
-                player_id, strength_state,
-                weighted_shots, weighted_goals, raw_shots, raw_goals,
-                prior_alpha, prior_beta, prior_concentration, prior_mean,
-                raw_shooting_pct, shrunken_shooting_pct
-            ) VALUES %s
-        """, [tuple(r.values()) for r in rows])
-        conn.commit()
-    print(f"Wrote {len(rows):,} skater_priors rows")
+SKATER_UPSERT = """
+INSERT INTO skater_priors (
+    player_id, strength_state,
+    weighted_shots, weighted_goals, raw_shots, raw_goals,
+    prior_alpha, prior_beta, prior_concentration, prior_mean,
+    raw_shooting_pct, shrunken_shooting_pct, computed_at
+) VALUES %s
+ON CONFLICT (player_id, strength_state) DO UPDATE SET
+    weighted_shots = EXCLUDED.weighted_shots,
+    weighted_goals = EXCLUDED.weighted_goals,
+    raw_shots = EXCLUDED.raw_shots,
+    raw_goals = EXCLUDED.raw_goals,
+    prior_alpha = EXCLUDED.prior_alpha,
+    prior_beta = EXCLUDED.prior_beta,
+    prior_concentration = EXCLUDED.prior_concentration,
+    prior_mean = EXCLUDED.prior_mean,
+    raw_shooting_pct = EXCLUDED.raw_shooting_pct,
+    shrunken_shooting_pct = EXCLUDED.shrunken_shooting_pct,
+    computed_at = EXCLUDED.computed_at;
+"""
 
-
-def write_goalie_priors(df: pd.DataFrame) -> None:
-    rows = df[[
-        "player_id", "danger_zone", "strength_state",
-        "weighted_shots_against", "weighted_goals_against",
-        "raw_shots_against", "raw_goals_against",
-        "prior_alpha", "prior_beta", "prior_concentration", "prior_mean",
-        "raw_ga_rate", "shrunken_ga_rate",
-    ]].to_dict("records")
-    if not rows:
-        return
-    with pg_conn() as conn, conn.cursor() as cur:
-        cur.execute("TRUNCATE TABLE goalie_priors;")
-        from psycopg2.extras import execute_values
-        execute_values(cur, """
-            INSERT INTO goalie_priors (
-                player_id, danger_zone, strength_state,
-                weighted_shots_against, weighted_goals_against,
-                raw_shots_against, raw_goals_against,
-                prior_alpha, prior_beta, prior_concentration, prior_mean,
-                raw_ga_rate, shrunken_ga_rate
-            ) VALUES %s
-        """, [tuple(r.values()) for r in rows])
-        conn.commit()
-    print(f"Wrote {len(rows):,} goalie_priors rows")
+GOALIE_UPSERT = """
+INSERT INTO goalie_priors (
+    player_id, danger_zone, strength_state,
+    weighted_shots_against, weighted_goals_against,
+    raw_shots_against, raw_goals_against,
+    prior_alpha, prior_beta, prior_concentration, prior_mean,
+    raw_ga_rate, shrunken_ga_rate, computed_at
+) VALUES %s
+ON CONFLICT (player_id, danger_zone, strength_state) DO UPDATE SET
+    weighted_shots_against = EXCLUDED.weighted_shots_against,
+    weighted_goals_against = EXCLUDED.weighted_goals_against,
+    raw_shots_against = EXCLUDED.raw_shots_against,
+    raw_goals_against = EXCLUDED.raw_goals_against,
+    prior_alpha = EXCLUDED.prior_alpha,
+    prior_beta = EXCLUDED.prior_beta,
+    prior_concentration = EXCLUDED.prior_concentration,
+    prior_mean = EXCLUDED.prior_mean,
+    raw_ga_rate = EXCLUDED.raw_ga_rate,
+    shrunken_ga_rate = EXCLUDED.shrunken_ga_rate,
+    computed_at = EXCLUDED.computed_at;
+"""
 
 
-# =====================================================================
-# Validation
-# =====================================================================
-
-def validate():
-    """Print sanity checks on the priors."""
-    queries = [
-        ("Skater prior population summary",
-         """
-         SELECT strength_state,
-                COUNT(*) AS players,
-                ROUND(AVG(prior_concentration)::numeric, 1) AS mean_K,
-                ROUND(AVG(prior_mean)::numeric, 4) AS league_avg
-         FROM skater_priors GROUP BY strength_state ORDER BY strength_state;
-         """),
-        ("Shrinkage in action — small-sample players (raw vs shrunken)",
-         """
-         SELECT player_id, p.full_name,
-                raw_shots, raw_goals,
-                ROUND(raw_shooting_pct::numeric, 3) AS raw,
-                ROUND(shrunken_shooting_pct::numeric, 3) AS shrunken,
-                ROUND(prior_mean::numeric, 3) AS league
-         FROM skater_priors sp
-         LEFT JOIN players p USING (player_id)
-         WHERE strength_state = '5v5' AND raw_shots BETWEEN 1 AND 5
-         ORDER BY raw_shots, raw_shooting_pct DESC LIMIT 10;
-         """),
-        ("Shrinkage in action — high-volume players (raw vs shrunken)",
-         """
-         SELECT player_id, p.full_name,
-                raw_shots, raw_goals,
-                ROUND(raw_shooting_pct::numeric, 3) AS raw,
-                ROUND(shrunken_shooting_pct::numeric, 3) AS shrunken,
-                ROUND(prior_mean::numeric, 3) AS league
-         FROM skater_priors sp
-         LEFT JOIN players p USING (player_id)
-         WHERE strength_state = '5v5' AND raw_shots > 300
-         ORDER BY shrunken_shooting_pct DESC LIMIT 10;
-         """),
-        ("Goalie priors — top elite goalies (overall)",
-         """
-         SELECT player_id, p.full_name,
-                raw_shots_against AS shots,
-                ROUND(raw_ga_rate::numeric, 4) AS raw,
-                ROUND(shrunken_ga_rate::numeric, 4) AS shrunken,
-                ROUND(prior_mean::numeric, 4) AS league_ga
-         FROM goalie_priors gp
-         LEFT JOIN players p USING (player_id)
-         WHERE danger_zone = 'all' AND strength_state = 'all'
-           AND raw_shots_against > 1000
-         ORDER BY shrunken_ga_rate ASC LIMIT 10;
-         """),
-        ("Goalie zone splits — does the high-danger / low-danger split make sense?",
-         """
-         SELECT danger_zone,
-                COUNT(*) AS goalies,
-                ROUND(AVG(prior_mean)::numeric, 4) AS league_ga_rate
-         FROM goalie_priors
-         WHERE strength_state = 'all'
-         GROUP BY danger_zone ORDER BY league_ga_rate DESC;
-         """),
+def write_skater_priors(conn, df: pd.DataFrame) -> int:
+    if df.empty:
+        log.warning("No skater priors to write")
+        return 0
+    rows = [
+        (
+            int(r.player_id), str(r.strength_state),
+            float(r.weighted_shots), float(r.weighted_goals),
+            int(r.raw_shots), int(r.raw_goals),
+            float(r.prior_alpha), float(r.prior_beta),
+            float(r.prior_concentration), float(r.prior_mean),
+            None if pd.isna(r.raw_shooting_pct) else float(r.raw_shooting_pct),
+            float(r.shrunken_shooting_pct),
+            pd.Timestamp.utcnow().to_pydatetime(),
+        )
+        for r in df.itertuples(index=False)
     ]
-    with pg_conn() as conn, conn.cursor() as cur:
-        for title, q in queries:
-            print(f"\n--- {title} ---")
+    with conn.cursor() as cur:
+        psycopg2.extras.execute_values(cur, SKATER_UPSERT, rows, page_size=1000)
+    conn.commit()
+    return len(rows)
+
+
+def write_goalie_priors(conn, df: pd.DataFrame) -> int:
+    if df.empty:
+        log.warning("No goalie priors to write")
+        return 0
+    rows = [
+        (
+            int(r.player_id), str(r.danger_zone), str(r.strength_state),
+            float(r.weighted_shots_against), float(r.weighted_goals_against),
+            int(r.raw_shots_against), int(r.raw_goals_against),
+            float(r.prior_alpha), float(r.prior_beta),
+            float(r.prior_concentration), float(r.prior_mean),
+            None if pd.isna(r.raw_ga_rate) else float(r.raw_ga_rate),
+            float(r.shrunken_ga_rate),
+            pd.Timestamp.utcnow().to_pydatetime(),
+        )
+        for r in df.itertuples(index=False)
+    ]
+    with conn.cursor() as cur:
+        psycopg2.extras.execute_values(cur, GOALIE_UPSERT, rows, page_size=1000)
+    conn.commit()
+    return len(rows)
+
+
+# -------------------------------------------------------------------------
+# Validation queries (printed at end)
+# -------------------------------------------------------------------------
+
+VALIDATION_QUERIES = [
+    ("Skater priors row counts by strength", """
+        SELECT strength_state, COUNT(*) AS n_players,
+               ROUND(AVG(prior_mean)::numeric, 4) AS prior_mean,
+               ROUND(AVG(prior_concentration)::numeric, 1) AS prior_K
+        FROM skater_priors GROUP BY strength_state ORDER BY strength_state;
+    """),
+    ("Top 10 5v5 shooters by sample size (raw vs shrunken)", """
+        SELECT sp.player_id,
+               COALESCE(p.full_name, '?') AS name,
+               sp.raw_shots,
+               ROUND(sp.raw_shooting_pct::numeric, 3)        AS raw_pct,
+               ROUND(sp.shrunken_shooting_pct::numeric, 3)   AS shrunk_pct
+        FROM skater_priors sp
+        LEFT JOIN players p ON p.player_id = sp.player_id
+        WHERE sp.strength_state = '5v5'
+        ORDER BY sp.raw_shots DESC LIMIT 10;
+    """),
+    ("Small-sample shrinkage demo (5v5, 1-5 shots)", """
+        SELECT sp.raw_shots, sp.raw_goals,
+               ROUND(sp.raw_shooting_pct::numeric, 3)      AS raw_pct,
+               ROUND(sp.shrunken_shooting_pct::numeric, 3) AS shrunk_pct,
+               COUNT(*) AS n_players
+        FROM skater_priors sp
+        WHERE sp.strength_state = '5v5' AND sp.raw_shots <= 5
+        GROUP BY sp.raw_shots, sp.raw_goals,
+                 sp.raw_shooting_pct, sp.shrunken_shooting_pct
+        ORDER BY sp.raw_shots, sp.raw_goals;
+    """),
+    ("Goalie priors row counts by (zone, strength)", """
+        SELECT danger_zone, strength_state, COUNT(*) AS n_goalies,
+               ROUND(AVG(prior_mean)::numeric, 4) AS prior_mean_GA,
+               ROUND(AVG(prior_concentration)::numeric, 1) AS prior_K
+        FROM goalie_priors
+        GROUP BY danger_zone, strength_state
+        ORDER BY danger_zone, strength_state;
+    """),
+    ("Top 10 goalies (zone=all, strength=all) by sample", """
+        SELECT gp.player_id,
+               COALESCE(p.full_name, '?') AS name,
+               gp.raw_shots_against,
+               ROUND(gp.raw_ga_rate::numeric, 3)      AS raw_GA_rate,
+               ROUND(gp.shrunken_ga_rate::numeric, 3) AS shrunk_GA_rate,
+               ROUND((1 - gp.shrunken_ga_rate)::numeric, 3) AS shrunk_sv_pct
+        FROM goalie_priors gp
+        LEFT JOIN players p ON p.player_id = gp.player_id
+        WHERE gp.danger_zone = 'all' AND gp.strength_state = 'all'
+        ORDER BY gp.raw_shots_against DESC LIMIT 10;
+    """),
+]
+
+
+def print_validation(conn) -> None:
+    print()
+    print("=" * 78)
+    print("VALIDATION")
+    print("=" * 78)
+    with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+        for label, sql in VALIDATION_QUERIES:
+            print(f"\n--- {label}")
             try:
-                cur.execute(q)
-            except Exception as e:
-                print(f"  query failed: {e}")
+                cur.execute(sql)
+                rows = cur.fetchall()
+            except psycopg2.Error as e:
                 conn.rollback()
+                print(f"  (query failed: {e})")
                 continue
-            cols = [d[0] for d in cur.description]
-            rows = cur.fetchall()
             if not rows:
                 print("  (no rows)")
                 continue
-            widths = [max(len(str(c)),
-                          max((len(str(r[i])) for r in rows), default=0))
-                      for i, c in enumerate(cols)]
-            print("  " + " | ".join(c.ljust(widths[i]) for i, c in enumerate(cols)))
-            print("  " + "-+-".join("-" * w for w in widths))
-            for r in rows:
-                print("  " + " | ".join(
-                    str(r[i]).ljust(widths[i]) for i in range(len(cols))))
+            df = pd.DataFrame(rows)
+            print(df.to_string(index=False))
+    print()
 
 
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--init-schema", action="store_true",
-                    help="Create skater_priors and goalie_priors tables.")
-    ap.add_argument("--verify-only", action="store_true",
-                    help="Skip computation, just run validation queries.")
-    args = ap.parse_args()
+# -------------------------------------------------------------------------
+# Entry point
+# -------------------------------------------------------------------------
 
-    if args.init_schema:
-        schema_path = Path(__file__).resolve().parent.parent / "db" / "schema_stage_b.sql"
-        print(f"Applying schema from {schema_path}")
-        init_schema(str(schema_path))
-        print("Stage B schema ready.")
+def init_schema(conn) -> None:
+    if not SCHEMA_FILE.exists():
+        raise FileNotFoundError(f"Schema file missing: {SCHEMA_FILE}")
+    log.info("Applying %s", SCHEMA_FILE)
+    sql = SCHEMA_FILE.read_text()
+    with conn.cursor() as cur:
+        cur.execute(sql)
+    conn.commit()
+    log.info("Schema applied")
 
-    if not args.verify_only:
-        df = load_shots()
-        if len(df) < 1000:
-            print(f"Too few shots ({len(df)}) — aborting.")
-            sys.exit(1)
 
-        print("\n=== Building skater priors ===")
-        skater_df = build_skater_priors(df)
-        write_skater_priors(skater_df)
+def main(argv: Iterable[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--init-schema", action="store_true",
+                        help="Apply db/schema_stage_b.sql then exit")
+    parser.add_argument("--skip-skater", action="store_true")
+    parser.add_argument("--skip-goalie", action="store_true")
+    args = parser.parse_args(list(argv) if argv is not None else None)
 
-        print("\n=== Building goalie priors ===")
-        goalie_df = build_goalie_priors(df)
-        write_goalie_priors(goalie_df)
+    conn = psycopg2.connect(PG_DSN)
+    try:
+        if args.init_schema:
+            init_schema(conn)
+            return 0
 
-    print("\n=== Validation ===")
-    validate()
+        shots = load_shots(conn)
+
+        if not args.skip_skater:
+            log.info("Building skater priors ...")
+            skater_df = build_skater_priors(shots)
+            n = write_skater_priors(conn, skater_df)
+            log.info("Wrote %d skater_priors rows", n)
+
+        if not args.skip_goalie:
+            log.info("Building goalie priors ...")
+            goalie_df = build_goalie_priors(shots)
+            n = write_goalie_priors(conn, goalie_df)
+            log.info("Wrote %d goalie_priors rows", n)
+
+        print_validation(conn)
+        return 0
+    finally:
+        conn.close()
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
