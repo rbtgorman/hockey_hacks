@@ -53,11 +53,11 @@ load_dotenv()
 
 PG_DSN = os.environ.get("PG_DSN") or (
     "host={host} port={port} dbname={db} user={user} password={pw}".format(
-        host=os.environ.get("PGHOST", "localhost"),
-        port=os.environ.get("PGPORT", "5432"),
-        db=os.environ.get("PGDATABASE", "hockeyviz"),
-        user=os.environ.get("PGUSER", "postgres"),
-        pw=os.environ.get("PGPASSWORD", ""),
+        host=os.environ.get("PG_HOST", "localhost"),
+        port=os.environ.get("PG_PORT", "5432"),
+        db=os.environ.get("PG_DB", "hockeyviz"),
+        user=os.environ.get("PG_USER", "postgres"),
+        pw=os.environ.get("PG_PASSWORD", ""),
     )
 )
 
