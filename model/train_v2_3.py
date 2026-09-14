@@ -11,18 +11,41 @@ Compare against v2.2 directly — same hyperparams, same features, same query
 shape. The only thing that changes is whether the shooter prior is stale or
 fresh.
 
+CHANGED IN THIS REVISION
+------------------------
+Metrics are no longer print-only. The run now writes results/v2_3/ containing
+metrics.json, reliability.csv, calibration.png and feature_importance.csv, and
+regenerates results/leaderboard.md. Nothing about the model, the features, the
+hyperparameters or the split changed — rerunning this should reproduce the same
+AUC 0.7706 / max gap 0.0178 it produced before.
+
+reliability_table() now comes from model.reporting rather than being defined
+locally. Max calibration gap is only comparable across versions if the binning
+is identical in all of them; one shared implementation guarantees that.
+
 Usage:
     python -m model.train_v2_3
+    python -m model.train_v2_3 --dry-run     # train and print, write nothing
 """
+import argparse
+
 import pandas as pd
 import numpy as np
 import lightgbm as lgb
 from pathlib import Path
 from sklearn.metrics import roc_auc_score, log_loss, brier_score_loss, average_precision_score
 from ingest.db import pg_conn
+from model.reporting import reliability_table, write_results, max_abs_gap
 
 ARTIFACT_DIR = Path(__file__).parent / "artifacts"
 ARTIFACT_DIR.mkdir(exist_ok=True)
+
+VERSION = "v2.3"
+DESCRIPTION = (
+    "v1 architecture plus an expanding-window shooter prior (trailing 2-year "
+    "window, resolved per player per game-date). Fixes the leakage and "
+    "staleness introduced by the season-pooled priors in v2 and v2.2."
+)
 
 TARGET = "is_goal"
 BOOLEAN_FEATURES = ["empty_net", "is_rebound", "is_rush"]
@@ -35,6 +58,21 @@ NUMERIC_FEATURES = [
     "shooter_prior_pct",
 ]
 ALL_FEATURES = NUMERIC_FEATURES + BOOLEAN_FEATURES + CATEGORICAL_FEATURES
+
+HYPERPARAMS = dict(
+    n_estimators=1000,
+    learning_rate=0.03,
+    num_leaves=63,
+    max_depth=-1,
+    min_child_samples=50,
+    reg_alpha=0.1,
+    reg_lambda=0.1,
+    objective="binary",
+    metric="auc",
+    importance_type="gain",
+    random_state=42,
+    verbose=-1,
+)
 
 # Join key: (player_id, game_date, strength_bucket).
 # Bucket the raw strength_state on the shots side; priors stored bucketed.
@@ -116,19 +154,12 @@ def assert_no_leakage(df):
         raise RuntimeError("score_diff constant in most games — possible leak.")
 
 
-def reliability_table(y_true, y_pred, n_bins=10):
-    df = pd.DataFrame({"y": y_true, "p": y_pred})
-    df["bin"] = pd.qcut(df["p"], n_bins, labels=False, duplicates="drop")
-    grp = df.groupby("bin").agg(
-        n=("y", "size"),
-        mean_pred=("p", "mean"),
-        actual_rate=("y", "mean"),
-    ).reset_index()
-    grp["pred_vs_actual_gap"] = grp["mean_pred"] - grp["actual_rate"]
-    return grp
-
-
 def main():
+    ap = argparse.ArgumentParser(description="Train xG v2.3")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="Train and print metrics, but write no files")
+    args = ap.parse_args()
+
     print("=" * 60)
     print("v2.3: v1 architecture + EXPANDING-WINDOW shooter prior")
     print("=" * 60)
@@ -137,24 +168,21 @@ def main():
     assert_no_leakage(df)
     train, val, test = split_three_way(df)
 
+    data_summary = {
+        "n_shots": int(len(df)),
+        "date_min": str(df["game_date"].min()),
+        "date_max": str(df["game_date"].max()),
+        "seasons": [int(s) for s in sorted(df["season"].unique())],
+        "train_season": int(sorted(df["season"].unique())[0]),
+        "val_season": int(sorted(df["season"].unique())[1]),
+        "test_season": int(sorted(df["season"].unique())[2]),
+    }
+
     X_train, y_train = train[ALL_FEATURES], train[TARGET]
     X_val,   y_val   = val[ALL_FEATURES],   val[TARGET]
     X_test,  y_test  = test[ALL_FEATURES],  test[TARGET]
 
-    model = lgb.LGBMClassifier(
-        n_estimators=1000,
-        learning_rate=0.03,
-        num_leaves=63,
-        max_depth=-1,
-        min_child_samples=50,
-        reg_alpha=0.1,
-        reg_lambda=0.1,
-        objective="binary",
-        metric="auc",
-        importance_type="gain",
-        random_state=42,
-        verbose=-1,
-    )
+    model = lgb.LGBMClassifier(**HYPERPARAMS)
 
     print("\nTraining LightGBM v2.3 (v1 params, +expanding shooter prior)...")
     model.fit(
@@ -166,13 +194,24 @@ def main():
     )
     print(f"Best iteration: {model.best_iteration_}")
 
+    splits = {}
+
     def eval_split(name, X, y):
         p = model.predict_proba(X)[:, 1]
+        m = {
+            "n": int(len(y)),
+            "goal_rate": float(y.mean()),
+            "auc": float(roc_auc_score(y, p)),
+            "pr_auc": float(average_precision_score(y, p)),
+            "log_loss": float(log_loss(y, p)),
+            "brier": float(brier_score_loss(y, p)),
+        }
+        splits[name.lower()] = m
         print(f"\n--- {name} metrics ---")
-        print(f"  ROC-AUC:   {roc_auc_score(y, p):.4f}")
-        print(f"  PR-AUC:    {average_precision_score(y, p):.4f}  (baseline = {y.mean():.4f})")
-        print(f"  Log-loss:  {log_loss(y, p):.4f}")
-        print(f"  Brier:     {brier_score_loss(y, p):.4f}")
+        print(f"  ROC-AUC:   {m['auc']:.4f}")
+        print(f"  PR-AUC:    {m['pr_auc']:.4f}  (baseline = {m['goal_rate']:.4f})")
+        print(f"  Log-loss:  {m['log_loss']:.4f}")
+        print(f"  Brier:     {m['brier']:.4f}")
         return p
 
     eval_split("Train", X_train, y_train)
@@ -182,14 +221,14 @@ def main():
     print("\n--- Reliability on TEST ---")
     rel = reliability_table(y_test, p_test)
     print(rel.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
-    max_gap = rel["pred_vs_actual_gap"].abs().max()
-    print(f"\nMax |predicted - actual| in any decile: {max_gap:.4f}")
+    gap = max_abs_gap(rel)
+    print(f"\nMax |predicted - actual| in any decile: {gap:.4f}")
 
     print("\n" + "=" * 60)
     print("BASELINES")
     print(f"  v1:        AUC 0.7705, max gap 0.0244")
     print(f"  v2.2:      AUC 0.7666, max gap 0.0188")
-    print(f"  v2.3:      AUC {roc_auc_score(y_test, p_test):.4f}, max gap {max_gap:.4f}")
+    print(f"  v2.3:      AUC {splits['test']['auc']:.4f}, max gap {gap:.4f}")
     print("=" * 60)
 
     print("\n--- LightGBM gain importance ---")
@@ -199,9 +238,31 @@ def main():
     }).sort_values("gain", ascending=False)
     print(imp.to_string(index=False))
 
+    if args.dry_run:
+        print("\n--dry-run: no files written.")
+        return
+
     model_path = ARTIFACT_DIR / "xg_v2_3.txt"
     model.booster_.save_model(str(model_path))
     print(f"\nSaved model to {model_path}")
+
+    write_results(
+        version=VERSION,
+        description=DESCRIPTION,
+        splits=splits,
+        reliability=rel,
+        feature_importance=imp,
+        hyperparameters={**HYPERPARAMS, "best_iteration": int(model.best_iteration_ or 0)},
+        features=ALL_FEATURES,
+        data_summary=data_summary,
+        notes=(
+            "Shooter prior resolved per (player_id, game_date, strength_bucket) from "
+            "skater_priors_expanding, so no shot sees data from its own date or later. "
+            "Shooter_id and goalie_id are deliberately NOT features — raw player IDs as "
+            "categoricals leak via memorization. Empty-net shots are retained; empty_net "
+            "is a feature the model is expected to learn."
+        ),
+    )
 
 
 if __name__ == "__main__":
