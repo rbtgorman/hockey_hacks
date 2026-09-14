@@ -1,0 +1,86 @@
+{
+  "version": "v2.3",
+  "description": "v1 architecture plus an expanding-window shooter prior (trailing 2-year window, resolved per player per game-date). Fixes the leakage and staleness introduced by the season-pooled priors in v2 and v2.2.",
+  "generated_at_utc": "2026-09-14T16:03:19+00:00",
+  "git_commit": "463bf4f",
+  "git_dirty": false,
+  "data": {
+    "n_shots": 252450,
+    "date_min": "2022-10-07",
+    "date_max": "2025-06-17",
+    "seasons": [
+      20222023,
+      20232024,
+      20242025
+    ],
+    "train_season": 20222023,
+    "val_season": 20232024,
+    "test_season": 20242025
+  },
+  "splits": {
+    "train": {
+      "n": 88086,
+      "goal_rate": 0.10247939513657107,
+      "auc": 0.8525734671364491,
+      "pr_auc": 0.47554475424158255,
+      "log_loss": 0.24960739539288498,
+      "brier": 0.07338483004838263
+    },
+    "val": {
+      "n": 84932,
+      "goal_rate": 0.10328262610088071,
+      "auc": 0.778317000748658,
+      "pr_auc": 0.3372658656680647,
+      "log_loss": 0.27752474160411617,
+      "brier": 0.08032227708339236
+    },
+    "test": {
+      "n": 79432,
+      "goal_rate": 0.108319065364085,
+      "auc": 0.7705750301862092,
+      "pr_auc": 0.3467558057136021,
+      "log_loss": 0.28773216232185805,
+      "brier": 0.08353058693735863
+    }
+  },
+  "calibration": {
+    "n_bins": 10,
+    "max_abs_gap": 0.017833495460280763,
+    "binning": "equal-count (qcut) on predicted probability"
+  },
+  "hyperparameters": {
+    "n_estimators": 1000,
+    "learning_rate": 0.03,
+    "num_leaves": 63,
+    "max_depth": -1,
+    "min_child_samples": 50,
+    "reg_alpha": 0.1,
+    "reg_lambda": 0.1,
+    "objective": "binary",
+    "metric": "auc",
+    "importance_type": "gain",
+    "random_state": 42,
+    "verbose": -1,
+    "best_iteration": 238
+  },
+  "features": [
+    "distance_ft",
+    "angle_deg",
+    "x_norm",
+    "y_norm",
+    "period_num",
+    "game_seconds",
+    "seconds_remaining_in_period",
+    "seconds_since_last_event",
+    "distance_from_last_event_ft",
+    "score_diff",
+    "shooter_prior_pct",
+    "empty_net",
+    "is_rebound",
+    "is_rush",
+    "last_event_type",
+    "shot_type",
+    "strength_state"
+  ],
+  "notes": "Shooter prior resolved per (player_id, game_date, strength_bucket) from skater_priors_expanding, so no shot sees data from its own date or later. Shooter_id and goalie_id are deliberately NOT features \u2014 raw player IDs as categoricals leak via memorization. Empty-net shots are retained; empty_net is a feature the model is expected to learn."
+}
