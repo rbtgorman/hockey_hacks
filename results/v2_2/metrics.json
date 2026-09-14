@@ -1,0 +1,69 @@
+{
+  "version": "v2.2",
+  "description": "v1 architecture plus a static per-player shooter prior from skater_priors_train, pooled across the training seasons and applied to every shot regardless of date. Stops the v2/v2.1 leakage but the prior is stale.",
+  "generated_at_utc": "2026-09-14T16:30:46+00:00",
+  "git_commit": "95f0dd0",
+  "git_dirty": true,
+  "data": {
+    "n_shots": 252450,
+    "seasons": [
+      20222023,
+      20232024,
+      20242025
+    ]
+  },
+  "splits": {
+    "train": {
+      "n": 88086,
+      "goal_rate": 0.10247939513657107,
+      "auc": 0.8604777041563219,
+      "pr_auc": 0.4916709874913619,
+      "log_loss": 0.24469993701130563,
+      "brier": 0.07203248486489533
+    },
+    "val": {
+      "n": 84932,
+      "goal_rate": 0.10328262610088071,
+      "auc": 0.7874582689394157,
+      "pr_auc": 0.3536483159995246,
+      "log_loss": 0.2740780957471511,
+      "brier": 0.07940234484262439
+    },
+    "test": {
+      "n": 79432,
+      "goal_rate": 0.108319065364085,
+      "auc": 0.7665676753753181,
+      "pr_auc": 0.34247921932334463,
+      "log_loss": 0.2897086571300519,
+      "brier": 0.08388476663866291
+    }
+  },
+  "calibration": {
+    "n_bins": 10,
+    "max_abs_gap": 0.01879685047927883,
+    "binning": "equal-count (qcut) on predicted probability"
+  },
+  "hyperparameters": {
+    "best_iteration": 263
+  },
+  "features": [
+    "distance_ft",
+    "angle_deg",
+    "x_norm",
+    "y_norm",
+    "period_num",
+    "game_seconds",
+    "seconds_remaining_in_period",
+    "seconds_since_last_event",
+    "distance_from_last_event_ft",
+    "score_diff",
+    "shooter_prior_pct",
+    "empty_net",
+    "is_rebound",
+    "is_rush",
+    "last_event_type",
+    "shot_type",
+    "strength_state"
+  ],
+  "notes": "Static prior: skater_priors_train holds one value per (player, strength) pooled over training seasons, applied to every shot regardless of date. Superseded by the expanding-window prior in v2.3."
+}

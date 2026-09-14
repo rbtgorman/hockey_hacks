@@ -23,9 +23,17 @@ import lightgbm as lgb
 from pathlib import Path
 from sklearn.metrics import roc_auc_score, log_loss, brier_score_loss, average_precision_score
 from ingest.db import pg_conn
+from model.reporting import reliability_table, write_results, max_abs_gap
 
 ARTIFACT_DIR = Path(__file__).parent / "artifacts"
 ARTIFACT_DIR.mkdir(exist_ok=True)
+
+VERSION = "v2.2"
+DESCRIPTION = (
+    "v1 architecture plus a static per-player shooter prior from skater_priors_train, "
+    "pooled across the training seasons and applied to every shot regardless of date. "
+    "Stops the v2/v2.1 leakage but the prior is stale."
+)
 
 TARGET = "is_goal"
 
@@ -120,18 +128,6 @@ def assert_no_leakage(df):
         raise RuntimeError("score_diff constant in most games — possible leak.")
 
 
-def reliability_table(y_true, y_pred, n_bins=10):
-    df = pd.DataFrame({"y": y_true, "p": y_pred})
-    df["bin"] = pd.qcut(df["p"], n_bins, labels=False, duplicates="drop")
-    grp = df.groupby("bin").agg(
-        n=("y", "size"),
-        mean_pred=("p", "mean"),
-        actual_rate=("y", "mean"),
-    ).reset_index()
-    grp["pred_vs_actual_gap"] = grp["mean_pred"] - grp["actual_rate"]
-    return grp
-
-
 def main():
     print("=" * 60)
     print("v2.2: v1 architecture + shooter prior ONLY")
@@ -171,13 +167,24 @@ def main():
     )
     print(f"Best iteration: {model.best_iteration_}")
 
+    splits = {}
+
     def eval_split(name, X, y):
         p = model.predict_proba(X)[:, 1]
+        m = {
+            "n": int(len(y)),
+            "goal_rate": float(y.mean()),
+            "auc": float(roc_auc_score(y, p)),
+            "pr_auc": float(average_precision_score(y, p)),
+            "log_loss": float(log_loss(y, p)),
+            "brier": float(brier_score_loss(y, p)),
+        }
+        splits[name.lower()] = m
         print(f"\n--- {name} metrics ---")
-        print(f"  ROC-AUC:   {roc_auc_score(y, p):.4f}")
-        print(f"  PR-AUC:    {average_precision_score(y, p):.4f}  (baseline = {y.mean():.4f})")
-        print(f"  Log-loss:  {log_loss(y, p):.4f}")
-        print(f"  Brier:     {brier_score_loss(y, p):.4f}")
+        print(f"  ROC-AUC:   {m['auc']:.4f}")
+        print(f"  PR-AUC:    {m['pr_auc']:.4f}  (baseline = {m['goal_rate']:.4f})")
+        print(f"  Log-loss:  {m['log_loss']:.4f}")
+        print(f"  Brier:     {m['brier']:.4f}")
         return p
 
     eval_split("Train", X_train, y_train)
@@ -187,7 +194,7 @@ def main():
     print("\n--- Reliability on TEST ---")
     rel = reliability_table(y_test, p_test)
     print(rel.to_string(index=False, float_format=lambda x: f"{x:.4f}"))
-    max_gap = rel["pred_vs_actual_gap"].abs().max()
+    max_gap = max_abs_gap(rel)
     print(f"\nMax |predicted - actual| in any decile: {max_gap:.4f}")
 
     print("\n" + "=" * 60)
@@ -195,7 +202,7 @@ def main():
     print(f"  v1:        AUC 0.7705, max gap 0.0244")
     print(f"  v2:        AUC 0.7620, max gap 0.0270")
     print(f"  v2.1 raw:  AUC 0.7615, max gap 0.0302")
-    print(f"  v2.2:      AUC {roc_auc_score(y_test, p_test):.4f}, max gap {max_gap:.4f}")
+    print(f"  v2.2:      AUC {splits['test']['auc']:.4f}, max gap {max_gap:.4f}")
     print("=" * 60)
 
     print("\n--- LightGBM gain importance ---")
@@ -208,6 +215,25 @@ def main():
     model_path = ARTIFACT_DIR / "xg_v2_2.txt"
     model.booster_.save_model(str(model_path))
     print(f"\nSaved model to {model_path}")
+
+    write_results(
+        version=VERSION,
+        description=DESCRIPTION,
+        splits=splits,
+        reliability=rel,
+        feature_importance=imp,
+        hyperparameters={"best_iteration": int(model.best_iteration_ or 0)},
+        features=ALL_FEATURES,
+        data_summary={
+            "n_shots": int(len(df)),
+            "seasons": [int(x) for x in sorted(df["season"].unique())],
+        },
+        notes=(
+            "Static prior: skater_priors_train holds one value per (player, strength) "
+            "pooled over training seasons, applied to every shot regardless of date. "
+            "Superseded by the expanding-window prior in v2.3."
+        ),
+    )
 
 
 if __name__ == "__main__":

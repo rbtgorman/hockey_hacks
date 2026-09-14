@@ -51,6 +51,7 @@ from sklearn.metrics import (
 )
 
 from ingest.db import pg_conn
+from model.reporting import reliability_table, write_results, max_abs_gap
 
 
 # --- Feature list (explicit, for reproducibility in v2) ---
@@ -201,23 +202,6 @@ def evaluate(model: lgb.LGBMClassifier, df: pd.DataFrame, label: str) -> dict:
             "n": len(df), "base_rate": float(y.mean())}
 
 
-def reliability_table(model: lgb.LGBMClassifier, df: pd.DataFrame, n_bins: int = 10) -> pd.DataFrame:
-    """Reliability (calibration) table: for each xG decile, compare mean predicted vs actual."""
-    X, y = df[ALL_FEATURES], df[TARGET]
-    probs = model.predict_proba(X)[:, 1]
-    edges = np.quantile(probs, np.linspace(0, 1, n_bins + 1))
-    edges[0], edges[-1] = -1e-9, 1 + 1e-9
-    bins = pd.cut(probs, bins=edges, labels=False, include_lowest=True)
-    out = pd.DataFrame({"bin": bins, "pred": probs, "actual": y.values})
-    table = out.groupby("bin").agg(
-        n=("actual", "size"),
-        mean_pred=("pred", "mean"),
-        actual_rate=("actual", "mean"),
-    ).reset_index()
-    table["pred_vs_actual_gap"] = table["mean_pred"] - table["actual_rate"]
-    return table
-
-
 def permutation_importance_on_test(model, test_df, n_repeats=3, seed=42):
     """Measure AUC drop when each feature is shuffled on the test set.
 
@@ -271,9 +255,10 @@ def main():
 
     # Calibration: the important check for an xG model
     print("\n--- Reliability (calibration) on TEST ---")
-    rel = reliability_table(model, test, n_bins=10)
+    p_test = model.predict_proba(test[ALL_FEATURES])[:, 1]
+    rel = reliability_table(test[TARGET], p_test)
     print(rel.to_string(index=False, float_format=lambda v: f"{v:.4f}"))
-    max_gap = rel["pred_vs_actual_gap"].abs().max()
+    max_gap = max_abs_gap(rel)
     print(f"\nMax |predicted - actual| in any decile: {max_gap:.4f}")
     print("A well-calibrated xG model has all gaps < 0.02.")
 
@@ -311,6 +296,34 @@ def main():
         gain.to_csv(ARTIFACT_DIR / "xg_v1_gain_importance.csv", index=False)
         print(f"\nCore artifacts saved to {ARTIFACT_DIR}/")
 
+        # evaluate() already returns auc/pr_auc/log_loss/brier/n; only the
+        # base-rate key differs from the reporting schema.
+        splits = {
+            name: {**{k: v for k, v in m.items() if k != "base_rate"},
+                   "goal_rate": m["base_rate"]}
+            for name, m in metrics.items()
+        }
+        results_dir = write_results(
+            version="v1",
+            description=(
+                "Clean geometric baseline: distance, angle, normalized coordinates, "
+                "situational context and strength state. No player priors of any kind."
+            ),
+            splits=splits,
+            reliability=rel,
+            feature_importance=gain,
+            hyperparameters={"best_iteration": int(model.best_iteration_ or 0)},
+            features=ALL_FEATURES,
+            data_summary={
+                "n_shots": int(len(df)),
+                "seasons": [int(x) for x in sorted(df["season"].unique())],
+            },
+            notes=(
+                "No shooter_id, goalie_id or prior features. This is the reference "
+                "point every later version is measured against."
+            ),
+        )
+
     # Permutation importance LAST, wrapped in try/except so a failure doesn't nuke the run
     print("\n--- Permutation importance on TEST set (what the MODEL relies on) ---")
     try:
@@ -318,7 +331,10 @@ def main():
         print(perm.head(15).to_string(index=False, float_format=lambda v: f"{v:.4f}"))
         if not args.dry_run:
             perm.to_csv(ARTIFACT_DIR / "xg_v1_perm_importance.csv", index=False)
-            print(f"Permutation importance saved.")
+            # Also publish it: permutation importance on held-out data says what the
+            # model RELIES on, which gain importance does not. No other version has it.
+            perm.to_csv(results_dir / "perm_importance.csv", index=False)
+            print(f"Permutation importance saved to {ARTIFACT_DIR}/ and {results_dir}/")
     except Exception as e:
         print(f"Permutation importance failed but model is saved. Error: {type(e).__name__}: {e}")
 

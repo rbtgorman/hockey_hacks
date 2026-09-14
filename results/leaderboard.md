@@ -7,8 +7,12 @@ All metrics are on the **held-out 2024-25 test season**. Training is
 
 | Version | Test AUC | PR-AUC | Log loss | Brier | Max calib. gap | Commit |
 |---|---|---|---|---|---|---|
+| **v1** | 0.7705 | 0.3455 | 0.2877 | 0.0836 | 0.0244 | `95f0dd0` |
+| **v2.2** | 0.7666 | 0.3425 | 0.2897 | 0.0839 | 0.0188 | `95f0dd0` |
 | **v2.3** | 0.7706 | 0.3468 | 0.2877 | 0.0835 | 0.0178 | `463bf4f` |
 
 ## What each version changed
 
+- **v1** — Clean geometric baseline: distance, angle, normalized coordinates, situational context and strength state. No player priors of any kind.
+- **v2.2** — v1 architecture plus a static per-player shooter prior from skater_priors_train, pooled across the training seasons and applied to every shot regardless of date. Stops the v2/v2.1 leakage but the prior is stale.
 - **v2.3** — v1 architecture plus an expanding-window shooter prior (trailing 2-year window, resolved per player per game-date). Fixes the leakage and staleness introduced by the season-pooled priors in v2 and v2.2.

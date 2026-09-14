@@ -1,0 +1,67 @@
+{
+  "version": "v1",
+  "description": "Clean geometric baseline: distance, angle, normalized coordinates, situational context and strength state. No player priors of any kind.",
+  "generated_at_utc": "2026-09-14T16:30:22+00:00",
+  "git_commit": "95f0dd0",
+  "git_dirty": true,
+  "data": {
+    "n_shots": 252450,
+    "seasons": [
+      20222023,
+      20232024,
+      20242025
+    ]
+  },
+  "splits": {
+    "train": {
+      "auc": 0.8292083376366443,
+      "pr_auc": 0.4223702608596132,
+      "log_loss": 0.2587130974234011,
+      "brier": 0.07582390622372273,
+      "n": 88086,
+      "goal_rate": 0.10247939513657107
+    },
+    "val": {
+      "auc": 0.777983710584097,
+      "pr_auc": 0.3370530439079757,
+      "log_loss": 0.27769408831084014,
+      "brier": 0.08034218095831769,
+      "n": 84932,
+      "goal_rate": 0.10328262610088071
+    },
+    "test": {
+      "auc": 0.7705290762790258,
+      "pr_auc": 0.3455272851203371,
+      "log_loss": 0.2877161837406435,
+      "brier": 0.08356876442291324,
+      "n": 79432,
+      "goal_rate": 0.108319065364085
+    }
+  },
+  "calibration": {
+    "n_bins": 10,
+    "max_abs_gap": 0.02437538637513159,
+    "binning": "equal-count (qcut) on predicted probability"
+  },
+  "hyperparameters": {
+    "best_iteration": 176
+  },
+  "features": [
+    "distance_ft",
+    "angle_deg",
+    "x_norm",
+    "y_norm",
+    "score_diff",
+    "seconds_since_last_event",
+    "distance_from_last_event_ft",
+    "period_num",
+    "seconds_remaining_in_period",
+    "is_rebound",
+    "is_rush",
+    "empty_net",
+    "shot_type",
+    "strength_state",
+    "last_event_type"
+  ],
+  "notes": "No shooter_id, goalie_id or prior features. This is the reference point every later version is measured against."
+}
