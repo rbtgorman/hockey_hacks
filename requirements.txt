@@ -1,5 +1,29 @@
+# ---------------------------------------------------------------------------
+# Ingest pipeline (ingest/)
+# ---------------------------------------------------------------------------
 requests>=2.31,<3.0
 psycopg2-binary>=2.9,<3.0
 python-dotenv>=1.0
 tenacity>=8.2
 tqdm>=4.66
+
+# ---------------------------------------------------------------------------
+# Feature engineering + modeling (features/, model/)
+# Previously missing entirely -- every train_*.py imports pandas, numpy,
+# lightgbm and sklearn, so the repo could not be installed and run as published.
+# ---------------------------------------------------------------------------
+pandas>=2.0,<4.0
+numpy>=1.24,<3.0
+scikit-learn>=1.3,<2.0
+lightgbm>=4.0,<5.0
+matplotlib>=3.7,<4.0
+
+# ---------------------------------------------------------------------------
+# NOT required: the parsers in ingest/ are pure standard library (math,
+# dataclasses, typing). That is why tests/ runs in CI with nothing installed.
+# Keep it that way -- it is a real property of the design, not an accident.
+# ---------------------------------------------------------------------------
+
+# These are install-compatible ranges, not a reproducibility guarantee. Your
+# published metrics were produced by the exact versions in your venv. To lock
+# them:  pip freeze > requirements.lock.txt   and commit that alongside.
