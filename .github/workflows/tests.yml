@@ -1,0 +1,58 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  parser-tests:
+    name: parser tests (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # No `pip install` step, deliberately. The three parsers under ingest/
+      # import only math, dataclasses and typing, and every test drives them
+      # with a synthetic payload. Nothing here touches Postgres or the NHL API,
+      # so CI needs no dependencies, no services and no secrets.
+      #
+      # The tests are script-style (def main(), manual assert helpers,
+      # sys.exit(failures)) rather than pytest functions. They already return
+      # correct exit codes, so they run as scripts. `pytest tests/` would
+      # collect zero tests here.
+      - name: Play-by-play parser
+        run: python tests/test_parser.py
+
+      - name: Shift parser
+        run: python tests/test_parser_shifts.py
+
+      - name: Boxscore/landing parser
+        run: python tests/test_parser_landing.py
+
+  compile:
+    name: import-level syntax check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # compileall parses without importing, so this catches syntax errors in
+      # the modeling and feature code without needing lightgbm, pandas or a
+      # database. Cheap guard against pushing a file that cannot even parse.
+      - name: Byte-compile all modules
+        run: python -m compileall -q ingest features model tests
