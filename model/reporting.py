@@ -171,6 +171,40 @@ def _git_dirty() -> bool | None:
         return None
 
 
+REQUIRED_SPLIT_KEYS = {"auc", "pr_auc", "log_loss", "brier"}
+
+
+def _validate_splits(splits) -> None:
+    """Fail loudly and legibly on a malformed splits argument.
+
+    Without this, passing the wrong shape produces errors like
+    "float() argument must be a string or a real number, not 'NoneType'"
+    several frames deep, which tells you nothing about what you got wrong.
+    The common mistakes are naming the metric "roc_auc" instead of "auc",
+    and putting scalars at the top level alongside the split dicts.
+    """
+    if not isinstance(splits, Mapping):
+        raise TypeError(
+            f"splits must be a mapping of split name -> metrics dict, got "
+            f"{type(splits).__name__}. Expected shape: "
+            '{"train": {"auc": ..., "pr_auc": ..., "log_loss": ..., "brier": ...}, "val": {...}, "test": {...}}'
+        )
+    for name, m in splits.items():
+        if not isinstance(m, Mapping):
+            raise TypeError(
+                f'splits["{name}"] must be a metrics dict, got {type(m).__name__}. '
+                "Scalars belong inside a split, not alongside them - the max calibration "
+                "gap is computed from the reliability table and must not be passed here."
+            )
+        missing = REQUIRED_SPLIT_KEYS - set(m)
+        if missing:
+            raise KeyError(
+                f'splits["{name}"] is missing {sorted(missing)}. '
+                f"Got {sorted(m)}. Note the key is \"auc\", not \"roc_auc\" - "
+                "the leaderboard reads splits.test.auc and renders an em-dash if absent."
+            )
+
+
 def write_results(
     version: str,
     description: str,
@@ -187,10 +221,12 @@ def write_results(
     splits: {"train": {"auc":..., "pr_auc":..., "log_loss":..., "brier":...,
                        "n":..., "goal_rate":...}, "val": {...}, "test": {...}}
     """
+    _validate_splits(splits)
+
     out_dir = RESULTS_DIR / version.replace(".", "_")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    test_auc = float(splits.get("test", {}).get("auc")) if "test" in splits else None
+    test_auc = float(splits["test"]["auc"]) if "test" in splits else None
     gap = max_abs_gap(reliability)
 
     record = {
