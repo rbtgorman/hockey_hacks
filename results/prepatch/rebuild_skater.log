@@ -1,0 +1,43 @@
+/home/bobert/my-projects/hockey-hacks/features/build_priors_expanding.py:84: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df = pd.read_sql(query, conn)
+/home/bobert/my-projects/hockey-hacks/features/build_priors_expanding.py:280: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df = pd.read_sql("""
+/home/bobert/my-projects/hockey-hacks/features/build_priors_expanding.py:295: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  elite = pd.read_sql("""
+Filtered 34 empty-net shots from PK bucket
+Loaded 353,713 shots, 1,198 players, 2022-10-07 to 2025-06-17
+
+=== Building bucket: 5v5 ===
+  293,410 shots, 1,190 players
+  league_mean=0.0623  K=125.2  (eligible players: 583, threshold 200 shots)
+    player 0/1,190    player 200/1,190    player 400/1,190    player 600/1,190    player 800/1,190    player 1,000/1,190    player 1,190/1,190  done.
+  Generated 122,624 prior rows for bucket 5v5
+
+=== Building bucket: PP ===
+  51,693 shots, 824 players
+  league_mean=0.1104  K=247.5  (eligible players: 73, threshold 200 shots)
+    player 0/824    player 200/824    player 400/824    player 600/824    player 800/824    player 824/824  done.
+  Generated 33,381 prior rows for bucket PP
+
+=== Building bucket: PK ===
+  8,610 shots, 686 players
+  Warning: only 0 eligible players for K fit; using K=100 default
+  league_mean=0.0743  K=100.0  (eligible players: 0, threshold 200 shots)
+    player 0/686    player 200/686    player 400/686    player 600/686    player 686/686  done.
+  Generated 7,874 prior rows for bucket PK
+
+Total rows to write: 163,879
+Wrote 163,879 rows to skater_priors_expanding
+
+--- Sanity: per-bucket means ---
+strength_state  n_rows  mean_shrunken          k
+           5v5  122624       0.062287 125.212481
+            PK    7874       0.075222 100.000000
+            PP   33381       0.109297 247.479334
+
+--- Sanity: elite shooters (Ovechkin 8471214, MacKinnon 8477492) ---
+ player_id strength_state  n_priors  mean_raw  mean_shrunken
+   8471214            5v5       219  0.075143       0.072020
+   8471214             PP       185  0.091620       0.103279
+   8477492            5v5       252  0.080936       0.077656
+   8477492             PP       186  0.076514       0.096899
