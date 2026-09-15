@@ -100,21 +100,30 @@ def load_shots() -> pd.DataFrame:
           f"{df['game_date'].min()} to {df['game_date'].max()}")
     return df
 
+# features/build_priors_expanding.py  AND
+# features/build_goalie_priors_expanding.py
+# (identical function in both; replace in place)
+
+W_MAX = 5.0
 
 def attach_recency_weight(target_season: int, shot_seasons: np.ndarray) -> np.ndarray:
-    """5 if same season, 4 if previous, 3 if two prior, 0 otherwise.
+    """Recency weights normalized so a current-season shot = 1.0 observation.
 
-    Seasons stored as integers like 20222023. We compute season distance by
-    season-start-year difference.
+    Raw 5/4/3 made weighted_shots ~4.5x raw_shots, while K is fit in raw
+    observation units (fit_k_methodofmoments uses raw_shots). The posterior
+    denominator therefore claimed 4.5x the evidence that existed and the
+    shrinkage barely fired.
+
+    Dividing by W_MAX puts weighted_shots back in observation units and keeps
+    the recency discount intact: a shot two seasons old counts as 0.6 of a
+    current-season shot. The point estimate weighted_goals/weighted_shots is
+    unchanged, since numerator and denominator scale identically.
     """
-    target_start = target_season // 10000
-    shot_starts = shot_seasons // 10000
-    diff = target_start - shot_starts
-    weights = np.where(diff == 0, 5.0,
-              np.where(diff == 1, 4.0,
-              np.where(diff == 2, 3.0, 0.0)))
-    return weights
-
+    diff = (target_season // 10000) - (shot_seasons // 10000)
+    w = np.where(diff == 0, 5.0,
+        np.where(diff == 1, 4.0,
+        np.where(diff == 2, 3.0, 0.0)))
+    return w / W_MAX
 
 def fit_k_methodofmoments(player_aggs: pd.DataFrame, mean: float) -> float:
     """Beta-Binomial method-of-moments K from per-player (n_shots, n_goals).

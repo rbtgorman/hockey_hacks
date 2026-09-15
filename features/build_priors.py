@@ -61,12 +61,13 @@ PG_DSN = os.environ.get("PG_DSN") or (
     )
 )
 
-# Map season-string to recency weight.  5/4/3 mirrors BallparkPal.
+# features/build_priors.py — SEASON_WEIGHTS, same normalization
 SEASON_WEIGHTS = {
-    "20242025": 5.0,
-    "20232024": 4.0,
-    "20222023": 3.0,
+    "20242025": 1.0,
+    "20232024": 0.8,
+    "20222023": 0.6,
 }
+
 
 # Minimum sample sizes for INCLUSION IN THE BETA FIT (i.e., used to estimate K).
 # Players below these thresholds still get priors written to the table (they just

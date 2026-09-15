@@ -159,12 +159,30 @@ def load_shots() -> pd.DataFrame:
         print(f"  zone {z:<5} {len(sub):>7,} shots  GA rate {sub['is_goal'].mean():.4f}")
     return df
 
+# features/build_priors_expanding.py  AND
+# features/build_goalie_priors_expanding.py
+# (identical function in both; replace in place)
+
+W_MAX = 5.0
 
 def attach_recency_weight(target_season: int, shot_seasons: np.ndarray) -> np.ndarray:
-    """5 same season, 4 one prior, 3 two prior, 0 otherwise. Stage B parity."""
-    diff = (target_season // 10000) - (shot_seasons // 10000)
-    return np.where(diff == 0, 5.0, np.where(diff == 1, 4.0, np.where(diff == 2, 3.0, 0.0)))
+    """Recency weights normalized so a current-season shot = 1.0 observation.
 
+    Raw 5/4/3 made weighted_shots ~4.5x raw_shots, while K is fit in raw
+    observation units (fit_k_methodofmoments uses raw_shots). The posterior
+    denominator therefore claimed 4.5x the evidence that existed and the
+    shrinkage barely fired.
+
+    Dividing by W_MAX puts weighted_shots back in observation units and keeps
+    the recency discount intact: a shot two seasons old counts as 0.6 of a
+    current-season shot. The point estimate weighted_goals/weighted_shots is
+    unchanged, since numerator and denominator scale identically.
+    """
+    diff = (target_season // 10000) - (shot_seasons // 10000)
+    w = np.where(diff == 0, 5.0,
+        np.where(diff == 1, 4.0,
+        np.where(diff == 2, 3.0, 0.0)))
+    return w / W_MAX
 
 def fit_k_methodofmoments(aggs: pd.DataFrame, mean: float) -> float:
     """Beta-Binomial method-of-moments K. Same as build_priors_expanding.py.
@@ -363,6 +381,20 @@ def sanity_checks():
         print("  If 'sparse' dominates, the 9-cell grid is too fine for a ~90-goalie")
         print("  population: most rows will sit near the league mean and the feature")
         print("  will carry little signal. Collapse to zone-only before adding it to v2.4.")
+
+        cur.execute("""
+        SELECT MAX(weighted_shots / NULLIF(raw_shots, 0))
+        FROM skater_priors_expanding WHERE raw_shots > 0
+    """)
+    ratio, = cur.fetchone()
+    print(f"\nEvidence scale (weighted/raw): max {ratio:.4f} (MUST be <= 1.0)")
+    
+    if ratio and ratio > 1.0 + 1e-9:
+        raise RuntimeError(
+            f"weighted_shots exceeds raw_shots by {ratio:.2f}x. A window of N shots "
+            f"cannot supply more than N observations of evidence against a K fit in "
+            f"raw units. Check attach_recency_weight normalization."
+        )
 
         cur.execute("SELECT COUNT(*) FROM goalie_priors_expanding WHERE window_end_date <= window_start_date")
         bad, = cur.fetchone()
