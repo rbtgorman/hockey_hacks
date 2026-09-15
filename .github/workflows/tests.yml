@@ -56,3 +56,16 @@ jobs:
       # database. Cheap guard against pushing a file that cannot even parse.
       - name: Byte-compile all modules
         run: python -m compileall -q ingest features model tests
+
+  feature-tests:
+    name: feature logic tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Goalie prior logic (synthetic, no database)
+        run: python tests/test_goalie_priors.py
