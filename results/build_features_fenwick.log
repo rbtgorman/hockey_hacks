@@ -1,0 +1,52 @@
+Building shot_features_fenwick (reads shots + plays_context)...
+Done. 364,074 rows in shot_features_fenwick.
+
+--- 1. Parity with legacy shot_features on shared rows (2022 must be all zeros; 2023/2024 nonzero only in the context columns) ---
+  season_start | rows_compared | static_cols | secs_since_last | dist_from_last | last_event | is_rebound | is_rush
+  -------------+---------------+-------------+-----------------+----------------+------------+------------+--------
+  2022         | 87538         | 0           | 0               | 0              | 0          | 0          | 0      
+  2023         | 84434         | 0           | 1066            | 1074           | 924        | 13         | 0      
+  2024         | 79007         | 0           | 1170            | 1179           | 981        | 28         | 0      
+
+--- 2. Legacy rows missing from the new table (expected: only game type 02, period 5) ---
+  season_start | game_type | period | legacy_rows_missing
+  -------------+-----------+--------+--------------------
+  2022         | 02        | 5      | 548                
+  2023         | 02        | 5      | 498                
+  2024         | 02        | 5      | 425                
+
+--- 3. Rows and goals by season and event type (missed-shot goals must be 0) ---
+  season_start | event_type   | n     | goals
+  -------------+--------------+-------+------
+  2022         | goal         | 8801  | 8801 
+  2022         | missed-shot  | 34528 | 0    
+  2022         | shot-on-goal | 78737 | 0    
+  2023         | goal         | 8590  | 8590 
+  2023         | missed-shot  | 38095 | 0    
+  2023         | shot-on-goal | 75844 | 0    
+  2024         | goal         | 8435  | 8435 
+  2024         | missed-shot  | 40472 | 0    
+  2024         | shot-on-goal | 70572 | 0    
+
+--- 4. Goal rate by distance band, regular season, no empty net (each band should be flat across seasons) ---
+  band     | season_start | n     | goal_pct
+  ---------+--------------+-------+---------
+  a_lt20   | 2022         | 35086 | 12.32   
+  a_lt20   | 2023         | 34488 | 12.40   
+  a_lt20   | 2024         | 32018 | 12.36   
+  b_20_40  | 2022         | 37742 | 7.20    
+  b_20_40  | 2023         | 37709 | 6.88    
+  b_20_40  | 2024         | 37056 | 7.17    
+  c_40_60  | 2022         | 30047 | 2.31    
+  c_40_60  | 2023         | 28343 | 2.33    
+  c_40_60  | 2024         | 27512 | 2.33    
+  d_60plus | 2022         | 10476 | 0.71    
+  d_60plus | 2023         | 13519 | 0.78    
+  d_60plus | 2024         | 14294 | 0.85    
+
+--- 5. Attempts from behind the goal line per game, regular season (flat if dropping failed-bank-attempt was right) ---
+  season_start | behind_line_per_game
+  -------------+---------------------
+  2022         | 0.767               
+  2023         | 1.245               
+  2024         | 0.798               

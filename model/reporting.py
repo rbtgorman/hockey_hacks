@@ -35,15 +35,32 @@ USAGE
     write_results(version="v2.3", ...)
 
     python -m model.reporting --leaderboard    # rebuild results/leaderboard.md
+
+CALIBRATION STATS AND POPULATIONS
+---------------------------------
+Max calibration gap cannot tell a level shift from a shape problem, and on
+2024-25 the shots-on-goal models suffered a level shift (the NHL started
+recording goalie-touched wide pucks as missed shots). calibration_stats()
+reports observed/expected goals (O/E) and the calibration slope separately.
+Training scripts put them inside each split's metrics dict:
+
+    splits["test"].update(calibration_stats(y_test, p_test))
+
+Runs also declare their shot population in data_summary["population"]
+("shots_on_goal" if absent, "fenwick" for unblocked attempts). The
+leaderboard renders one table per population, because AUC and log loss are
+not comparable across different sets of shots.
 """
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+import numpy as np
 import pandas as pd
 
 import matplotlib
@@ -88,6 +105,47 @@ def reliability_table(y_true, y_pred, n_bins: int = 10) -> pd.DataFrame:
 
 def max_abs_gap(rel: pd.DataFrame) -> float:
     return float(rel["pred_vs_actual_gap"].abs().max())
+
+
+def calibration_stats(y_true, y_pred) -> dict:
+    """Calibration-in-the-large and calibration slope for one split.
+
+      o_e            observed / expected goals. 1.00 = right on average;
+                     1.07 = 7% more goals than predicted.
+      citl           mean_pred - observed_rate. Same sign as the reliability
+                     table's gap column: negative = under-predicting.
+      cal_slope      slope of a logistic fit of the outcome on logit(p).
+                     1.0 = spread is right; below 1 = predictions too
+                     extreme (the usual overfitting signature); above 1 =
+                     too timid.
+      cal_intercept  that fit's intercept.
+
+    The fit is a two-parameter Newton-Raphson in numpy, so it does not
+    depend on the installed scikit-learn's penalty API. It starts at
+    (0, 1), perfect calibration, which is close to any usable model.
+    """
+    y = np.asarray(y_true, dtype=float)
+    p = np.clip(np.asarray(y_pred, dtype=float), 1e-6, 1 - 1e-6)
+    lp = np.log(p / (1.0 - p))
+    X = np.column_stack([np.ones_like(lp), lp])
+    beta = np.array([0.0, 1.0])
+    for _ in range(50):
+        mu = 1.0 / (1.0 + np.exp(-(X @ beta)))
+        w = mu * (1.0 - mu)
+        step = np.linalg.solve(X.T @ (X * w[:, None]), X.T @ (y - mu))
+        beta = beta + step
+        if np.max(np.abs(step)) < 1e-9:
+            break
+    mean_pred = float(p.mean())
+    observed = float(y.mean())
+    return {
+        "mean_pred": mean_pred,
+        "observed_rate": observed,
+        "o_e": observed / mean_pred,
+        "citl": mean_pred - observed,
+        "cal_intercept": float(beta[0]),
+        "cal_slope": float(beta[1]),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -267,22 +325,39 @@ def write_results(
 # ---------------------------------------------------------------------------
 
 def _version_sort_key(v: str):
-    """Sort v1 < v2.1 < v2.2 < v2.3 < v2.10 numerically, not lexically."""
-    parts = v.lstrip("vV").split(".")
-    key = []
-    for p in parts:
-        try:
-            key.append(int(p))
-        except ValueError:
-            key.append(0)
-    return key
+    """Sort v1 < v2.1 < v2.3 < v2.10 numerically, not lexically.
+
+    Only the digit groups count, so suffixed names like 'v1-fenwick' sort by
+    their number as well.
+    """
+    return [int(x) for x in re.findall(r"\d+", v)] or [0]
+
+
+POPULATIONS = {
+    "shots_on_goal": (
+        "Shots on goal (legacy population)",
+        "Trained and scored on shots on goal, including regular-season shootout "
+        "attempts (about 0.6% of rows). From 2023-24 the NHL records many "
+        "goalie-touched wide pucks as missed shots, so this population's "
+        "conversion drifts upward across the split. Kept for reproducibility.",
+    ),
+    "fenwick": (
+        "Unblocked attempts (Fenwick)",
+        "Shots on goal plus missed shots. Shootout attempts are excluded, as are "
+        "events logged in only part of the window (teammate blocks, failed bank "
+        "attempts). Goals per unblocked attempt hold steady across the split "
+        "within each distance band. AUC and log loss are not comparable with "
+        "the shots-on-goal table: the set of shots differs.",
+    ),
+}
 
 
 def build_leaderboard() -> Path | None:
     """Regenerate results/leaderboard.md from every results/*/metrics.json.
 
-    Ordered chronologically by version, not by AUC. The iteration story is the
-    point: what each change was trying to do and what it actually did.
+    One table per shot population, each ordered chronologically by version,
+    not by AUC. The iteration story is the point: what each change was trying
+    to do and what it actually did.
     """
     if not RESULTS_DIR.exists():
         return None
@@ -298,11 +373,14 @@ def build_leaderboard() -> Path | None:
         rows.append({
             "version": rec.get("version", mpath.parent.name),
             "description": rec.get("description", ""),
+            "population": (rec.get("data") or {}).get("population", "shots_on_goal"),
             "auc": test.get("auc"),
             "pr_auc": test.get("pr_auc"),
             "log_loss": test.get("log_loss"),
             "brier": test.get("brier"),
             "max_gap": rec.get("calibration", {}).get("max_abs_gap"),
+            "o_e": test.get("o_e"),
+            "cal_slope": test.get("cal_slope"),
             "commit": rec.get("git_commit"),
         })
 
@@ -322,17 +400,35 @@ def build_leaderboard() -> Path | None:
         "All metrics are on the **held-out 2024-25 test season**. Training is",
         "2022-23, validation 2023-24. No random splits at any point.",
         "",
-        "| Version | Test AUC | PR-AUC | Log loss | Brier | Max calib. gap | Commit |",
-        "|---|---|---|---|---|---|---|",
+        "O/E is observed goals divided by predicted goals (1.00 is right on",
+        "average). Calib. slope is the logistic slope of the outcome on logit(p)",
+        "(1.00 is ideal; below 1 means over-confident). Both are blank for runs",
+        "recorded before they existed.",
+        "",
     ]
-    for r in rows:
-        lines.append(
-            f"| **{r['version']}** | {fmt(r['auc'])} | {fmt(r['pr_auc'])} | "
-            f"{fmt(r['log_loss'])} | {fmt(r['brier'])} | {fmt(r['max_gap'])} | "
-            f"`{r['commit'] or '—'}` |"
-        )
 
-    lines += ["", "## What each version changed", ""]
+    present = {r["population"] for r in rows}
+    order = [p for p in POPULATIONS if p in present] + sorted(present - set(POPULATIONS))
+    for pop in order:
+        title, note = POPULATIONS.get(pop, (pop, ""))
+        lines += [f"## {title}", ""]
+        if note:
+            lines += [note, ""]
+        lines += [
+            "| Version | Test AUC | PR-AUC | Log loss | Brier | Max calib. gap "
+            "| O/E | Calib. slope | Commit |",
+            "|---|---|---|---|---|---|---|---|---|",
+        ]
+        for r in (r for r in rows if r["population"] == pop):
+            lines.append(
+                f"| **{r['version']}** | {fmt(r['auc'])} | {fmt(r['pr_auc'])} | "
+                f"{fmt(r['log_loss'])} | {fmt(r['brier'])} | {fmt(r['max_gap'])} | "
+                f"{fmt(r['o_e'], 3)} | {fmt(r['cal_slope'], 3)} | "
+                f"`{r['commit'] or '—'}` |"
+            )
+        lines.append("")
+
+    lines += ["## What each version changed", ""]
     for r in rows:
         if r["description"]:
             lines.append(f"- **{r['version']}** — {r['description']}")
