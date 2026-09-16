@@ -1,0 +1,88 @@
+{
+  "version": "v1-fenwick",
+  "description": "v1 features and hyperparameters retrained on unblocked attempts (shot_features_fenwick). Removes the 2023-24 on-goal relabel from the target population.",
+  "generated_at_utc": "2026-09-16T19:51:25+00:00",
+  "git_commit": "1b11eb9",
+  "git_dirty": true,
+  "data": {
+    "population": "fenwick",
+    "table": "shot_features_fenwick",
+    "n_shots": 364074,
+    "seasons": [
+      20222023,
+      20232024,
+      20242025
+    ]
+  },
+  "splits": {
+    "train": {
+      "auc": 0.8286359438142086,
+      "pr_auc": 0.3382177963198729,
+      "log_loss": 0.20747076587189744,
+      "brier": 0.057524047818409314,
+      "n": 122066,
+      "goal_rate": 0.07210033916078187,
+      "mean_pred": 0.07211879099594647,
+      "observed_rate": 0.07210033916078187,
+      "o_e": 0.9997441466376547,
+      "citl": 1.8451835164592922e-05,
+      "cal_intercept": 0.8987120808048149,
+      "cal_slope": 1.430474334781679
+    },
+    "val": {
+      "auc": 0.7739280339751675,
+      "pr_auc": 0.24376257389945843,
+      "log_loss": 0.21849846512771443,
+      "brier": 0.05922634079631273,
+      "n": 122529,
+      "goal_rate": 0.07010585249206311,
+      "mean_pred": 0.068796428217082,
+      "observed_rate": 0.07010585249206311,
+      "o_e": 1.0190333177014557,
+      "citl": -0.0013094242749811108,
+      "cal_intercept": 0.03564347242825225,
+      "cal_slope": 1.0060551552748322
+    },
+    "test": {
+      "auc": 0.7677488619249322,
+      "pr_auc": 0.2464416721026486,
+      "log_loss": 0.22043028841393453,
+      "brier": 0.059572818634477574,
+      "n": 119479,
+      "goal_rate": 0.0705981804333816,
+      "mean_pred": 0.06965822969741021,
+      "observed_rate": 0.0705981804333816,
+      "o_e": 1.0134937499855288,
+      "citl": -0.0009399507359713899,
+      "cal_intercept": -0.07259159365668633,
+      "cal_slope": 0.9595944135499807
+    }
+  },
+  "calibration": {
+    "n_bins": 10,
+    "max_abs_gap": 0.013813845078184034,
+    "binning": "equal-count (qcut) on predicted probability"
+  },
+  "hyperparameters": {
+    "best_iteration": 186,
+    "settings": "identical to v1"
+  },
+  "features": [
+    "distance_ft",
+    "angle_deg",
+    "x_norm",
+    "y_norm",
+    "score_diff",
+    "seconds_since_last_event",
+    "distance_from_last_event_ft",
+    "period_num",
+    "seconds_remaining_in_period",
+    "is_rebound",
+    "is_rush",
+    "empty_net",
+    "shot_type",
+    "strength_state",
+    "last_event_type"
+  ],
+  "notes": "Reference point for the Fenwick population. Compare later Fenwick versions against this, not against the shots-on-goal v1."
+}

@@ -32,6 +32,11 @@ DIFFERENCES FROM build_features.py
    labels across seasons. is_rebound already accepted both.
 5. event_type is kept as a column for diagnostics and the Stage D on-net
    layer. It is not a model feature.
+6. shot_type merges wrist and snap into 'wrist-snap'. In 2024-25 about
+   7,500 attempts moved from one label to the other: wrist fell from 54.5%
+   to 48.0% of attempts in a single season and snap rose from 14.1% to
+   21.1%, while the two combined held at 68.3% / 68.6% / 69.1%. Shooting
+   doesn't change like that in one season; the labelling did.
 
 Every other feature is defined exactly as in build_features.py. The first
 verify query checks that claim: on 2022-23, where neither regime-only event
@@ -152,7 +157,10 @@ SELECT
     s.x_norm,
     s.y_norm,
 
-    COALESCE(s.shot_type, 'unknown') AS shot_type,
+    CASE
+        WHEN s.shot_type IN ('wrist', 'snap') THEN 'wrist-snap'
+        ELSE COALESCE(s.shot_type, 'unknown')
+    END AS shot_type,
 
     -- Game state
     s.strength_state,
@@ -220,7 +228,10 @@ VERIFY_QUERIES = [
             COUNT(*) AS rows_compared,
             COUNT(*) FILTER (WHERE n.distance_ft IS DISTINCT FROM o.distance_ft
                                 OR n.angle_deg IS DISTINCT FROM o.angle_deg
-                                OR n.shot_type IS DISTINCT FROM o.shot_type
+                                OR n.shot_type IS DISTINCT FROM
+                                   CASE WHEN o.shot_type IN ('wrist', 'snap')
+                                        THEN 'wrist-snap'
+                                        ELSE o.shot_type END
                                 OR n.strength_state IS DISTINCT FROM o.strength_state
                                 OR n.score_diff IS DISTINCT FROM o.score_diff
                                 OR n.seconds_remaining_in_period
@@ -295,6 +306,34 @@ VERIFY_QUERIES = [
      WHERE substr(f.game_id::text, 5, 2) = '02'
      GROUP BY 1
      ORDER BY 1;
+     """),
+    ("6. Goal rate by model shot_type and season, regular season, no empty net "
+     "(each type should be roughly flat)",
+     """
+     SELECT f.shot_type,
+            substr(f.game_id::text, 1, 4) AS season_start,
+            COUNT(*) AS n,
+            ROUND(100.0 * COUNT(*) FILTER (WHERE f.is_goal) / COUNT(*), 2) AS goal_pct
+     FROM shot_features_fenwick f
+     WHERE substr(f.game_id::text, 5, 2) = '02'
+       AND NOT COALESCE(f.empty_net, false)
+     GROUP BY 1, 2
+     ORDER BY 1, 2;
+     """),
+    ("7. Raw wrist vs snap by season (why they are merged)",
+     """
+     SELECT s.shot_type AS raw_shot_type,
+            substr(f.game_id::text, 1, 4) AS season_start,
+            COUNT(*) AS n,
+            ROUND(100.0 * COUNT(*) FILTER (WHERE f.is_goal) / COUNT(*), 2) AS goal_pct,
+            ROUND(AVG(f.distance_ft)::numeric, 1) AS avg_ft
+     FROM shot_features_fenwick f
+     JOIN shots s ON s.game_id = f.game_id AND s.event_idx = f.event_idx
+     WHERE substr(f.game_id::text, 5, 2) = '02'
+       AND NOT COALESCE(f.empty_net, false)
+       AND s.shot_type IN ('wrist', 'snap')
+     GROUP BY 1, 2
+     ORDER BY 1, 2;
      """),
 ]
 
