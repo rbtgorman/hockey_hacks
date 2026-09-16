@@ -1,0 +1,87 @@
+/home/bobert/my-projects/hockey-hacks/model/train_v2_3.py:116: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df = pd.read_sql(LOAD_QUERY, conn)
+============================================================
+v2.3: v1 architecture + EXPANDING-WINDOW shooter prior
+============================================================
+Loaded 252,450 shots spanning 2022-10-07 to 2025-06-17
+Seasons present: [20222023, 20232024, 20242025]
+Missing shooter priors after league-mean fallback: 0 (0.00%)
+Leakage check (score_diff): 4,185/4,198 games (99.7%) have varying score_diff — expect >80%.
+Train: season 20222023, 88,086 shots, 10.25% goals
+Val:   season 20232024, 84,932 shots, 10.33% goals
+Test:  season 20242025, 79,432 shots, 10.83% goals
+
+Training LightGBM v2.3 (v1 params, +expanding shooter prior)...
+Training until validation scores don't improve for 100 rounds
+[50]	val's auc: 0.7741
+[100]	val's auc: 0.776798
+[150]	val's auc: 0.777816
+[200]	val's auc: 0.777825
+[250]	val's auc: 0.778111
+[300]	val's auc: 0.777973
+[350]	val's auc: 0.777478
+Early stopping, best iteration is:
+[261]	val's auc: 0.778146
+Best iteration: 261
+
+--- Train metrics ---
+  ROC-AUC:   0.8591
+  PR-AUC:    0.4893  (baseline = 0.1025)
+  Log-loss:  0.2471
+  Brier:     0.0727
+
+--- Val metrics ---
+  ROC-AUC:   0.7781
+  PR-AUC:    0.3361  (baseline = 0.1033)
+  Log-loss:  0.2776
+  Brier:     0.0804
+
+--- Test metrics ---
+  ROC-AUC:   0.7707
+  PR-AUC:    0.3449  (baseline = 0.1083)
+  Log-loss:  0.2877
+  Brier:     0.0836
+
+--- Reliability on TEST ---
+ bin    n  mean_pred  actual_rate  pred_vs_actual_gap
+   0 7944     0.0049       0.0064             -0.0015
+   1 7943     0.0159       0.0183             -0.0024
+   2 7943     0.0251       0.0296             -0.0044
+   3 7943     0.0382       0.0465             -0.0083
+   4 7943     0.0578       0.0686             -0.0108
+   5 7943     0.0834       0.0959             -0.0125
+   6 7943     0.1142       0.1255             -0.0113
+   7 7943     0.1477       0.1644             -0.0167
+   8 7943     0.1880       0.1915             -0.0034
+   9 7944     0.3363       0.3365             -0.0002
+
+Max |predicted - actual| in any decile: 0.0167
+
+============================================================
+BASELINES
+  v1:        AUC 0.7705, max gap 0.0244
+  v2.2:      AUC 0.7666, max gap 0.0188
+  v2.3:      AUC 0.7707, max gap 0.0167
+============================================================
+
+--- LightGBM gain importance ---
+                    feature         gain
+                distance_ft 78580.682441
+                  empty_net 40390.833809
+                  angle_deg 19672.836320
+          shooter_prior_pct 15038.495271
+distance_from_last_event_ft 14269.560339
+   seconds_since_last_event 13034.025460
+seconds_remaining_in_period 12255.754855
+               game_seconds 10394.549618
+                     y_norm  9772.240241
+                  shot_type  8764.750319
+                     x_norm  8077.151191
+             strength_state  7004.659281
+            last_event_type  4042.614190
+                 score_diff  2815.067955
+                 is_rebound  1052.476245
+                    is_rush   185.568010
+                 period_num   180.986081
+
+--dry-run: no files written.
