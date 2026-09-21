@@ -27,7 +27,7 @@ Shots on goal plus missed shots. Shootout attempts are excluded, as are events l
 
 | Version | Test AUC | PR-AUC | Log loss | Brier | Max calib. gap | O/E | Calib. slope | Commit |
 |---|---|---|---|---|---|---|---|---|
-| **v1-fenwick** | 0.7677 | 0.2464 | 0.2204 | 0.0596 | 0.0138 | 1.013 | 0.960 | `1b11eb9` |
+| **v1-fenwick** | 0.7677 | 0.2464 | 0.2204 | 0.0596 | 0.0138 | 1.013 | 0.960 | `aeb82df` |
 
 ## What each version changed
 

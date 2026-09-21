@@ -23,6 +23,10 @@ WHAT TO LOOK FOR
     train AUC 0.859 against val 0.778); on the shots-on-goal test, that
     over-confidence was hiding behind the drift in the top decile.
   - AUC and log loss are not comparable with the shots-on-goal leaderboard.
+  - O/E by segment (net, strength, shot type, distance) for val and test,
+    printed and saved as results/v1-fenwick/segments.csv. A miss that only
+    shows up in test, in one segment, points at a 2024-25 labelling change
+    rather than at the model.
 
 Usage:
     python3 -m model.train_v1_fenwick
@@ -34,6 +38,7 @@ import argparse
 import json
 
 import joblib
+import numpy as np
 import pandas as pd
 
 from ingest.db import pg_conn
@@ -99,6 +104,69 @@ def split_metrics(model, df: pd.DataFrame, label: str):
     return out, p
 
 
+STRENGTH_BUCKET = {
+    "5v5": "5v5", "4v4": "5v5", "3v3": "5v5",
+    "5v4": "PP", "5v3": "PP", "4v3": "PP",
+    "4v5": "PK", "3v5": "PK", "3v4": "PK",
+}
+
+
+def _distance_band(d: pd.Series) -> pd.Series:
+    """Same edges as the SQL band checks: [0,20) [20,40) [40,60) [60,inf)."""
+    bands = pd.cut(d, [-np.inf, 20, 40, 60, np.inf], right=False,
+                   labels=["<20 ft", "20-40 ft", "40-60 ft", "60+ ft"])
+    return bands.astype(str)  # a missing distance becomes 'nan'
+
+
+SEGMENTS = {
+    "net": lambda d: pd.Series(
+        np.where(d["empty_net"] == 1, "empty net", "goalie in net"), index=d.index),
+    "strength": lambda d: (d["strength_state"].astype(str)
+                           .map(STRENGTH_BUCKET).fillna("other")),
+    "shot_type": lambda d: d["shot_type"].astype(str),
+    "distance": lambda d: _distance_band(d["distance_ft"]),
+}
+
+
+def segment_calibration(y_true, y_pred, segments) -> pd.DataFrame:
+    """Observed vs predicted goals inside each segment.
+
+    Lives here until a second training script needs it; then it moves to
+    model/reporting.py next to reliability_table().
+    """
+    df = pd.DataFrame({
+        "segment": np.asarray(segments, dtype=object),
+        "y": np.asarray(y_true, dtype=float),
+        "p": np.asarray(y_pred, dtype=float),
+    })
+    out = (df.groupby("segment")
+             .agg(n=("y", "size"), observed=("y", "sum"), predicted=("p", "sum"))
+             .reset_index())
+    out["o_e"] = out["observed"] / out["predicted"]
+    return out
+
+
+def segment_report(val, p_val, test, p_test) -> pd.DataFrame:
+    """Print val vs test O/E per segment; return one long table for saving."""
+    frames = []
+    for dim, fn in SEGMENTS.items():
+        sv = segment_calibration(val[v1.TARGET], p_val, fn(val)).set_index("segment")
+        st = segment_calibration(test[v1.TARGET], p_test, fn(test)).set_index("segment")
+        tbl = pd.DataFrame({
+            "val_n": sv["n"], "val_oe": sv["o_e"],
+            "test_n": st["n"], "test_oe": st["o_e"],
+        })
+        tbl.index.name = "segment"
+        tbl["val_n"] = tbl["val_n"].astype("Int64")
+        tbl["test_n"] = tbl["test_n"].astype("Int64")
+        tbl = tbl.sort_values("test_n", ascending=False)
+        print(f"\n  by {dim}")
+        print(tbl.to_string(float_format=lambda v: f"{v:.3f}"))
+        frames.append(tbl.reset_index().assign(dimension=dim))
+    return pd.concat(frames, ignore_index=True)[
+        ["dimension", "segment", "val_n", "val_oe", "test_n", "test_oe"]]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description="v1 model on unblocked attempts")
     ap.add_argument("--dry-run", action="store_true",
@@ -134,6 +202,9 @@ def main() -> None:
     print(rel.to_string(index=False, float_format=fmt))
     max_gap = max_abs_gap(rel)
     print(f"Max gap (test): {max_gap:.4f}")
+
+    print("\n--- O/E by segment (val = 2023-24, test = 2024-25; 1.000 is right on average) ---")
+    seg = segment_report(val, preds["val"], test, preds["test"])
 
     print("\n--- LightGBM gain importance ---")
     gain = (pd.DataFrame({"feature": v1.ALL_FEATURES,
@@ -194,6 +265,8 @@ def main() -> None:
                 "Fenwick versions against this, not against the shots-on-goal v1."
             ),
         )
+        seg.to_csv(results_dir / "segments.csv", index=False)
+        print(f"Segment table saved to {results_dir}/segments.csv")
 
     print("\n--- Permutation importance on TEST (what the model relies on) ---")
     try:

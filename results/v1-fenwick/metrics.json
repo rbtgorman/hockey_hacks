@@ -1,8 +1,8 @@
 {
   "version": "v1-fenwick",
   "description": "v1 features and hyperparameters retrained on unblocked attempts (shot_features_fenwick). Removes the 2023-24 on-goal relabel from the target population.",
-  "generated_at_utc": "2026-09-16T19:51:25+00:00",
-  "git_commit": "1b11eb9",
+  "generated_at_utc": "2026-09-16T19:53:11+00:00",
+  "git_commit": "aeb82df",
   "git_dirty": true,
   "data": {
     "population": "fenwick",
