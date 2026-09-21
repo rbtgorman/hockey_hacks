@@ -78,15 +78,12 @@ Done. 364,074 rows in shot_features_fenwick.
   tip-in       | 2022         | 9636  | 8.77    
   tip-in       | 2023         | 10096 | 8.34    
   tip-in       | 2024         | 9829  | 7.76    
-  unknown      | 2022         | 17    | 100.00  
-  unknown      | 2023         | 10    | 100.00  
-  unknown      | 2024         | 20    | 100.00  
   wrap-around  | 2022         | 973   | 5.55    
   wrap-around  | 2023         | 905   | 6.08    
   wrap-around  | 2024         | 779   | 4.75    
-  wrist-snap   | 2022         | 77436 | 6.73    
-  wrist-snap   | 2023         | 78147 | 6.55    
-  wrist-snap   | 2024         | 76594 | 6.55    
+  wrist-snap   | 2022         | 77453 | 6.75    
+  wrist-snap   | 2023         | 78157 | 6.56    
+  wrist-snap   | 2024         | 76614 | 6.58    
 
 --- 7. Raw wrist vs snap by season (why they are merged) ---
   raw_shot_type | season_start | n     | goal_pct | avg_ft
@@ -97,3 +94,8 @@ Done. 364,074 rows in shot_features_fenwick.
   wrist         | 2022         | 59932 | 6.16     | 37.6  
   wrist         | 2023         | 62199 | 5.85     | 38.7  
   wrist         | 2024         | 53670 | 5.77     | 39.8  
+
+--- 8. Categorical values that give away the answer (expected: 0 rows). Flags any value that is always a goal (n >= 10) or never a goal (n >= 200) ---
+  feature | value | n | goals
+  --------+-------+---+------
+  (0 rows)
