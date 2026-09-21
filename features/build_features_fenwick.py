@@ -37,6 +37,11 @@ DIFFERENCES FROM build_features.py
    to 48.0% of attempts in a single season and snap rose from 14.1% to
    21.1%, while the two combined held at 68.3% / 68.6% / 69.1%. Shooting
    doesn't change like that in one season; the labelling did.
+7. A missing shot type becomes 'wrist-snap', the most common type. The
+   legacy table's 'unknown' appears only on goals (100% goal rate in every
+   season), so as its own category it tells the model the answer. Leaving
+   it NULL would not help: LightGBM learns a direction for missing values,
+   and it would learn the same thing.
 
 Every other feature is defined exactly as in build_features.py. The first
 verify query checks that claim: on 2022-23, where neither regime-only event
@@ -158,8 +163,9 @@ SELECT
     s.y_norm,
 
     CASE
-        WHEN s.shot_type IN ('wrist', 'snap') THEN 'wrist-snap'
-        ELSE COALESCE(s.shot_type, 'unknown')
+        WHEN s.shot_type IS NULL
+          OR s.shot_type IN ('wrist', 'snap', 'unknown') THEN 'wrist-snap'
+        ELSE s.shot_type
     END AS shot_type,
 
     -- Game state
@@ -229,7 +235,7 @@ VERIFY_QUERIES = [
             COUNT(*) FILTER (WHERE n.distance_ft IS DISTINCT FROM o.distance_ft
                                 OR n.angle_deg IS DISTINCT FROM o.angle_deg
                                 OR n.shot_type IS DISTINCT FROM
-                                   CASE WHEN o.shot_type IN ('wrist', 'snap')
+                                   CASE WHEN o.shot_type IN ('wrist', 'snap', 'unknown')
                                         THEN 'wrist-snap'
                                         ELSE o.shot_type END
                                 OR n.strength_state IS DISTINCT FROM o.strength_state
@@ -334,6 +340,29 @@ VERIFY_QUERIES = [
        AND s.shot_type IN ('wrist', 'snap')
      GROUP BY 1, 2
      ORDER BY 1, 2;
+     """),
+    ("8. Categorical values that give away the answer (expected: 0 rows). "
+     "Flags any value that is always a goal (n >= 10) or never a goal (n >= 200)",
+     """
+     WITH v AS (
+         SELECT 'shot_type' AS feature, shot_type AS value, is_goal
+         FROM shot_features_fenwick
+         UNION ALL
+         SELECT 'strength_state', strength_state, is_goal
+         FROM shot_features_fenwick
+         UNION ALL
+         SELECT 'last_event_type', last_event_type, is_goal
+         FROM shot_features_fenwick
+     )
+     SELECT feature,
+            value,
+            COUNT(*) AS n,
+            COUNT(*) FILTER (WHERE is_goal) AS goals
+     FROM v
+     GROUP BY 1, 2
+     HAVING (COUNT(*) >= 10  AND COUNT(*) FILTER (WHERE is_goal) = COUNT(*))
+         OR (COUNT(*) >= 200 AND COUNT(*) FILTER (WHERE is_goal) = 0)
+     ORDER BY 1, 3 DESC;
      """),
 ]
 
