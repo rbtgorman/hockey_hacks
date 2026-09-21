@@ -32,18 +32,6 @@ v2.3 is the production model. It matches the baseline AUC but achieves the tight
 *   **Environment drift vs. model error:** All versions under-predict the test season by ~8%. The training-season goal rate was 10.25%; the test season was 10.83%. Three differently-built models missing by the exact same margin indicates environment drift. 
 *   **Flat rescaling fails:** Rescaling predictions by 1.082 to close the mean miss widens the max gap (0.0178 → 0.0206) because the top deciles are already calibrated. Fixing this requires a monotone calibration map, not a constant multiplier.
 
-## Usage
-
-```bash
-pip install -r requirements.txt
-cp .env.example .env          # fill in Postgres credentials
-
-python -m ingest.run_stage_a  # ingest (cached JSON in raw_data/ is reused)
-python -m features.build_priors_expanding
-python -m model.train_v2_3
-```
-*Metrics, reliability tables, and calibration plots are written to `results/` and tracked in git. Model binaries are excluded.*
-
 ## Roadmap
 *   Goalie priors using the expanding-window design.
 *   Rolling in-season recalibration layer.
