@@ -52,19 +52,6 @@ v2.3 is the champion not because it won on AUC — it matched the baseline to wi
 
 That rules out the obvious fix. Rescaling every prediction by 1.082 to close the mean makes the max gap *worse*, 0.0178 → 0.0206, because the top deciles are already calibrated. The correction has to be a monotone calibration map, not a constant.
 
-## Running it
-
-```bash
-pip install -r requirements.txt
-cp .env.example .env          # fill in Postgres credentials
-
-python -m ingest.run_stage_a  # ingest (cached JSON in raw_data/ is reused)
-python -m features.build_priors_expanding
-python -m model.train_v2_3
-```
-
-Metrics, reliability tables, and calibration plots are written to `results/` and tracked in git. Model binaries are not.
-
 ## Not built yet
 
 Goalie priors on the same expanding-window design, a rolling in-season recalibration layer, and the Monte Carlo game simulator those feed into.
