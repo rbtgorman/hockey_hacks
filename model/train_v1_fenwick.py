@@ -12,25 +12,28 @@ reproduces the shots-on-goal leaderboard.
            instead of shot_features
 
 That table adds missed shots, drops shootout attempts, removes two event
-types logged in only part of the window, and merges shot-on-goal and
-missed-shot in last_event_type. The builder's docstring has the evidence.
+types logged in only part of the window, merges shot-on-goal and
+missed-shot in last_event_type, merges wrist and snap (relabelled in
+2024-25), and folds the goal-only missing shot type into that category.
+The builder's docstring has the evidence.
 
 WHAT TO LOOK FOR
 ----------------
   - Test O/E near 1.00. The shots-on-goal v2.3 ran at 1.070 on 2024-25,
     because the NHL started recording goalie-touched wide pucks as misses.
-  - Calibration slope below 1. v1's settings overfit (v2.3's log shows
-    train AUC 0.859 against val 0.778); on the shots-on-goal test, that
-    over-confidence was hiding behind the drift in the top decile.
+  - Calibration slope. The first Fenwick run (before the shot-type merge)
+    gave 1.006 on val but 0.960 on test, with the top test decile
+    over-predicted by about 6%. That is a test-season problem, not generic
+    over-confidence.
   - AUC and log loss are not comparable with the shots-on-goal leaderboard.
-  - O/E by segment (net, strength, shot type, distance) for val and test,
-    printed and saved as results/v1-fenwick/segments.csv. A miss that only
-    shows up in test, in one segment, points at a 2024-25 labelling change
-    rather than at the model.
+  - O/E by segment (net, strength, shot type, distance, angle) for val and
+    test, printed and saved as results/v1-fenwick/segments.csv. A miss in
+    both val and test points at the 2023-24 recording change; a miss only
+    in test points at something that changed in 2024-25.
 
-Usage:
-    python3 -m model.train_v1_fenwick
-    python3 -m model.train_v1_fenwick --dry-run    # train and print, write nothing
+Usage (repo root, with the project venv's python):
+    .venv/bin/python3 -m model.train_v1_fenwick
+    .venv/bin/python3 -m model.train_v1_fenwick --dry-run    # train and print, write nothing
 """
 from __future__ import annotations
 
@@ -118,6 +121,14 @@ def _distance_band(d: pd.Series) -> pd.Series:
     return bands.astype(str)  # a missing distance becomes 'nan'
 
 
+def _angle_band(a: pd.Series) -> pd.Series:
+    """Shot angle bands. The parser's angle is 0 straight on, 90 from the goal
+    line; shots from behind the line land at about 90."""
+    bands = pd.cut(a, [-np.inf, 15, 30, 45, 60, np.inf], right=False,
+                   labels=["0-15 deg", "15-30 deg", "30-45 deg", "45-60 deg", "60+ deg"])
+    return bands.astype(str)
+
+
 SEGMENTS = {
     "net": lambda d: pd.Series(
         np.where(d["empty_net"] == 1, "empty net", "goalie in net"), index=d.index),
@@ -125,6 +136,7 @@ SEGMENTS = {
                            .map(STRENGTH_BUCKET).fillna("other")),
     "shot_type": lambda d: d["shot_type"].astype(str),
     "distance": lambda d: _distance_band(d["distance_ft"]),
+    "angle": lambda d: _angle_band(d["angle_deg"]),
 }
 
 
@@ -213,6 +225,9 @@ def main() -> None:
     print(gain.to_string(index=False))
 
     print("\n" + "=" * 60)
+    print("Same model on this table before the shot-type merge (2026-09-16):")
+    print("  val   AUC 0.7739  O/E 1.019  slope 1.006  max gap 0.0075")
+    print("  test  AUC 0.7677  O/E 1.014  slope 0.960  max gap 0.0138")
     print("Shots-on-goal reference (different population, not comparable):")
     print("  v1    test AUC 0.7705  max gap 0.0244")
     print("  v2.3  test AUC 0.7707  max gap 0.0167  O/E 1.070")
