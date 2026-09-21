@@ -1,8 +1,8 @@
 {
   "version": "v1-fenwick",
   "description": "v1 features and hyperparameters retrained on unblocked attempts (shot_features_fenwick). Removes the 2023-24 on-goal relabel from the target population.",
-  "generated_at_utc": "2026-09-16T19:53:11+00:00",
-  "git_commit": "aeb82df",
+  "generated_at_utc": "2026-09-21T16:18:11+00:00",
+  "git_commit": "2ee3bdd",
   "git_dirty": true,
   "data": {
     "population": "fenwick",
@@ -16,55 +16,55 @@
   },
   "splits": {
     "train": {
-      "auc": 0.8286359438142086,
-      "pr_auc": 0.3382177963198729,
-      "log_loss": 0.20747076587189744,
-      "brier": 0.057524047818409314,
+      "auc": 0.8158969446476732,
+      "pr_auc": 0.3146767918655304,
+      "log_loss": 0.21168967260501392,
+      "brier": 0.058433049754824495,
       "n": 122066,
       "goal_rate": 0.07210033916078187,
-      "mean_pred": 0.07211879099594647,
+      "mean_pred": 0.07213543521378951,
       "observed_rate": 0.07210033916078187,
-      "o_e": 0.9997441466376547,
-      "citl": 1.8451835164592922e-05,
-      "cal_intercept": 0.8987120808048149,
-      "cal_slope": 1.430474334781679
+      "o_e": 0.9995134700039776,
+      "citl": 3.5096053007638295e-05,
+      "cal_intercept": 0.7997591855942353,
+      "cal_slope": 1.3775007001588413
     },
     "val": {
-      "auc": 0.7739280339751675,
-      "pr_auc": 0.24376257389945843,
-      "log_loss": 0.21849846512771443,
-      "brier": 0.05922634079631273,
+      "auc": 0.7712520856364528,
+      "pr_auc": 0.24097832116850376,
+      "log_loss": 0.21915584235460536,
+      "brier": 0.059338505706345586,
       "n": 122529,
       "goal_rate": 0.07010585249206311,
-      "mean_pred": 0.068796428217082,
+      "mean_pred": 0.06905292784603857,
       "observed_rate": 0.07010585249206311,
-      "o_e": 1.0190333177014557,
-      "citl": -0.0013094242749811108,
-      "cal_intercept": 0.03564347242825225,
-      "cal_slope": 1.0060551552748322
+      "o_e": 1.0152480811294802,
+      "citl": -0.0010529246460245362,
+      "cal_intercept": 0.08038576810273687,
+      "cal_slope": 1.0282555271873575
     },
     "test": {
-      "auc": 0.7677488619249322,
-      "pr_auc": 0.2464416721026486,
-      "log_loss": 0.22043028841393453,
-      "brier": 0.059572818634477574,
+      "auc": 0.7661460266517871,
+      "pr_auc": 0.24380280696840012,
+      "log_loss": 0.22079591976750124,
+      "brier": 0.05964911269932565,
       "n": 119479,
       "goal_rate": 0.0705981804333816,
-      "mean_pred": 0.06965822969741021,
+      "mean_pred": 0.06848293197165806,
       "observed_rate": 0.0705981804333816,
-      "o_e": 1.0134937499855288,
-      "citl": -0.0009399507359713899,
-      "cal_intercept": -0.07259159365668633,
-      "cal_slope": 0.9595944135499807
+      "o_e": 1.0308872357071241,
+      "citl": -0.0021152484617235484,
+      "cal_intercept": 0.0056520600654240815,
+      "cal_slope": 0.9863679669034099
     }
   },
   "calibration": {
     "n_bins": 10,
-    "max_abs_gap": 0.013813845078184034,
+    "max_abs_gap": 0.01295877482501806,
     "binning": "equal-count (qcut) on predicted probability"
   },
   "hyperparameters": {
-    "best_iteration": 186,
+    "best_iteration": 146,
     "settings": "identical to v1"
   },
   "features": [

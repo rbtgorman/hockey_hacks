@@ -1,8 +1,181 @@
-Traceback (most recent call last):
-  File "/usr/lib/python3.10/runpy.py", line 196, in _run_module_as_main
-    return _run_code(code, main_globals, None,
-  File "/usr/lib/python3.10/runpy.py", line 86, in _run_code
-    exec(code, run_globals)
-  File "/home/bobert/my-projects/hockey-hacks/model/train_v1_fenwick.py", line 36, in <module>
-    import joblib
-ModuleNotFoundError: No module named 'joblib'
+/home/bobert/my-projects/hockey-hacks/model/train_v1_fenwick.py:75: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df = pd.read_sql(query, conn)
+============================================================
+v1-fenwick: v1 features + hyperparameters on shot_features_fenwick
+============================================================
+Loaded 364,074 unblocked attempts from shot_features_fenwick, 2022-10-07 to 2025-06-17
+Seasons present: [20222023, 20232024, 20242025]
+
+Event mix by season (share of rows):
+event_type   goal  missed-shot  shot-on-goal
+season                                      
+20222023    0.072        0.283         0.645
+20232024    0.070        0.311         0.619
+20242025    0.071        0.339         0.591
+Leakage check: 4,181/4,198 games (99.6%) have varying score_diff across shots — expect >80% for non-leaky in-game state.
+Train: season 20222023, 122,066 shots, 7.21% goals
+Val:   season 20232024, 122,529 shots, 7.01% goals
+Test:  season 20242025, 119,479 shots, 7.06% goals
+
+Training LightGBM (early stopping on VALIDATION set, test untouched)...
+[50]	val's auc: 0.768897
+[100]	val's auc: 0.770613
+[150]	val's auc: 0.771185
+Best iteration: 146
+
+--- Train (sanity only) metrics ---
+  ROC-AUC:   0.8159  (spec target > 0.75)
+  PR-AUC:    0.3147  (baseline = 0.0721)
+  Log-loss:  0.2117
+  Brier:     0.0584
+  Baseline (predict p=mean): Brier 0.0669
+  O/E:       0.9995  (observed 0.0721, predicted 0.0721)
+  Cal slope: 1.3775  (intercept 0.7998)
+
+--- Validation (used for early stop) metrics ---
+  ROC-AUC:   0.7713  (spec target > 0.75)
+  PR-AUC:    0.2410  (baseline = 0.0701)
+  Log-loss:  0.2192
+  Brier:     0.0593
+  Baseline (predict p=mean): Brier 0.0652
+  O/E:       1.0152  (observed 0.0701, predicted 0.0691)
+  Cal slope: 1.0283  (intercept 0.0804)
+
+--- Test (held out, touch once) metrics ---
+  ROC-AUC:   0.7661  (spec target > 0.75)
+  PR-AUC:    0.2438  (baseline = 0.0706)
+  Log-loss:  0.2208
+  Brier:     0.0596
+  Baseline (predict p=mean): Brier 0.0656
+  O/E:       1.0309  (observed 0.0706, predicted 0.0685)
+  Cal slope: 0.9864  (intercept 0.0057)
+
+--- Reliability on VAL ---
+ bin     n  mean_pred  actual_rate  pred_vs_actual_gap
+   0 12253     0.0061       0.0053              0.0008
+   1 12253     0.0125       0.0100              0.0025
+   2 12253     0.0184       0.0180              0.0003
+   3 12253     0.0278       0.0286             -0.0008
+   4 12253     0.0415       0.0418             -0.0003
+   5 12252     0.0562       0.0549              0.0013
+   6 12253     0.0749       0.0765             -0.0016
+   7 12253     0.0973       0.1018             -0.0045
+   8 12253     0.1288       0.1378             -0.0090
+   9 12253     0.2271       0.2264              0.0007
+Max gap (val): 0.0090
+
+--- Reliability on TEST ---
+ bin     n  mean_pred  actual_rate  pred_vs_actual_gap
+   0 11948     0.0060       0.0056              0.0004
+   1 11948     0.0122       0.0114              0.0008
+   2 11948     0.0176       0.0175              0.0001
+   3 11948     0.0262       0.0275             -0.0013
+   4 11948     0.0400       0.0433             -0.0033
+   5 11947     0.0546       0.0593             -0.0047
+   6 11948     0.0736       0.0807             -0.0071
+   7 11948     0.0961       0.1091             -0.0130
+   8 11948     0.1276       0.1278             -0.0002
+   9 11948     0.2310       0.2238              0.0072
+Max gap (test): 0.0130
+
+--- O/E by segment (val = 2023-24, test = 2024-25; 1.000 is right on average) ---
+
+  by net
+                val_n  val_oe  test_n  test_oe
+segment                                       
+goalie in net  121686   1.013  118477    1.031
+empty net         843   1.052    1002    1.029
+
+  by strength
+         val_n  val_oe  test_n  test_oe
+segment                                
+5v5      98008   1.029   97271    1.034
+PP       17938   0.972   15683    1.027
+other     3588   1.005    3940    1.000
+PK        2995   1.039    2585    1.093
+
+  by shot_type
+              val_n  val_oe  test_n  test_oe
+segment                                     
+wrist-snap    84108   1.034   82556    1.069
+slap          14393   1.076   13955    1.027
+tip-in        10789   0.965   10622    0.901
+backhand       8760   1.017    8460    1.033
+deflected      2479   0.806    2039    0.917
+wrap-around     990   0.767     838    0.679
+poke            456   0.707     481    0.957
+bat             463   0.854     443    0.681
+between-legs     82   0.978      75    0.254
+cradle            9   3.818      10    0.000
+
+  by distance
+          val_n  val_oe  test_n  test_oe
+segment                                 
+20-40 ft  40237   1.019   39571    1.077
+<20 ft    36841   1.018   34355    1.014
+40-60 ft  30408   0.981   29542    1.009
+60+ ft    15043   1.021   16011    0.942
+
+  by angle
+           val_n  val_oe  test_n  test_oe
+segment                                  
+15-30 deg  30149   1.038   29669    1.086
+30-45 deg  29592   0.971   29190    0.993
+0-15 deg   27991   1.100   27410    1.083
+45-60 deg  19418   0.946   18781    0.952
+60+ deg    15379   0.929   14429    0.951
+
+--- LightGBM gain importance ---
+                    feature         gain
+                distance_ft 77030.566493
+                  empty_net 28125.930329
+                  angle_deg 18001.417082
+   seconds_since_last_event 12157.483456
+distance_from_last_event_ft 11311.108025
+             strength_state 10988.362731
+seconds_remaining_in_period  8817.688410
+                  shot_type  8355.954124
+                     y_norm  6783.179083
+                     x_norm  4464.481682
+            last_event_type  3056.970013
+                 score_diff  2084.807689
+                 period_num  1340.061568
+                 is_rebound   784.854703
+                    is_rush    88.011459
+
+============================================================
+Same model on this table before the shot-type merge (2026-09-16):
+  val   AUC 0.7739  O/E 1.019  slope 1.006  max gap 0.0075
+  test  AUC 0.7677  O/E 1.014  slope 0.960  max gap 0.0138
+Shots-on-goal reference (different population, not comparable):
+  v1    test AUC 0.7705  max gap 0.0244
+  v2.3  test AUC 0.7707  max gap 0.0167  O/E 1.070
+============================================================
+
+Model and meta saved to /home/bobert/my-projects/hockey-hacks/model/artifacts/xg_v1_fenwick*
+
+Results written to /home/bobert/my-projects/hockey-hacks/results/v1-fenwick/
+  metrics.json  reliability.csv  calibration.png  feature_importance.csv
+Leaderboard written to /home/bobert/my-projects/hockey-hacks/results/leaderboard.md
+Segment table saved to /home/bobert/my-projects/hockey-hacks/results/v1-fenwick/segments.csv
+
+--- Permutation importance on TEST (what the model relies on) ---
+                    feature  auc_drop_mean  auc_drop_std
+                distance_ft         0.1815        0.0034
+                  angle_deg         0.0274        0.0008
+                  empty_net         0.0202        0.0004
+                  shot_type         0.0186        0.0001
+             strength_state         0.0101        0.0004
+                     y_norm         0.0095        0.0013
+   seconds_since_last_event         0.0029        0.0001
+                     x_norm         0.0020        0.0002
+                    is_rush         0.0001        0.0000
+                 period_num         0.0001        0.0001
+                 score_diff         0.0001        0.0000
+seconds_remaining_in_period         0.0000        0.0002
+distance_from_last_event_ft        -0.0002        0.0002
+                 is_rebound        -0.0002        0.0001
+            last_event_type        -0.0007        0.0002
+Saved to /home/bobert/my-projects/hockey-hacks/results/v1-fenwick/perm_importance.csv
+
+Done.
