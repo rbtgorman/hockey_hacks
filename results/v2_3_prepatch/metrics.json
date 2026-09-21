@@ -1,5 +1,5 @@
 {
-  "version": "v2.3",
+  "version": "v2.3-prepatch",
   "description": "v1 architecture plus an expanding-window shooter prior (trailing 2-year window, resolved per player per game-date). Fixes the leakage and staleness introduced by the season-pooled priors in v2 and v2.2.",
   "generated_at_utc": "2026-09-14T16:03:19+00:00",
   "git_commit": "463bf4f",

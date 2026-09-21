@@ -1,9 +1,9 @@
 {
   "version": "v2.3",
   "description": "v1 architecture plus an expanding-window shooter prior (trailing 2-year window, resolved per player per game-date). Fixes the leakage and staleness introduced by the season-pooled priors in v2 and v2.2.",
-  "generated_at_utc": "2026-09-14T16:03:19+00:00",
-  "git_commit": "463bf4f",
-  "git_dirty": false,
+  "generated_at_utc": "2026-09-21T16:21:52+00:00",
+  "git_commit": "ae901b0",
+  "git_dirty": true,
   "data": {
     "n_shots": 252450,
     "date_min": "2022-10-07",
@@ -21,31 +21,31 @@
     "train": {
       "n": 88086,
       "goal_rate": 0.10247939513657107,
-      "auc": 0.8525734671364491,
-      "pr_auc": 0.47554475424158255,
-      "log_loss": 0.24960739539288498,
-      "brier": 0.07338483004838263
+      "auc": 0.8591290136639669,
+      "pr_auc": 0.48932991074060295,
+      "log_loss": 0.24705818108564648,
+      "brier": 0.07269429003776419
     },
     "val": {
       "n": 84932,
       "goal_rate": 0.10328262610088071,
-      "auc": 0.778317000748658,
-      "pr_auc": 0.3372658656680647,
-      "log_loss": 0.27752474160411617,
-      "brier": 0.08032227708339236
+      "auc": 0.7781456623347013,
+      "pr_auc": 0.3361084435693186,
+      "log_loss": 0.2776183142437769,
+      "brier": 0.08035499557361205
     },
     "test": {
       "n": 79432,
       "goal_rate": 0.108319065364085,
-      "auc": 0.7705750301862092,
-      "pr_auc": 0.3467558057136021,
-      "log_loss": 0.28773216232185805,
-      "brier": 0.08353058693735863
+      "auc": 0.7707358610668514,
+      "pr_auc": 0.34487527842544,
+      "log_loss": 0.287746506945281,
+      "brier": 0.08358422088203034
     }
   },
   "calibration": {
     "n_bins": 10,
-    "max_abs_gap": 0.017833495460280763,
+    "max_abs_gap": 0.016691699502036667,
     "binning": "equal-count (qcut) on predicted probability"
   },
   "hyperparameters": {
@@ -61,7 +61,7 @@
     "importance_type": "gain",
     "random_state": 42,
     "verbose": -1,
-    "best_iteration": 238
+    "best_iteration": 261
   },
   "features": [
     "distance_ft",
