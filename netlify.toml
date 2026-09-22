@@ -1,0 +1,12 @@
+# Static dashboard, no build step. Netlify serves everything in site/.
+[build]
+  publish = "site"
+
+# Long cache for the immutable stuff, none for the page itself, so a push
+# shows up immediately rather than after a cache expiry.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

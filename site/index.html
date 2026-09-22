@@ -1,0 +1,600 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hockey Hacks — NHL expected goals</title>
+<meta name="description" content="A personal NHL expected-goals model: what it found about how the league records shots, how it scores, and what is still open.">
+<meta name="author" content="Robert Gorman">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Hockey Hacks — NHL expected goals">
+<meta property="og:description" content="A personal NHL expected-goals model: what it found about how the league records shots, how it scores, and what is still open.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%232a78d6'/><rect x='22' y='54' width='12' height='26' fill='white'/><rect x='44' y='38' width='12' height='42' fill='white'/><rect x='66' y='22' width='12' height='58' fill='white'/></svg>">
+<style>
+  /* baseline the artifact host supplies; needed for a standalone page */
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; }
+  img { max-width: 100%; }
+  [hidden] { display: none !important; }
+</style>
+<style>
+  :root {
+    color-scheme: light;
+    --plane:       #f7f8f7;
+    --surface:     #fdfdfc;
+    --ink:         #0b0e0d;
+    --ink-2:       #4e5453;
+    --muted:       #8a908e;
+    --rule:        #e2e4e0;
+    --rule-soft:   #eceeea;
+    --axis:        #c3c7c3;
+    --s1:          #2a78d6;
+    --s2:          #eb6834;
+    --s3:          #1baf7a;
+    --good:        #0ca30c;
+    --warn:        #b4790a;
+    --idle:        #8a908e;
+    --chip:        rgba(11,14,13,0.05);
+    --ring:        rgba(11,14,13,0.10);
+    --shadow:      0 1px 2px rgba(11,14,13,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane:     #0d0f0e;
+      --surface:   #171a19;
+      --ink:       #f4f6f4;
+      --ink-2:     #c1c6c3;
+      --muted:     #8a908e;
+      --rule:      #2b2f2d;
+      --rule-soft: #242826;
+      --axis:      #3a3f3d;
+      --s1:        #3987e5;
+      --s2:        #d95926;
+      --s3:        #199e70;
+      --good:      #0ca30c;
+      --warn:      #fab219;
+      --idle:      #8a908e;
+      --chip:      rgba(255,255,255,0.06);
+      --ring:      rgba(255,255,255,0.10);
+      --shadow:    none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane:     #0d0f0e;
+    --surface:   #171a19;
+    --ink:       #f4f6f4;
+    --ink-2:     #c1c6c3;
+    --muted:     #8a908e;
+    --rule:      #2b2f2d;
+    --rule-soft: #242826;
+    --axis:      #3a3f3d;
+    --s1:        #3987e5;
+    --s2:        #d95926;
+    --s3:        #199e70;
+    --good:      #0ca30c;
+    --warn:      #fab219;
+    --idle:      #8a908e;
+    --chip:      rgba(255,255,255,0.06);
+    --ring:      rgba(255,255,255,0.10);
+    --shadow:    none;
+  }
+
+  body {
+    background: var(--plane);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.015em; }
+  h1 { font-size: clamp(26px, 4.6vw, 38px); font-weight: 650; line-height: 1.12; }
+  h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+  h3 { font-size: 16px; font-weight: 600; }
+  p { margin: 0; }
+  a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--axis); }
+  a:hover { text-decoration-color: currentColor; }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; border-radius: 3px; }
+  code { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace; font-size: 0.86em; }
+
+  header.masthead { display: flex; flex-direction: column; gap: 14px; padding-bottom: 22px; border-bottom: 1px solid var(--rule); }
+  .lede { font-size: clamp(15px, 2.1vw, 17px); color: var(--ink-2); max-width: 62ch; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 13px; color: var(--muted); }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { background: var(--chip); border-radius: 4px; padding: 3px 8px; font-size: 12px; color: var(--ink-2); letter-spacing: 0.01em; }
+
+  section { margin-top: 40px; display: flex; flex-direction: column; gap: 16px; }
+  .section-head { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; justify-content: space-between; }
+  .section-head .hint { font-size: 12.5px; color: var(--muted); }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  .stat { background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 3px; }
+  .stat .v { font-size: 27px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
+  .stat .v .arrow { color: var(--muted); font-weight: 400; margin: 0 4px; }
+  .stat .v .now { color: var(--s1); }
+  .stat .k { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .stat .n { font-size: 12.5px; color: var(--ink-2); }
+
+  .prose { max-width: 68ch; color: var(--ink-2); font-size: 15.5px; }
+  .prose strong { color: var(--ink); font-weight: 600; }
+  .callout { border-left: 2px solid var(--warn); padding: 2px 0 2px 14px; color: var(--ink-2); font-size: 14px; max-width: 68ch; }
+
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 16px 12px; box-shadow: var(--shadow); position: relative; display: flex; flex-direction: column; gap: 10px; }
+  .card .cap { font-size: 12.5px; color: var(--muted); }
+  .card .cap b { color: var(--ink-2); font-weight: 500; }
+  figure { margin: 0; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
+
+  .tip { position: absolute; pointer-events: none; opacity: 0; transition: opacity .12s; background: var(--surface); border: 1px solid var(--ring); border-radius: 6px; padding: 6px 9px; font-size: 12.5px; color: var(--ink); box-shadow: 0 4px 14px rgba(0,0,0,0.12); white-space: nowrap; z-index: 5; }
+
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  caption { text-align: left; font-size: 13px; font-weight: 600; padding-bottom: 8px; color: var(--ink); }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--rule-soft); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--rule); }
+  tbody tr.current td { font-weight: 600; }
+  tbody tr.current td:first-child { box-shadow: inset 2px 0 0 var(--s1); }
+
+  .stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .stage { border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 2px; }
+  .stage .nm { font-size: 14px; font-weight: 600; }
+  .stage .st { font-size: 12px; color: var(--ink-2); }
+
+  .steps { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--surface); }
+  .step { display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; padding: 13px 16px; align-items: start; border-top: 1px solid var(--rule-soft); }
+  .step:first-child { border-top: 0; }
+  .step .idx { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 2px; }
+  .step .ttl { font-size: 14.5px; font-weight: 600; }
+  .step .nt { font-size: 13px; color: var(--ink-2); }
+  .status { font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase; font-weight: 600; padding: 3px 8px; border-radius: 999px; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; }
+  .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+  .status.done { color: var(--good); background: color-mix(in srgb, var(--good) 12%, transparent); }
+  .status.active { color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .status.next { color: var(--s1); background: color-mix(in srgb, var(--s1) 12%, transparent); }
+  .status.idle { color: var(--idle); background: var(--chip); }
+
+  .issues { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .issue { border: 1px solid var(--rule); border-left: 2px solid var(--axis); border-radius: 6px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 4px; }
+  .issue .h { font-size: 14px; font-weight: 600; }
+  .issue .b { font-size: 13px; color: var(--ink-2); }
+
+  footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
+  footer ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <h1>Hockey Hacks</h1>
+      <p class="lede">A personal NHL expected-goals model: it estimates every shot attempt's chance of becoming a goal, and it caught a change in how the league records shots.</p>
+    </div>
+    <div class="chips" id="stack"></div>
+    <div class="meta-row">
+      <span><a href="https://github.com/rbtgorman/hockey_hacks">github.com/rbtgorman/hockey_hacks</a></span>
+      <span><a href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">Full findings</a></span>
+      <span id="meta-updated"></span>
+    </div>
+  </header>
+
+  <section>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <section>
+    <h2>What happened</h2>
+    <p class="prose" id="story"></p>
+    <p class="callout" id="caveat"></p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Evidence</h2>
+      <span class="hint">O/E is observed ÷ predicted goals. 1.00 is right on average.</span>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div>
+          <h3>Every shots-on-goal version missed 2024-25 the same way</h3>
+          <p class="cap">Test-season O/E by model version. Distance from the 1.00 line is the size of the miss.</p>
+        </div>
+        <figure id="fig-oe"></figure>
+        <p class="cap">Sources: <b>results/*/metrics.json</b> and <b>results/leaderboard.md</b>; O/E computed from each version's committed <b>reliability.csv</b>.</p>
+      </div>
+      <div class="card">
+        <div>
+          <h3>The shot count moved, the attempt count didn't</h3>
+          <p class="cap">Three season series from one query, indexed to 2022-23 = 100.</p>
+        </div>
+        <figure id="fig-idx"></figure>
+        <p class="cap">Raw values: shots on goal per team-game 31.08 / 30.12 / 28.08; goals per shot on goal .0958 / .0966 / .1001; goals per unblocked attempt inside 20 ft .1232 / .1240 / .1222. Source: <b>db/checks/c4_shot_regime_by_season.sql</b> — the query is committed, its output isn't yet.</p>
+      </div>
+      <div class="card">
+        <div>
+          <h3>Calibration of the current model</h3>
+          <p class="cap">Deciles of predicted goal probability against the observed rate. On the line is perfect.</p>
+        </div>
+        <figure id="fig-cal"></figure>
+        <p class="cap">v1-fenwick. Max gap 0.0090 on validation, 0.0130 on test. Source: <b>results/v1-fenwick/reliability.csv</b>, <b>results/v1_fenwick_train.log</b>.</p>
+      </div>
+      <div class="card">
+        <div>
+          <h3>Where the remaining miss sits</h3>
+          <p class="cap">O/E by shot angle. Central shots are under-predicted in both seasons; wide-angle shots are over-predicted.</p>
+        </div>
+        <figure id="fig-ang"></figure>
+        <p class="cap">A pattern in both seasons points at the 2023-24 recording change rather than at 2024-25. Untested. Source: <b>results/v1-fenwick/segments.csv</b>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Results</h2>
+      <span class="hint">Held-out 2024-25 test season</span>
+    </div>
+    <div class="grid-2">
+      <div class="card"><div class="tablewrap"><table id="tbl-sog"></table></div></div>
+      <div class="card"><div class="tablewrap"><table id="tbl-fen"></table></div></div>
+    </div>
+    <p class="cap" style="color:var(--muted);font-size:12.5px">AUC, log loss and Brier don't compare across the two tables, because the sets of shots differ. O/E does, because both models predict the same season's goals.</p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Progress</h2>
+      <span class="hint" id="progress-hint"></span>
+    </div>
+    <div class="stages" id="stages"></div>
+    <div class="steps" id="steps"></div>
+  </section>
+
+  <section>
+    <h2>Open issues</h2>
+    <div class="issues" id="issues"></div>
+  </section>
+
+  <footer>
+    <div>Every figure on this page comes from a file committed in the repo, a source page listed below, or a calculation from a committed file that is labelled where it appears.</div>
+    <ul id="sources"></ul>
+    <div id="verified"></div>
+  </footer>
+</div>
+
+<script>
+/* ---------------------------------------------------------------
+   All content, numbers and statuses live here. Editing this object
+   updates the page; nothing below needs to change.
+   --------------------------------------------------------------- */
+const DATA = {
+  updated: "September 22, 2026",
+  commit: "1b4a128",
+  stack: ["Python", "LightGBM", "PostgreSQL 14", "NHL public API", "SQL", "GitHub Actions CI"],
+
+  stats: [
+    { v: "1.071|1.031", k: "2024-25 O/E", n: "Observed ÷ predicted goals, shots on goal → unblocked attempts" },
+    { v: "4,198", k: "Games ingested", n: "2022-23 to 2024-25, regular season and playoffs" },
+    { v: "364,074", k: "Unblocked attempts", n: "Goals, shots on goal and missed shots in the current table" },
+    { v: "0.7661", k: "Test AUC", n: "Current model; the target is 0.78, so this isn't there yet" }
+  ],
+
+  story: "Trained on 2022-23 shots on goal, the model under-predicted the 2024-25 test season by 7% — and so did every other shots-on-goal version. Scoring hadn't risen. Within each distance band under 60 ft, goals per shot on goal rose 6–9% from 2022-23 to 2024-25, while goals per unblocked attempt barely moved. That fits some saves being logged as misses, which David Johnson at Hockey Analysis suggested puck tracking now allows. Retraining on unblocked attempts — goals, saves and misses, the population most public expected-goals models use — cut the 2024-25 miss to 3%.",
+  caveat: "Provisional: a newer 'short' miss label is still in validation and test, and because 2024-25 is the season the problem was found in, 2025-26 is the real test.",
+
+  oe: [
+    { label: "v1", pop: "sog", oe: 1.080 },
+    { label: "v2.2", pop: "sog", oe: 1.077 },
+    { label: "v2.3 pre-fix", pop: "sog", oe: 1.082 },
+    { label: "v2.3", pop: "sog", oe: 1.071 },
+    { label: "v1-fenwick", pop: "fen", oe: 1.031, current: true }
+  ],
+
+  seasons: ["2022-23", "2023-24", "2024-25"],
+  indexed: [
+    { name: "Shots on goal per team-game", raw: [31.08, 30.12, 28.08], color: "s2" },
+    { name: "Goals per shot on goal", raw: [0.0958, 0.0966, 0.1001], color: "s1" },
+    { name: "Goals per unblocked attempt, <20 ft", raw: [0.1232, 0.1240, 0.1222], color: "s3" }
+  ],
+
+  calibration: {
+    val:  [[0.0061,0.0053],[0.0125,0.0100],[0.0184,0.0180],[0.0278,0.0286],[0.0415,0.0418],[0.0562,0.0549],[0.0749,0.0765],[0.0973,0.1018],[0.1288,0.1378],[0.2271,0.2264]],
+    test: [[0.0060,0.0056],[0.0122,0.0114],[0.0176,0.0175],[0.0262,0.0275],[0.0400,0.0433],[0.0546,0.0593],[0.0736,0.0807],[0.0961,0.1091],[0.1277,0.1278],[0.2310,0.2238]]
+  },
+
+  angles: [
+    { band: "0–15°",  val: 1.100, test: 1.083 },
+    { band: "15–30°", val: 1.038, test: 1.086 },
+    { band: "30–45°", val: 0.971, test: 0.993 },
+    { band: "45–60°", val: 0.946, test: 0.952 },
+    { band: "60°+",   val: 0.929, test: 0.951 }
+  ],
+
+  tables: {
+    sog: {
+      caption: "Shots on goal — 252,450 shots, table frozen so v1–v2.3 reproduce",
+      cols: ["Version", "Test AUC", "Max gap", "O/E"],
+      rows: [
+        ["v1", "0.7705", "0.0244", "1.080"],
+        ["v2.2", "0.7666", "0.0188", "1.077"],
+        ["v2.3 before priors fix", "0.7706", "0.0178", "1.082"],
+        ["v2.3", "0.7707", "0.0167", "1.071"]
+      ],
+      current: 3
+    },
+    fen: {
+      caption: "Unblocked attempts — 364,074 attempts, the current table",
+      cols: ["v1-fenwick", "AUC", "Max gap", "O/E"],
+      rows: [
+        ["Validation 2023-24", "0.7713", "0.0090", "1.015"],
+        ["Test 2024-25", "0.7661", "0.0130", "1.031"]
+      ],
+      current: 1
+    }
+  },
+
+  stages: [
+    { nm: "A · Ingest", st: "Done — play-by-play, shifts, boxscores in PostgreSQL", s: "done" },
+    { nm: "B · Player priors", st: "Done — expanding-window shooter priors", s: "done" },
+    { nm: "C · xG model", st: "Current — v1-fenwick on unblocked attempts", s: "active" },
+    { nm: "D · Simulator", st: "Not started", s: "idle" }
+  ],
+
+  steps: [
+    { t: "Housekeeping and evidence", n: "README rewritten and committed; findings written. Still open: the stray file, the CI test swap, and committing the query output behind the season figures.", s: "active" },
+    { t: "Remove 'short' misses", n: "Count them by season; if they start in 2023-24, drop them from the table and its previous-event lookups, then re-score.", s: "next" },
+    { t: "Roll the split forward", n: "Ingest 2025-26 and move to train 2023-24, validate 2024-25, test 2025-26 — all after the recording change.", s: "idle" },
+    { t: "Shooter priors on the new table", n: "Cleanup first (power-play mean, penalty-kill threshold, position-specific constants), then v2.3-fenwick.", s: "idle" },
+    { t: "Goalie priors", n: "Builder exists and no model uses it yet. Zone-based, checked against NHL EDGE by location.", s: "idle" },
+    { t: "Location diagnostics", n: "Compare recorded shot locations with EDGE zone counts, and check for rink-level bias in recorded distance.", s: "idle" },
+    { t: "Monte Carlo simulator", n: "Two layers: expected goals per attempt, then the chance an attempt reaches the net.", s: "idle" }
+  ],
+
+  issues: [
+    { h: "'Short' misses", b: "A label the API added in 2023-24 for fanned attempts. They sit in validation and test but not training, and haven't been counted here yet. Removing them should raise O/E." },
+    { h: "2024-25 isn't a clean test", b: "The switch to unblocked attempts and the wrist/snap merge were both chosen while looking at that season." },
+    { h: "The miss isn't uniform", b: "Central shots are under-predicted and wide-angle shots over-predicted in both seasons, which fits a shift in recorded locations." },
+    { h: "Two build checks", b: "Attempts from behind the goal line spike in 2023-24, and tip-in and slap conversion fall every season, where flat is expected." }
+  ],
+
+  sources: [
+    { t: "David Johnson, Hockey Analysis (2025) — missed shots rising league-wide", u: "https://hockeyanalysis.com/2025/03/21/are-changes-in-nhl-shot-data-tracking-hiding-that-teams-are-getting-better-at-defending/" },
+    { t: "HockeyStats.com — expected goals methodology, and the 'short' miss label", u: "https://hockeystats.com/methodology/expected-goals" },
+    { t: "AP via ESPN (April 2026) — the league on shot-total revisions and tracking", u: "https://www.espn.com/nhl/story/_/id/48487239/nhl-goalies-save-percentage-dips-lowest-point-three-decades" },
+    { t: "Hockey-Reference — NHL league averages", u: "https://www.hockey-reference.com/leagues/stats.html" }
+  ],
+  verified: "The Johnson, HockeyStats and AP pages were opened and quoted from directly. League averages come from Hockey-Reference."
+};
+
+/* ---------------------------- helpers ---------------------------- */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const NS = "http://www.w3.org/2000/svg";
+const fmt = (n, d) => n.toFixed(d);
+
+function svg(w, h) {
+  const s = document.createElementNS(NS, "svg");
+  s.setAttribute("viewBox", `0 0 ${w} ${h}`);
+  s.setAttribute("role", "img");
+  return s;
+}
+function el(parent, name, attrs, text) {
+  const n = document.createElementNS(NS, name);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (text != null) n.textContent = text;
+  parent.appendChild(n);
+  return n;
+}
+function label(parent, x, y, text, opts = {}) {
+  return el(parent, "text", {
+    x, y,
+    fill: opts.fill || "var(--muted)",
+    "font-size": opts.size || 12.5,
+    "text-anchor": opts.anchor || "middle",
+    "font-weight": opts.weight || 400,
+    "font-family": "system-ui, -apple-system, 'Segoe UI', sans-serif",
+    "dominant-baseline": opts.baseline || "auto"
+  }, text);
+}
+function tipFor(card) {
+  const t = document.createElement("div");
+  t.className = "tip";
+  card.appendChild(t);
+  return t;
+}
+function bindTip(node, card, tip, html) {
+  const show = (e) => {
+    tip.innerHTML = html;
+    const r = card.getBoundingClientRect();
+    const x = e.clientX - r.left, y = e.clientY - r.top;
+    tip.style.opacity = 1;
+    tip.style.left = Math.min(Math.max(8, x + 12), r.width - tip.offsetWidth - 8) + "px";
+    tip.style.top = Math.max(4, y - tip.offsetHeight - 10) + "px";
+  };
+  node.addEventListener("mousemove", show);
+  node.addEventListener("mouseenter", show);
+  node.addEventListener("mouseleave", () => { tip.style.opacity = 0; });
+}
+function legend(container, items) {
+  const d = document.createElement("div");
+  d.className = "legend";
+  d.innerHTML = items.map((i) => `<span><i class="swatch" style="background:${i.c}"></i>${esc(i.t)}</span>`).join("");
+  container.appendChild(d);
+}
+
+/* --------------------------- header bits -------------------------- */
+$("stack").innerHTML = DATA.stack.map((s) => `<span class="chip">${esc(s)}</span>`).join("");
+$("meta-updated").textContent = `Updated ${DATA.updated} · repo at ${DATA.commit}`;
+$("story").textContent = DATA.story;
+$("caveat").textContent = DATA.caveat;
+$("progress-hint").textContent = `Status as of ${DATA.updated}`;
+$("stats").innerHTML = DATA.stats.map((s) => {
+  const v = s.v.includes("|")
+    ? `${s.v.split("|")[0]}<span class="arrow">→</span><span class="now">${s.v.split("|")[1]}</span>`
+    : esc(s.v);
+  return `<div class="stat"><div class="k">${esc(s.k)}</div><div class="v">${v}</div><div class="n">${esc(s.n)}</div></div>`;
+}).join("");
+
+/* ---------------------- chart 1 — O/E by version ------------------- */
+(function () {
+  const card = $("fig-oe").closest(".card"), tip = tipFor(card);
+  const W = 520, H = 250, L = 96, R = 22, T = 18, B = 46;
+  const lo = 0.99, hi = 1.10;
+  const x = (v) => L + ((v - lo) / (hi - lo)) * (W - L - R);
+  const rows = DATA.oe;
+  const step = (H - T - B) / rows.length;
+  const s = svg(W, H);
+  s.setAttribute("aria-label", "Observed over expected goals by model version");
+
+  for (let t = 1.00; t <= 1.101; t += 0.02) {
+    el(s, "line", { x1: x(t), x2: x(t), y1: T, y2: H - B, stroke: "var(--rule-soft)", "stroke-width": 1 });
+    label(s, x(t), H - B + 16, fmt(t, 2));
+  }
+  el(s, "line", { x1: x(1), x2: x(1), y1: T - 6, y2: H - B, stroke: "var(--axis)", "stroke-width": 1.5 });
+  label(s, x(1) + 6, T - 8, "1.00 — exactly right", { anchor: "start", size: 12 });
+
+  rows.forEach((r, i) => {
+    const cy = T + step * i + step / 2;
+    const color = r.current ? "var(--s1)" : "var(--muted)";
+    el(s, "line", { x1: x(1), x2: x(r.oe), y1: cy, y2: cy, stroke: color, "stroke-width": 2, "stroke-linecap": "round", opacity: r.current ? 1 : 0.55 });
+    const dot = el(s, "circle", { cx: x(r.oe), cy, r: r.current ? 6 : 5, fill: color, stroke: "var(--surface)", "stroke-width": 2 });
+    label(s, L - 12, cy + 4, r.label, { anchor: "end", fill: r.current ? "var(--ink)" : "var(--ink-2)", weight: r.current ? 600 : 400, size: 12.5 });
+    label(s, x(r.oe) + 12, cy + 4, fmt(r.oe, 3), { anchor: "start", fill: "var(--ink-2)", size: 12.5 });
+    bindTip(dot, card, tip, `<b>${esc(r.label)}</b> · ${r.pop === "sog" ? "shots on goal" : "unblocked attempts"}<br>${((r.oe - 1) * 100).toFixed(1)}% more goals than predicted`);
+  });
+  label(s, L + (W - L - R) / 2, H - 4, "Observed ÷ predicted goals, 2024-25", { size: 12.5 });
+  $("fig-oe").appendChild(s);
+  legend($("fig-oe"), [{ c: "var(--muted)", t: "Shots on goal (frozen)" }, { c: "var(--s1)", t: "Unblocked attempts (current)" }]);
+})();
+
+/* ------------------- chart 2 — indexed season series --------------- */
+(function () {
+  const card = $("fig-idx").closest(".card"), tip = tipFor(card);
+  const W = 520, H = 260, L = 44, R = 116, T = 22, B = 40;
+  const idx = DATA.indexed.map((s) => ({ ...s, v: s.raw.map((r) => (r / s.raw[0]) * 100) }));
+  const lo = 88, hi = 108;
+  const x = (i) => L + i * ((W - L - R) / (DATA.seasons.length - 1));
+  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const s = svg(W, H);
+  s.setAttribute("aria-label", "Season series indexed to 2022-23 equals 100");
+
+  for (let v = 90; v <= 105.1; v += 5) {
+    el(s, "line", { x1: L, x2: W - R, y1: y(v), y2: y(v), stroke: "var(--rule-soft)", "stroke-width": 1 });
+    label(s, L - 8, y(v) + 4, String(v), { anchor: "end" });
+  }
+  el(s, "line", { x1: L, x2: W - R, y1: y(100), y2: y(100), stroke: "var(--axis)", "stroke-width": 1.5 });
+  DATA.seasons.forEach((ss, i) => label(s, x(i), H - B + 20, ss, { size: 12 }));
+
+  idx.forEach((series) => {
+    const c = `var(--${series.color})`;
+    const d = series.v.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" ");
+    el(s, "path", { d, fill: "none", stroke: c, "stroke-width": 2, "stroke-linejoin": "round" });
+    series.v.forEach((v, i) => {
+      const dot = el(s, "circle", { cx: x(i), cy: y(v), r: 4.5, fill: c, stroke: "var(--surface)", "stroke-width": 2 });
+      const raw = series.raw[i];
+      bindTip(dot, card, tip, `<b>${esc(series.name)}</b><br>${DATA.seasons[i]} · index ${v.toFixed(1)} · raw ${raw < 1 ? raw.toFixed(4) : raw.toFixed(2)}`);
+    });
+    const last = series.v.length - 1;
+    const words = series.name.split(" ");
+    const line1 = words.slice(0, 3).join(" "), line2 = words.slice(3).join(" ");
+    label(s, x(last) + 10, y(series.v[last]) + (line2 ? 0 : 4), line1, { anchor: "start", fill: c, size: 12, weight: 600 });
+    if (line2) label(s, x(last) + 10, y(series.v[last]) + 14, line2, { anchor: "start", fill: c, size: 12, weight: 600 });
+  });
+  label(s, L - 32, T - 8, "Index", { anchor: "start", size: 12 });
+  $("fig-idx").appendChild(s);
+})();
+
+/* --------------------- chart 3 — calibration ---------------------- */
+(function () {
+  const card = $("fig-cal").closest(".card"), tip = tipFor(card);
+  const W = 520, H = 300, L = 52, R = 18, T = 16, B = 46;
+  const max = 0.24;
+  const x = (v) => L + (v / max) * (W - L - R);
+  const y = (v) => T + (1 - v / max) * (H - T - B);
+  const s = svg(W, H);
+  s.setAttribute("aria-label", "Calibration curve: predicted against observed goal rate");
+
+  [0, 0.05, 0.10, 0.15, 0.20].forEach((t) => {
+    el(s, "line", { x1: L, x2: W - R, y1: y(t), y2: y(t), stroke: "var(--rule-soft)", "stroke-width": 1 });
+    label(s, L - 8, y(t) + 4, (t * 100).toFixed(0) + "%", { anchor: "end" });
+    label(s, x(t), H - B + 18, (t * 100).toFixed(0) + "%");
+  });
+  el(s, "line", { x1: x(0), y1: y(0), x2: x(max), y2: y(max), stroke: "var(--axis)", "stroke-width": 1.5, "stroke-dasharray": "4 4" });
+  label(s, x(0.195), y(0.176), "perfect calibration", { anchor: "end", size: 12 });
+
+  [["val", "var(--s3)", "Validation 2023-24"], ["test", "var(--s1)", "Test 2024-25"]].forEach(([k, c, nm]) => {
+    const pts = DATA.calibration[k];
+    el(s, "path", { d: pts.map((p, i) => `${i ? "L" : "M"}${x(p[0])},${y(p[1])}`).join(" "), fill: "none", stroke: c, "stroke-width": 2, "stroke-linejoin": "round" });
+    pts.forEach((p, i) => {
+      const dot = el(s, "circle", { cx: x(p[0]), cy: y(p[1]), r: 4.5, fill: c, stroke: "var(--surface)", "stroke-width": 2 });
+      bindTip(dot, card, tip, `<b>${esc(nm)}</b> · decile ${i + 1}<br>predicted ${(p[0] * 100).toFixed(2)}% · observed ${(p[1] * 100).toFixed(2)}%`);
+    });
+  });
+  label(s, L + (W - L - R) / 2, H - 6, "Mean predicted goal probability", { size: 12.5 });
+  el(s, "text", { x: 14, y: T + (H - T - B) / 2, fill: "var(--muted)", "font-size": 12.5, "text-anchor": "middle", transform: `rotate(-90 14 ${T + (H - T - B) / 2})`, "font-family": "system-ui, sans-serif" }).textContent = "Observed goal rate";
+  $("fig-cal").appendChild(s);
+  legend($("fig-cal"), [{ c: "var(--s3)", t: "Validation 2023-24" }, { c: "var(--s1)", t: "Test 2024-25" }]);
+})();
+
+/* ------------------- chart 4 — O/E by angle band ------------------- */
+(function () {
+  const card = $("fig-ang").closest(".card"), tip = tipFor(card);
+  const W = 520, H = 260, L = 64, R = 26, T = 16, B = 46;
+  const lo = 0.90, hi = 1.12;
+  const x = (v) => L + ((v - lo) / (hi - lo)) * (W - L - R);
+  const step = (H - T - B) / DATA.angles.length;
+  const s = svg(W, H);
+  s.setAttribute("aria-label", "Observed over expected goals by shot angle band");
+
+  [0.90, 0.95, 1.00, 1.05, 1.10].forEach((t) => {
+    el(s, "line", { x1: x(t), x2: x(t), y1: T, y2: H - B, stroke: t === 1 ? "var(--axis)" : "var(--rule-soft)", "stroke-width": t === 1 ? 1.5 : 1 });
+    label(s, x(t), H - B + 16, fmt(t, 2));
+  });
+
+  DATA.angles.forEach((a, i) => {
+    const cy = T + step * i + step / 2;
+    el(s, "line", { x1: x(Math.min(a.val, a.test)), x2: x(Math.max(a.val, a.test)), y1: cy, y2: cy, stroke: "var(--axis)", "stroke-width": 1.5 });
+    label(s, L - 12, cy + 4, a.band, { anchor: "end", fill: "var(--ink-2)", size: 12 });
+    [["val", "var(--s3)", "Validation 2023-24"], ["test", "var(--s1)", "Test 2024-25"]].forEach(([k, c, nm]) => {
+      const dot = el(s, "circle", { cx: x(a[k]), cy, r: 5, fill: c, stroke: "var(--surface)", "stroke-width": 2 });
+      bindTip(dot, card, tip, `<b>${esc(a.band)}</b> · ${esc(nm)}<br>O/E ${fmt(a[k], 3)} — ${a[k] > 1 ? "under" : "over"}-predicted by ${Math.abs((a[k] - 1) * 100).toFixed(1)}%`);
+    });
+  });
+  label(s, L + (W - L - R) / 2, H - 4, "Observed ÷ predicted goals", { size: 12.5 });
+  $("fig-ang").appendChild(s);
+  legend($("fig-ang"), [{ c: "var(--s3)", t: "Validation 2023-24" }, { c: "var(--s1)", t: "Test 2024-25" }]);
+})();
+
+/* ------------------------------ tables ---------------------------- */
+function renderTable(id, t) {
+  const node = $(id);
+  node.innerHTML =
+    `<caption>${esc(t.caption)}</caption>` +
+    `<thead><tr>${t.cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead>` +
+    `<tbody>${t.rows.map((r, i) => `<tr class="${i === t.current ? "current" : ""}">${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+}
+renderTable("tbl-sog", DATA.tables.sog);
+renderTable("tbl-fen", DATA.tables.fen);
+
+/* ----------------------------- progress --------------------------- */
+const STATUS_TEXT = { done: "Done", active: "In progress", next: "Next", idle: "Planned" };
+$("stages").innerHTML = DATA.stages.map((s) =>
+  `<div class="stage"><div class="nm">${esc(s.nm)}</div><div class="st">${esc(s.st)}</div></div>`).join("");
+$("steps").innerHTML = DATA.steps.map((s, i) =>
+  `<div class="step"><div class="idx">${i + 1}</div><div><div class="ttl">${esc(s.t)}</div><div class="nt">${esc(s.n)}</div></div><span class="status ${s.s}">${STATUS_TEXT[s.s]}</span></div>`).join("");
+$("issues").innerHTML = DATA.issues.map((i) =>
+  `<div class="issue"><div class="h">${esc(i.h)}</div><div class="b">${esc(i.b)}</div></div>`).join("");
+$("sources").innerHTML = DATA.sources.map((s) => `<li><a href="${esc(s.u)}">${esc(s.t)}</a></li>`).join("");
+$("verified").textContent = DATA.verified;
+</script>
+
+</html>
