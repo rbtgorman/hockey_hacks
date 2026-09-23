@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Hockey Hacks — NHL expected goals</title>
-<meta name="description" content="A personal NHL expected-goals model: what it found about how the league records shots, how it scores, and what is still open.">
+<title>Hockey Hacks: NHL expected goals</title>
+<meta name="description" content="A personal NHL expected-goals model: what it found about how the league records shots, how it scores, and what is still open. Work in progress.">
 <meta name="author" content="Robert Gorman">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Hockey Hacks — NHL expected goals">
-<meta property="og:description" content="A personal NHL expected-goals model: what it found about how the league records shots, how it scores, and what is still open.">
+<meta property="og:title" content="Hockey Hacks: NHL expected goals">
+<meta property="og:description" content="A personal NHL expected-goals model: what it found about how the league records shots, how it scores, and what is still open. Work in progress.">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%232a78d6'/><rect x='22' y='54' width='12' height='26' fill='white'/><rect x='44' y='38' width='12' height='42' fill='white'/><rect x='66' y='22' width='12' height='58' fill='white'/></svg>">
 <style>
@@ -217,7 +217,7 @@
           <p class="cap">Three season series from one query, indexed to 2022-23 = 100.</p>
         </div>
         <figure id="fig-idx"></figure>
-        <p class="cap">Raw values: shots on goal per team-game 31.08 / 30.12 / 28.08; goals per shot on goal .0958 / .0966 / .1001; goals per unblocked attempt inside 20 ft .1232 / .1240 / .1222. Source: <b>db/checks/c4_shot_regime_by_season.sql</b> — the query is committed, its output isn't yet.</p>
+        <p class="cap">Raw values: shots on goal per team-game 31.08 / 30.12 / 28.08; goals per shot on goal .0958 / .0966 / .1001; goals per unblocked attempt inside 20 ft .1232 / .1240 / .1222. Source: <b>db/checks/c4_shot_regime_by_season.sql</b>. The query is committed, its output isn't yet.</p>
       </div>
       <div class="card">
         <div>
@@ -288,7 +288,7 @@ const DATA = {
     { v: "0.7661", k: "Test AUC", n: "Current model; the target is 0.78, so this isn't there yet" }
   ],
 
-  story: "Trained on 2022-23 shots on goal, the model under-predicted the 2024-25 test season by 7% — and so did every other shots-on-goal version. Scoring hadn't risen. Within each distance band under 60 ft, goals per shot on goal rose 6–9% from 2022-23 to 2024-25, while goals per unblocked attempt barely moved. That fits some saves being logged as misses, which David Johnson at Hockey Analysis suggested puck tracking now allows. Retraining on unblocked attempts — goals, saves and misses, the population most public expected-goals models use — cut the 2024-25 miss to 3%.",
+  story: "Trained on 2022-23 shots on goal, the model under-predicted the 2024-25 test season by 7%, and so did every other shots-on-goal version. Scoring hadn't risen. Within each distance band under 60 ft, goals per shot on goal rose 6–9% from 2022-23 to 2024-25, while goals per unblocked attempt barely moved. That fits some saves being logged as misses, which David Johnson at Hockey Analysis suggested puck tracking now allows. Retraining on unblocked attempts (goals, saves and misses, the population most public expected-goals models use) cut the 2024-25 miss to 3%.",
   caveat: "Provisional: a newer 'short' miss label is still in validation and test, and because 2024-25 is the season the problem was found in, 2025-26 is the real test.",
 
   oe: [
@@ -321,7 +321,7 @@ const DATA = {
 
   tables: {
     sog: {
-      caption: "Shots on goal — 252,450 shots, table frozen so v1–v2.3 reproduce",
+      caption: "Shots on goal: 252,450 shots, table frozen so v1–v2.3 reproduce",
       cols: ["Version", "Test AUC", "Max gap", "O/E"],
       rows: [
         ["v1", "0.7705", "0.0244", "1.080"],
@@ -332,7 +332,7 @@ const DATA = {
       current: 3
     },
     fen: {
-      caption: "Unblocked attempts — 364,074 attempts, the current table",
+      caption: "Unblocked attempts: 364,074 attempts, the current table",
       cols: ["v1-fenwick", "AUC", "Max gap", "O/E"],
       rows: [
         ["Validation 2023-24", "0.7713", "0.0090", "1.015"],
@@ -343,16 +343,16 @@ const DATA = {
   },
 
   stages: [
-    { nm: "A · Ingest", st: "Done — play-by-play, shifts, boxscores in PostgreSQL", s: "done" },
-    { nm: "B · Player priors", st: "Done — expanding-window shooter priors", s: "done" },
-    { nm: "C · xG model", st: "Current — v1-fenwick on unblocked attempts", s: "active" },
+    { nm: "A · Ingest", st: "Done: play-by-play, shifts, boxscores in PostgreSQL", s: "done" },
+    { nm: "B · Player priors", st: "Done: expanding-window shooter priors", s: "done" },
+    { nm: "C · xG model", st: "Current: v1-fenwick on unblocked attempts", s: "active" },
     { nm: "D · Simulator", st: "Not started", s: "idle" }
   ],
 
   steps: [
     { t: "Housekeeping and evidence", n: "README rewritten and committed; findings written. Still open: the stray file, the CI test swap, and committing the query output behind the season figures.", s: "active" },
     { t: "Remove 'short' misses", n: "Count them by season; if they start in 2023-24, drop them from the table and its previous-event lookups, then re-score.", s: "next" },
-    { t: "Roll the split forward", n: "Ingest 2025-26 and move to train 2023-24, validate 2024-25, test 2025-26 — all after the recording change.", s: "idle" },
+    { t: "Roll the split forward", n: "Ingest 2025-26 and move to train 2023-24, validate 2024-25, test 2025-26, all after the recording change.", s: "idle" },
     { t: "Shooter priors on the new table", n: "Cleanup first (power-play mean, penalty-kill threshold, position-specific constants), then v2.3-fenwick.", s: "idle" },
     { t: "Goalie priors", n: "Builder exists and no model uses it yet. Zone-based, checked against NHL EDGE by location.", s: "idle" },
     { t: "Location diagnostics", n: "Compare recorded shot locations with EDGE zone counts, and check for rink-level bias in recorded distance.", s: "idle" },
@@ -367,10 +367,10 @@ const DATA = {
   ],
 
   sources: [
-    { t: "David Johnson, Hockey Analysis (2025) — missed shots rising league-wide", u: "https://hockeyanalysis.com/2025/03/21/are-changes-in-nhl-shot-data-tracking-hiding-that-teams-are-getting-better-at-defending/" },
-    { t: "HockeyStats.com — expected goals methodology, and the 'short' miss label", u: "https://hockeystats.com/methodology/expected-goals" },
-    { t: "AP via ESPN (April 2026) — the league on shot-total revisions and tracking", u: "https://www.espn.com/nhl/story/_/id/48487239/nhl-goalies-save-percentage-dips-lowest-point-three-decades" },
-    { t: "Hockey-Reference — NHL league averages", u: "https://www.hockey-reference.com/leagues/stats.html" }
+    { t: "David Johnson, Hockey Analysis (2025): missed shots rising league-wide", u: "https://hockeyanalysis.com/2025/03/21/are-changes-in-nhl-shot-data-tracking-hiding-that-teams-are-getting-better-at-defending/" },
+    { t: "HockeyStats.com: expected goals methodology, and the 'short' miss label", u: "https://hockeystats.com/methodology/expected-goals" },
+    { t: "AP via ESPN (April 2026): the league on shot-total revisions and tracking", u: "https://www.espn.com/nhl/story/_/id/48487239/nhl-goalies-save-percentage-dips-lowest-point-three-decades" },
+    { t: "Hockey-Reference: NHL league averages", u: "https://www.hockey-reference.com/leagues/stats.html" }
   ],
   verified: "The Johnson, HockeyStats and AP pages were opened and quoted from directly. League averages come from Hockey-Reference."
 };
@@ -444,7 +444,7 @@ $("stats").innerHTML = DATA.stats.map((s) => {
   return `<div class="stat"><div class="k">${esc(s.k)}</div><div class="v">${v}</div><div class="n">${esc(s.n)}</div></div>`;
 }).join("");
 
-/* ---------------------- chart 1 — O/E by version ------------------- */
+/* ---------------------- chart 1: O/E by version ------------------- */
 (function () {
   const card = $("fig-oe").closest(".card"), tip = tipFor(card);
   const W = 520, H = 250, L = 96, R = 22, T = 18, B = 46;
@@ -460,7 +460,7 @@ $("stats").innerHTML = DATA.stats.map((s) => {
     label(s, x(t), H - B + 16, fmt(t, 2));
   }
   el(s, "line", { x1: x(1), x2: x(1), y1: T - 6, y2: H - B, stroke: "var(--axis)", "stroke-width": 1.5 });
-  label(s, x(1) + 6, T - 8, "1.00 — exactly right", { anchor: "start", size: 12 });
+  label(s, x(1) + 6, T - 8, "1.00 = exactly right", { anchor: "start", size: 12 });
 
   rows.forEach((r, i) => {
     const cy = T + step * i + step / 2;
@@ -476,7 +476,7 @@ $("stats").innerHTML = DATA.stats.map((s) => {
   legend($("fig-oe"), [{ c: "var(--muted)", t: "Shots on goal (frozen)" }, { c: "var(--s1)", t: "Unblocked attempts (current)" }]);
 })();
 
-/* ------------------- chart 2 — indexed season series --------------- */
+/* ------------------- chart 2: indexed season series --------------- */
 (function () {
   const card = $("fig-idx").closest(".card"), tip = tipFor(card);
   const W = 520, H = 260, L = 44, R = 116, T = 22, B = 40;
@@ -513,7 +513,7 @@ $("stats").innerHTML = DATA.stats.map((s) => {
   $("fig-idx").appendChild(s);
 })();
 
-/* --------------------- chart 3 — calibration ---------------------- */
+/* --------------------- chart 3: calibration ---------------------- */
 (function () {
   const card = $("fig-cal").closest(".card"), tip = tipFor(card);
   const W = 520, H = 300, L = 52, R = 18, T = 16, B = 46;
@@ -545,7 +545,7 @@ $("stats").innerHTML = DATA.stats.map((s) => {
   legend($("fig-cal"), [{ c: "var(--s3)", t: "Validation 2023-24" }, { c: "var(--s1)", t: "Test 2024-25" }]);
 })();
 
-/* ------------------- chart 4 — O/E by angle band ------------------- */
+/* ------------------- chart 4: O/E by angle band ------------------- */
 (function () {
   const card = $("fig-ang").closest(".card"), tip = tipFor(card);
   const W = 520, H = 260, L = 64, R = 26, T = 16, B = 46;
@@ -566,7 +566,7 @@ $("stats").innerHTML = DATA.stats.map((s) => {
     label(s, L - 12, cy + 4, a.band, { anchor: "end", fill: "var(--ink-2)", size: 12 });
     [["val", "var(--s3)", "Validation 2023-24"], ["test", "var(--s1)", "Test 2024-25"]].forEach(([k, c, nm]) => {
       const dot = el(s, "circle", { cx: x(a[k]), cy, r: 5, fill: c, stroke: "var(--surface)", "stroke-width": 2 });
-      bindTip(dot, card, tip, `<b>${esc(a.band)}</b> · ${esc(nm)}<br>O/E ${fmt(a[k], 3)} — ${a[k] > 1 ? "under" : "over"}-predicted by ${Math.abs((a[k] - 1) * 100).toFixed(1)}%`);
+      bindTip(dot, card, tip, `<b>${esc(a.band)}</b> · ${esc(nm)}<br>O/E ${fmt(a[k], 3)}, ${a[k] > 1 ? "under" : "over"}-predicted by ${Math.abs((a[k] - 1) * 100).toFixed(1)}%`);
     });
   });
   label(s, L + (W - L - R) / 2, H - 4, "Observed ÷ predicted goals", { size: 12.5 });
