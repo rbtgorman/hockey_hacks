@@ -38,6 +38,7 @@
     --chip:        rgba(11,14,13,0.05);
     --ring:        rgba(11,14,13,0.10);
     --shadow:      0 1px 2px rgba(11,14,13,0.05);
+    --shamrock:    #2f8f4e;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -59,6 +60,7 @@
       --chip:      rgba(255,255,255,0.06);
       --ring:      rgba(255,255,255,0.10);
       --shadow:    none;
+      --shamrock:  #4cae6b;
     }
   }
   :root[data-theme="dark"] {
@@ -80,6 +82,7 @@
     --chip:      rgba(255,255,255,0.06);
     --ring:      rgba(255,255,255,0.10);
     --shadow:    none;
+    --shamrock:  #4cae6b;
   }
 
   body {
@@ -169,6 +172,8 @@
 
   footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
   footer ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+  .credit { margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--rule-soft); display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); }
+  .credit svg { width: 15px; height: 15px; flex: none; color: var(--shamrock); }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -268,6 +273,7 @@
     <div>Every figure on this page comes from a file committed in the repo, a source page listed below, or a calculation from a committed file that is labelled where it appears.</div>
     <ul id="sources"></ul>
     <div id="verified"></div>
+    <div class="credit" id="credit"></div>
   </footer>
 </div>
 
@@ -372,6 +378,7 @@ const DATA = {
     { t: "AP via ESPN (April 2026): the league on shot-total revisions and tracking", u: "https://www.espn.com/nhl/story/_/id/48487239/nhl-goalies-save-percentage-dips-lowest-point-three-decades" },
     { t: "Hockey-Reference: NHL league averages", u: "https://www.hockey-reference.com/leagues/stats.html" }
   ],
+  credit: { holder: "rdg83 Web Design", year: 2026 },
   verified: "The Johnson, HockeyStats and AP pages were opened and quoted from directly. League averages come from Hockey-Reference."
 };
 
@@ -595,6 +602,6 @@ $("issues").innerHTML = DATA.issues.map((i) =>
   `<div class="issue"><div class="h">${esc(i.h)}</div><div class="b">${esc(i.b)}</div></div>`).join("");
 $("sources").innerHTML = DATA.sources.map((s) => `<li><a href="${esc(s.u)}">${esc(s.t)}</a></li>`).join("");
 $("verified").textContent = DATA.verified;
+$("credit").innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><g fill="currentColor"><path d="M12 11C8.2 8.6 6.4 5.6 8.2 3.6 9.6 2 11.4 2.6 12 4.4 12.6 2.6 14.4 2 15.8 3.6 17.6 5.6 15.8 8.6 12 11Z"/><path d="M12 11C8.2 8.6 6.4 5.6 8.2 3.6 9.6 2 11.4 2.6 12 4.4 12.6 2.6 14.4 2 15.8 3.6 17.6 5.6 15.8 8.6 12 11Z" transform="rotate(120 12 11)"/><path d="M12 11C8.2 8.6 6.4 5.6 8.2 3.6 9.6 2 11.4 2.6 12 4.4 12.6 2.6 14.4 2 15.8 3.6 17.6 5.6 15.8 8.6 12 11Z" transform="rotate(240 12 11)"/></g><path d="M12.2 11.4C13.1 14.2 13 17.6 11.6 21.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>&copy; ${DATA.credit.year} ${esc(DATA.credit.holder)}</span>`;
 </script>
-
 </html>
