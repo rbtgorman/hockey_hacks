@@ -39,9 +39,9 @@ USAGE
 CALIBRATION STATS AND POPULATIONS
 ---------------------------------
 Max calibration gap cannot tell a level shift from a shape problem, and on
-2024-25 the shots-on-goal models suffered a level shift (the NHL started
-recording goalie-touched wide pucks as missed shots). calibration_stats()
-reports observed/expected goals (O/E) and the calibration slope separately.
+2024-25 the shots-on-goal models suffered a level shift: every one of them
+under-predicted that season. calibration_stats() reports observed/expected
+goals (O/E) and the calibration slope separately.
 Training scripts put them inside each split's metrics dict:
 
     splits["test"].update(calibration_stats(y_test, p_test))
@@ -259,7 +259,7 @@ def _validate_splits(splits) -> None:
             raise KeyError(
                 f'splits["{name}"] is missing {sorted(missing)}. '
                 f"Got {sorted(m)}. Note the key is \"auc\", not \"roc_auc\" - "
-                "the leaderboard reads splits.test.auc and renders an em-dash if absent."
+                "the leaderboard reads splits.test.auc and renders n/a if absent."
             )
 
 
@@ -337,17 +337,23 @@ POPULATIONS = {
     "shots_on_goal": (
         "Shots on goal (legacy population)",
         "Trained and scored on shots on goal, including regular-season shootout "
-        "attempts (about 0.6% of rows). From 2023-24 the NHL records many "
-        "goalie-touched wide pucks as missed shots, so this population's "
-        "conversion drifts upward across the split. Kept for reproducibility.",
+        "attempts (about 0.6% of rows). Goals per shot on goal drift upward "
+        "across the split while goals per unblocked attempt under 60 ft barely "
+        "move, so every model in this table under-predicts 2024-25. David "
+        "Johnson (Hockey Analysis) suggested a mechanism: puck tracking may now "
+        "log some pucks a goalie stops as misses if they were heading wide. "
+        "That is his hypothesis, not a league statement. Kept for "
+        "reproducibility.",
     ),
     "fenwick": (
         "Unblocked attempts (Fenwick)",
         "Shots on goal plus missed shots. Shootout attempts are excluded, as are "
         "events logged in only part of the window (teammate blocks, failed bank "
         "attempts). Goals per unblocked attempt hold steady across the split "
-        "within each distance band. AUC and log loss are not comparable with "
-        "the shots-on-goal table: the set of shots differs.",
+        "within each distance band under 60 ft. The 60+ ft band does not: "
+        "0.71% / 0.78% / 0.85% (build check 4, "
+        "results/build_features_fenwick.log). AUC and log loss are not "
+        "comparable with the shots-on-goal table: the set of shots differs.",
     ),
 }
 
@@ -390,7 +396,7 @@ def build_leaderboard() -> Path | None:
     rows.sort(key=lambda r: _version_sort_key(r["version"]))
 
     def fmt(x, nd=4):
-        return f"{x:.{nd}f}" if isinstance(x, (int, float)) else "—"
+        return f"{x:.{nd}f}" if isinstance(x, (int, float)) else "n/a"
 
     lines = [
         "# Model leaderboard",
@@ -402,8 +408,8 @@ def build_leaderboard() -> Path | None:
         "",
         "O/E is observed goals divided by predicted goals (1.00 is right on",
         "average). Calib. slope is the logistic slope of the outcome on logit(p)",
-        "(1.00 is ideal; below 1 means over-confident). Both are blank for runs",
-        "recorded before they existed.",
+        "(1.00 is ideal; below 1 means over-confident). Both show n/a for runs",
+        "recorded before they existed and not re-scored since.",
         "",
     ]
 
@@ -424,14 +430,14 @@ def build_leaderboard() -> Path | None:
                 f"| **{r['version']}** | {fmt(r['auc'])} | {fmt(r['pr_auc'])} | "
                 f"{fmt(r['log_loss'])} | {fmt(r['brier'])} | {fmt(r['max_gap'])} | "
                 f"{fmt(r['o_e'], 3)} | {fmt(r['cal_slope'], 3)} | "
-                f"`{r['commit'] or '—'}` |"
+                f"`{r['commit'] or 'n/a'}` |"
             )
         lines.append("")
 
     lines += ["## What each version changed", ""]
     for r in rows:
         if r["description"]:
-            lines.append(f"- **{r['version']}** — {r['description']}")
+            lines.append(f"- **{r['version']}**: {r['description']}")
     lines.append("")
 
     out = RESULTS_DIR / "leaderboard.md"
@@ -450,6 +456,6 @@ if __name__ == "__main__":
 
     if args.leaderboard:
         if build_leaderboard() is None:
-            print(f"No metrics.json files found under {RESULTS_DIR}/ — run a model first.")
+            print(f"No metrics.json files found under {RESULTS_DIR}/. Run a model first.")
     else:
         ap.print_help()
