@@ -2,7 +2,7 @@
 
 A personal project: an expected-goals (xG) model for the NHL, built end to end. It pulls data from the public NHL API, stores it in PostgreSQL, and trains and calibrates LightGBM models. It's meant to feed a Monte Carlo game simulator, which isn't built yet.
 
-**Where it stands.** The current model, v1-fenwick, is trained on unblocked shot attempts. The held-out 2024-25 season had 3% more goals than it predicted, against 7% for the best shots-on-goal model. That figure is provisional (see [Known issues](#known-issues)). The full write-up is in [docs/FINDINGS.md](docs/FINDINGS.md).
+**Where it stands.** The current model, v1-fenwick, is trained on unblocked shot attempts. The held-out 2024-25 season had 3% more goals than it predicted, against 7% for the best shots-on-goal model. That figure is provisional (see [Known issues](#known-issues)). The full write-up is in [docs/FINDINGS.md](docs/FINDINGS.md), and the [project dashboard](https://hockeyhacks.netlify.app) shows the metrics, roadmap and open issues on one page.
 
 ## The problem
 
@@ -12,7 +12,7 @@ Data: 4,198 games, 2022-23 through 2024-25, regular season and playoffs.
 
 ## Pipeline
 
-### Stage A — Ingest
+### Stage A: Ingest
 
 Play-by-play, shift charts and boxscores from `api-web.nhle.com` and `api.nhle.com`, cached as raw JSON and parsed into PostgreSQL. The parsers use only the standard library and are covered by synthetic-payload tests, so those tests run in CI with nothing installed.
 
@@ -21,13 +21,13 @@ Two bugs worth naming, because both were silent:
 - **Coordinate normalization.** Assuming rink orientation from convention put roughly 28% of shots more than 100 ft from the goal. Deriving the normalization empirically from the data fixed it.
 - **Shift intervals.** Treating shifts as closed on both ends produced impossible on-ice player counts. Switching to half-open `[start, end)` dropped those from 5,008 to 14.
 
-### Stage B — Player priors
+### Stage B: Player priors
 
 `features/build_priors_expanding.py` fits Beta-Binomial empirical Bayes priors for shooter finishing, stratified by strength state (5v5 / PP / PK) and weighted toward recent seasons. Each prior is resolved per player per game date from a trailing two-year window, so no shot is scored with information from its own date or later. Shrinkage is the point: a player with one shot and one goal must not be handed a 100% shooting rate.
 
 A units bug weakened that shrinkage. Recency weights of 5/4/3 made weighted shots about 4.5× raw shots, while the shrinkage constant K was fit on raw counts, so every player's record looked about 4.5× bigger than it was. Dividing the weights by 5 fixed the units; the weighted shooting rates didn't change, only the shrinkage did. Average self-weight (how much a player's own record counts against the league mean) fell from 0.77 to 0.49 at 5v5, from 0.46 to 0.18 on the power play and from 0.28 to 0.08 on the penalty kill ([before and after](results/prepatch/)).
 
-### Stage C — The model
+### Stage C: The model
 
 LightGBM with a strict temporal split: train on 2022-23, validate on 2023-24, test on 2024-25. Never a random split. Every training run checks that the score differential varies within games, which it does in more than 99% of them; if final scores had leaked into the features, it would be constant.
 
