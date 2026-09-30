@@ -57,8 +57,8 @@ jobs:
       - name: Byte-compile all modules
         run: python -m compileall -q ingest features model tests
 
-  feature-tests:
-    name: feature logic tests
+  reporting-tests:
+    name: calibration stats test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -66,6 +66,13 @@ jobs:
         with:
           python-version: "3.10"
           cache: pip
+      # model/reporting.py imports numpy, pandas and matplotlib at module
+      # level, so this job installs requirements. It still needs no database:
+      # the test builds synthetic outcomes from known probabilities.
       - run: pip install -r requirements.txt
-      - name: Goalie prior logic (synthetic, no database)
-        run: python tests/test_goalie_priors.py
+
+      # Run as a module (-m), not as a path. The test imports model.reporting,
+      # and `python tests/test_calibration_stats.py` would put tests/ on
+      # sys.path instead of the repo root, so that import would fail.
+      - name: O/E and calibration slope (synthetic, no database)
+        run: python -m tests.test_calibration_stats
