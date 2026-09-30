@@ -3,13 +3,16 @@
 WHY THIS EXISTS
 ---------------
 features/build_features.py builds shot_features from shots on goal only
-(is_sog = TRUE). Starting in 2023-24 the NHL records many pucks the goalie
-touched on their way wide as missed shots. From 2022-23 to 2024-25,
-conversion per shot on goal rose 6-9% in each distance band under 60 ft,
-while conversion per unblocked attempt stayed flat
-(db/checks/c4_shot_regime_by_season.sql). Goals per unblocked attempt do not
-move when a shot is relabeled from on-net to missed, so that is the
-population the model trains on from here.
+(is_sog = TRUE). From 2022-23 to 2024-25, conversion per shot on goal rose
+6-9% in each distance band under 60 ft, while conversion per unblocked
+attempt barely moved (db/checks/c4_shot_regime_by_season.sql). The 60+ ft
+band is the exception: goals per unblocked attempt rise there too, 0.71% /
+0.78% / 0.85% (build check 4 below).
+David Johnson (Hockey Analysis) suggested a mechanism: puck tracking may now
+log some pucks a goalie stops as missed shots if they were heading wide.
+That is his hypothesis, not a league statement. Whatever the cause, goals
+per unblocked attempt do not move when a puck is recorded as missed rather
+than on net, so that is the population the model trains on from here.
 
 build_features.py stays frozen so the shots-on-goal leaderboard (v1-v2.3)
 remains reproducible. This builder writes its own table and never touches
@@ -28,8 +31,9 @@ DIFFERENCES FROM build_features.py
    is_rebound off, and one between a takeaway and a shot turns is_rush off,
    in 2023-24 onward only.
 4. last_event_type merges shot-on-goal and missed-shot into
-   'unblocked-shot', because the relabel moves pucks between those two
-   labels across seasons. is_rebound already accepted both.
+   'unblocked-shot', because the on-goal share of unblocked attempts falls
+   across seasons, so the split between those two labels is not stable.
+   is_rebound already accepted both.
 5. event_type is kept as a column for diagnostics and the Stage D on-net
    layer. It is not a model feature.
 6. shot_type merges wrist and snap into 'wrist-snap'. In 2024-25 about
@@ -284,7 +288,7 @@ VERIFY_QUERIES = [
      ORDER BY 1, 2;
      """),
     ("4. Goal rate by distance band, regular season, no empty net "
-     "(each band should be flat across seasons)",
+     "(bands under 60 ft should be flat across seasons)",
      """
      SELECT CASE
                 WHEN f.distance_ft IS NULL THEN 'e_null'
