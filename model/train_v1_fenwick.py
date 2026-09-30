@@ -13,19 +13,20 @@ reproduces the shots-on-goal leaderboard.
 
 That table adds missed shots, drops shootout attempts, removes two event
 types logged in only part of the window, merges shot-on-goal and
-missed-shot in last_event_type, merges wrist and snap (relabelled in
-2024-25), and folds the goal-only missing shot type into that category.
-The builder's docstring has the evidence.
+missed-shot in last_event_type, merges wrist and snap (their split shifted
+sharply in 2024-25), and folds the goal-only missing shot type into that
+category. The builder's docstring has the evidence.
 
 WHAT TO LOOK FOR
 ----------------
   - Test O/E near 1.00. The shots-on-goal v2.3 ran at about 1.07 on
-    2024-25 (the reference line below reads the exact value from
-    results/v2_3/). Within each distance band under 60 ft, goals per shot
-    on goal rose across the split while goals per unblocked attempt barely
-    moved. David Johnson (Hockey Analysis) suggested puck tracking may now
-    log some pucks a goalie stops as misses; that is his hypothesis, and
-    unblocked attempts are the population it would not affect.
+    2024-25 (the reference lines printed at the end of a run read the
+    exact values from results/). Within each distance band under 60 ft,
+    goals per shot on goal rose across the split while goals per unblocked
+    attempt barely moved. David Johnson (Hockey Analysis) suggested puck
+    tracking may now log some pucks a goalie stops as misses; that is his
+    hypothesis, and unblocked attempts are the population it would not
+    affect.
   - Calibration slope. The first Fenwick run (before the shot-type merge)
     gave 1.006 on val but 0.960 on test, with the top test decile
     over-predicted by about 6%. That is a test-season problem, not generic
@@ -69,34 +70,39 @@ DESCRIPTION = (
     "puck moving between on-goal and missed does not change the population."
 )
 
-V2_3_RESULTS = RESULTS_DIR / "v2_3"
-
 
 def committed_reference(results_dir) -> str:
     """Test-season reference line for a committed run, read from its files.
 
-    This line used to be typed in by hand ("O/E 1.070"). The committed
-    reliability table gives 1.0707, which rounds to 1.071, so the printed
-    reference disagreed with the file it was describing. Reading the numbers
-    from results/ means the line cannot drift from the record again.
+    These lines used to be typed in by hand, and the v2.3 one said
+    "O/E 1.070". The committed reliability table gives 1.0707, which rounds
+    to 1.071, so the printed reference disagreed with the file it described.
+    Reading the numbers from results/ means the lines cannot drift from the
+    record again.
 
     O/E comes from metrics.json when the run has it (after
     model/rescore_v2_3_calibration.py), otherwise from reliability.csv as
     sum(n * actual_rate) / sum(n * mean_pred). The two agree: equal-count
     bins weighted by n reproduce the season's observed and predicted totals.
     """
-    rec = json.loads((results_dir / "metrics.json").read_text())
-    test = rec["splits"]["test"]
-    oe = test.get("o_e")
-    src = "metrics.json"
-    if oe is None:
-        rel = pd.read_csv(results_dir / "reliability.csv")
-        oe = float((rel["n"] * rel["actual_rate"]).sum()
-                   / (rel["n"] * rel["mean_pred"]).sum())
-        src = "computed from reliability.csv"
-    return (f"test AUC {test['auc']:.4f}  "
-            f"max gap {rec['calibration']['max_abs_gap']:.4f}  "
-            f"O/E {oe:.3f} ({src})")
+    # This runs after training but before the model and results are saved,
+    # so it must never raise: a missing or malformed reference file costs a
+    # printed line, not the run.
+    try:
+        rec = json.loads((results_dir / "metrics.json").read_text())
+        test = rec["splits"]["test"]
+        oe = test.get("o_e")
+        src = "metrics.json"
+        if oe is None:
+            rel = pd.read_csv(results_dir / "reliability.csv")
+            oe = float((rel["n"] * rel["actual_rate"]).sum()
+                       / (rel["n"] * rel["mean_pred"]).sum())
+            src = "computed from reliability.csv"
+        return (f"test AUC {test['auc']:.4f}  "
+                f"max gap {rec['calibration']['max_abs_gap']:.4f}  "
+                f"O/E {oe:.3f} ({src})")
+    except Exception as e:  # noqa: BLE001
+        return f"unavailable ({type(e).__name__}: {e})"
 
 
 def load_features() -> pd.DataFrame:
@@ -264,8 +270,8 @@ def main() -> None:
     print("  val   AUC 0.7739  O/E 1.019  slope 1.006  max gap 0.0075")
     print("  test  AUC 0.7677  O/E 1.014  slope 0.960  max gap 0.0138")
     print("Shots-on-goal reference (different population, not comparable):")
-    print("  v1    test AUC 0.7705  max gap 0.0244")
-    print(f"  v2.3  {committed_reference(V2_3_RESULTS)}")
+    print(f"  v1    {committed_reference(RESULTS_DIR / 'v1')}")
+    print(f"  v2.3  {committed_reference(RESULTS_DIR / 'v2_3')}")
     print("=" * 60)
 
     results_dir = None
