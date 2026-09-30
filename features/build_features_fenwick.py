@@ -6,13 +6,14 @@ features/build_features.py builds shot_features from shots on goal only
 (is_sog = TRUE). From 2022-23 to 2024-25, conversion per shot on goal rose
 6-9% in each distance band under 60 ft, while conversion per unblocked
 attempt barely moved (db/checks/c4_shot_regime_by_season.sql). The 60+ ft
-band is the exception: goals per unblocked attempt rise there too, 0.71% /
-0.78% / 0.85% (build check 4 below).
+band is the exception for unblocked attempts: 0.71% / 0.78% / 0.85% (build
+check 4 below).
+
 David Johnson (Hockey Analysis) suggested a mechanism: puck tracking may now
 log some pucks a goalie stops as missed shots if they were heading wide.
-That is his hypothesis, not a league statement. Whatever the cause, goals
-per unblocked attempt do not move when a puck is recorded as missed rather
-than on net, so that is the population the model trains on from here.
+That is his hypothesis, not a league statement. Whatever the cause, a puck
+recorded as missed rather than on net stays in the unblocked population,
+so that is the population the model trains on from here.
 
 build_features.py stays frozen so the shots-on-goal leaderboard (v1-v2.3)
 remains reproducible. This builder writes its own table and never touches
@@ -36,11 +37,11 @@ DIFFERENCES FROM build_features.py
    is_rebound already accepted both.
 5. event_type is kept as a column for diagnostics and the Stage D on-net
    layer. It is not a model feature.
-6. shot_type merges wrist and snap into 'wrist-snap'. In 2024-25 about
-   7,500 attempts moved from one label to the other: wrist fell from 54.5%
-   to 48.0% of attempts in a single season and snap rose from 14.1% to
-   21.1%, while the two combined held at 68.3% / 68.6% / 69.1%. Shooting
-   doesn't change like that in one season; the labelling did.
+6. shot_type merges wrist and snap into 'wrist-snap'. In 2024-25 wrist
+   fell from 54.5% to 48.0% of attempts and snap rose from 14.1% to 21.1%
+   (about 7,500 attempts), while the two combined held at 68.3% / 68.6% /
+   69.1%. Whether shooting changed or only the labelling did, the merged
+   category means the model does not depend on which label a shot gets.
 7. A missing shot type becomes 'wrist-snap', the most common type. The
    legacy table's 'unknown' appears only on goals (100% goal rate in every
    season), so as its own category it tells the model the answer. Leaving
