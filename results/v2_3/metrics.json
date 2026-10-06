@@ -24,7 +24,13 @@
       "auc": 0.8591290136639669,
       "pr_auc": 0.48932991074060295,
       "log_loss": 0.24705818108564648,
-      "brier": 0.07269429003776419
+      "brier": 0.07269429003776419,
+      "mean_pred": 0.10250125521979386,
+      "observed_rate": 0.10247939513657107,
+      "o_e": 0.9997867335070589,
+      "citl": 2.1860083222788318e-05,
+      "cal_intercept": 1.2703576406865416,
+      "cal_slope": 1.7442885758278437
     },
     "val": {
       "n": 84932,
@@ -32,7 +38,13 @@
       "auc": 0.7781456623347013,
       "pr_auc": 0.3361084435693186,
       "log_loss": 0.2776183142437769,
-      "brier": 0.08035499557361205
+      "brier": 0.08035499557361205,
+      "mean_pred": 0.09919625460240394,
+      "observed_rate": 0.10328262610088071,
+      "o_e": 1.0411948164258384,
+      "citl": -0.004086371498476765,
+      "cal_intercept": 0.023478830019856994,
+      "cal_slope": 0.984854739573191
     },
     "test": {
       "n": 79432,
@@ -40,7 +52,13 @@
       "auc": 0.7707358610668514,
       "pr_auc": 0.34487527842544,
       "log_loss": 0.287746506945281,
-      "brier": 0.08358422088203034
+      "brier": 0.08358422088203034,
+      "mean_pred": 0.10116846024582227,
+      "observed_rate": 0.108319065364085,
+      "o_e": 1.0706801813617404,
+      "citl": -0.007150605118262737,
+      "cal_intercept": -0.040368722694795724,
+      "cal_slope": 0.9313349834773742
     }
   },
   "calibration": {
@@ -82,5 +100,11 @@
     "shot_type",
     "strength_state"
   ],
-  "notes": "Shooter prior resolved per (player_id, game_date, strength_bucket) from skater_priors_expanding, so no shot sees data from its own date or later. Shooter_id and goalie_id are deliberately NOT features \u2014 raw player IDs as categoricals leak via memorization. Empty-net shots are retained; empty_net is a feature the model is expected to learn."
+  "notes": "Shooter prior resolved per (player_id, game_date, strength_bucket) from skater_priors_expanding, so no shot sees data from its own date or later. Shooter_id and goalie_id are deliberately NOT features \u2014 raw player IDs as categoricals leak via memorization. Empty-net shots are retained; empty_net is a feature the model is expected to learn.",
+  "rescored": {
+    "what": "calibration_stats() added to each split; model unchanged",
+    "at_utc": "2026-09-30T16:47:07+00:00",
+    "git_commit": "40519e0",
+    "git_dirty": false
+  }
 }
