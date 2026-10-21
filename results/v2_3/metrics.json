@@ -103,8 +103,8 @@
   "notes": "Shooter prior resolved per (player_id, game_date, strength_bucket) from skater_priors_expanding, so no shot sees data from its own date or later. Shooter_id and goalie_id are deliberately NOT features \u2014 raw player IDs as categoricals leak via memorization. Empty-net shots are retained; empty_net is a feature the model is expected to learn.",
   "rescored": {
     "what": "calibration_stats() added to each split; model unchanged",
-    "at_utc": "2026-09-30T16:47:07+00:00",
-    "git_commit": "40519e0",
+    "at_utc": "2026-10-06T15:42:40+00:00",
+    "git_commit": "9537f48",
     "git_dirty": false
   }
 }
