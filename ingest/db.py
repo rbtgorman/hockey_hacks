@@ -91,9 +91,20 @@ def insert_shots(cur, shots: Iterable[ShotRow]) -> int:
 
 
 def insert_contexts(cur, ctxs: Iterable[ContextRow]) -> int:
+    """Bulk insert context events, including actor attribution.
+
+    Requires db/migrations/002_plays_context_actors.sql to have been applied.
+
+    Note the ON CONFLICT DO NOTHING: on a re-run against rows that are already
+    there, this inserts nothing and the actor columns stay as they were. That is
+    why backfilling actors onto existing rows goes through ingest/reparse.py,
+    which truncates first, rather than through a second ingest pass.
+    """
     rows = [
         (c.game_id, c.event_idx, c.period, c.game_seconds,
-         c.event_type, c.x, c.y, c.team_id)
+         c.event_type, c.x, c.y, c.team_id,
+         c.actor_1_id, c.actor_1_role, c.actor_2_id, c.actor_2_role,
+         Json(c.raw_details_json) if c.raw_details_json is not None else None)
         for c in ctxs
     ]
     if not rows:
@@ -101,7 +112,9 @@ def insert_contexts(cur, ctxs: Iterable[ContextRow]) -> int:
     execute_values(cur, """
         INSERT INTO plays_context (
             game_id, event_idx, period, game_seconds,
-            event_type, x, y, team_id
+            event_type, x, y, team_id,
+            actor_1_id, actor_1_role, actor_2_id, actor_2_role,
+            raw_details_json
         ) VALUES %s
         ON CONFLICT (game_id, event_idx) DO NOTHING
     """, rows)
