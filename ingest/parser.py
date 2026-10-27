@@ -34,6 +34,26 @@ Each play:
     shotType         -> 'wrist' | 'snap' | 'slap' | 'backhand' | 'tip-in' | 'deflected' | 'wrap-around'
     zoneCode         -> 'O' | 'N' | 'D' (from shooter's perspective)
     homeScore, awayScore (state after the event — we adjust for 'before' on goals)
+
+ACTOR EXTRACTION (added 2026-10-27)
+-----------------------------------
+Non-shot events carry the players involved under event-specific keys:
+hits name a hitter and a hittee, penalties name who committed and who drew,
+faceoffs name a winner and a loser. The original ContextRow kept only
+eventOwnerTeamId, so every hit and penalty in plays_context was anonymous and
+"who draws penalties" was unanswerable from the database.
+
+Rather than hardcode a key map per event type, actors are discovered
+generically: any key in `details` whose name ends in "PlayerId" (case
+insensitive) is an actor, and the role is the key name with that suffix
+stripped and converted to snake_case. hittingPlayerId becomes "hitting",
+drawnByPlayerId becomes "drawn_by". A bare "playerId" (giveaway, takeaway)
+takes the event type as its role.
+
+This is deliberate. A hardcoded map fails SILENTLY when the NHL renames a
+field: the key stops matching, the column goes null, and nothing errors. The
+generic rule keeps working through a rename and surfaces the new name in the
+role string, where a validation query on role distribution will show it.
 """
 from __future__ import annotations
 
@@ -54,6 +74,93 @@ CONTEXT_EVENTS = {
 # Goal is at x = +89 (NHL rink: 200ft long, goals 11ft from each end)
 GOAL_X = 89.0
 GOAL_Y = 0.0
+
+# Shot-family events already store their full `details` dict in shots.raw_details_json,
+# keyed on the same (game_id, event_idx). Storing it a second time on the context row
+# would double the JSONB footprint for nothing, so context rows for these carry NULL.
+SHOT_FAMILY_FOR_RAW = SHOT_EVENTS
+
+# Player-id keys that are NOT actors. goalieInNetId does not end in "PlayerId" so it
+# never matches anyway; this set exists so future exclusions have an obvious home.
+ACTOR_KEY_EXCLUDE: set[str] = set()
+
+# plays_context has two actor slots. When an event names more players than that,
+# this decides which two land in the columns; the rest stay in raw_details_json.
+# Lower number wins. The intent is that slot 1 is the player who DID the thing and
+# slot 2 is the player it was done to.
+ROLE_PRIORITY: dict[str, int] = {
+    # slot 1 candidates: the actor
+    "hitting": 0,
+    "committed_by": 0,
+    "winning": 0,
+    "giveaway": 0,
+    "takeaway": 0,
+    "shooting": 0,
+    "scoring": 0,
+    "blocking": 0,
+    # slot 2 candidates: the recipient
+    "drawn_by": 1,
+    "hittee": 1,
+    "losing": 1,
+    # overflow: recoverable from raw_details_json / shots.raw_details_json
+    "served_by": 3,
+    "assist1": 3,
+    "assist2": 4,
+}
+# An unrecognised role sorts between the recipients and the known overflow, so a
+# renamed NHL key still reaches a column instead of being silently dropped.
+DEFAULT_ROLE_PRIORITY = 2
+
+_ACTOR_SUFFIX = "playerid"
+
+
+def _role_from_key(key: str, event_type: str) -> str:
+    """'hittingPlayerId' -> 'hitting'; 'drawnByPlayerId' -> 'drawn_by'.
+
+    A bare 'playerId' carries no role of its own, so the event type supplies one:
+    a giveaway's playerId becomes role 'giveaway'. Without that, every giveaway and
+    takeaway row would share an uninformative role and the two could not be told
+    apart on the role column alone.
+    """
+    base = key[: len(key) - len(_ACTOR_SUFFIX)] if key.lower().endswith(_ACTOR_SUFFIX) else key
+    if not base:
+        return event_type.replace("-", "_")
+    out: list[str] = []
+    for ch in base:
+        if ch.isupper():
+            out.append("_")
+            out.append(ch.lower())
+        else:
+            out.append(ch)
+    return "".join(out).lstrip("_")
+
+
+def _extract_actors(details: dict, event_type: str) -> list[tuple[int, str]]:
+    """Return [(player_id, role), ...] ordered by ROLE_PRIORITY, then payload order.
+
+    Payload order is the tiebreaker rather than anything derived, because dicts from
+    json.load preserve file order, so two events of the same type resolve identically
+    every run. That determinism is what makes the reparse row-for-row reproducible.
+    """
+    found: list[tuple[int, int, str]] = []   # (priority, payload_index, role) + id
+    ids: list[int] = []
+    for idx, (key, value) in enumerate(details.items()):
+        if key in ACTOR_KEY_EXCLUDE:
+            continue
+        if not key.lower().endswith(_ACTOR_SUFFIX):
+            continue
+        if value is None:
+            continue
+        try:
+            pid = int(value)
+        except (TypeError, ValueError):
+            continue
+        role = _role_from_key(key, event_type)
+        found.append((ROLE_PRIORITY.get(role, DEFAULT_ROLE_PRIORITY), idx, role))
+        ids.append(pid)
+
+    order = sorted(range(len(found)), key=lambda i: (found[i][0], found[i][1]))
+    return [(ids[i], found[i][2]) for i in order]
 
 
 def _parse_mmss(s: str) -> int:
@@ -239,6 +346,13 @@ class ContextRow:
     x: Optional[float]
     y: Optional[float]
     team_id: Optional[int]
+    # Added 2026-10-27. All five default to None so existing constructor calls,
+    # including the ones in tests/, keep working unchanged.
+    actor_1_id: Optional[int] = None
+    actor_1_role: Optional[str] = None
+    actor_2_id: Optional[int] = None
+    actor_2_role: Optional[str] = None
+    raw_details_json: Optional[dict] = None
 
 
 @dataclass
@@ -399,6 +513,9 @@ def parse_pbp(payload: dict) -> ParseResult:
 
             # --- Context events (all events, including shots, for temporal context) ---
             if event_type in CONTEXT_EVENTS:
+                actors = _extract_actors(details, event_type)
+                a1_id, a1_role = actors[0] if len(actors) > 0 else (None, None)
+                a2_id, a2_role = actors[1] if len(actors) > 1 else (None, None)
                 result.contexts.append(ContextRow(
                     game_id=game_id,
                     event_idx=i,
@@ -408,6 +525,13 @@ def parse_pbp(payload: dict) -> ParseResult:
                     x=float(x) if x is not None else None,
                     y=float(y) if y is not None else None,
                     team_id=team_id,
+                    actor_1_id=a1_id,
+                    actor_1_role=a1_role,
+                    actor_2_id=a2_id,
+                    actor_2_role=a2_role,
+                    raw_details_json=(
+                        None if event_type in SHOT_FAMILY_FOR_RAW else details
+                    ),
                 ))
 
         except (KeyError, ValueError, TypeError) as e:
