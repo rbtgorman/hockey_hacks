@@ -28,11 +28,13 @@ Shots on goal plus missed shots. Shootout attempts are excluded, as are events l
 | Version | Test AUC | PR-AUC | Log loss | Brier | Max calib. gap | O/E | Calib. slope | Commit |
 |---|---|---|---|---|---|---|---|---|
 | **v1-fenwick** | 0.7661 | 0.2438 | 0.2208 | 0.0596 | 0.0130 | 1.031 | 0.986 | `2ee3bdd` |
+| **v1.1-fenwick** | 0.7722 | 0.2587 | 0.2225 | 0.0605 | 0.0084 | 0.985 | 0.982 | `ab0746a` |
 
 ## What each version changed
 
 - **v1**: Clean geometric baseline: distance, angle, normalized coordinates, situational context and strength state. No player priors of any kind.
 - **v1-fenwick**: v1 features and hyperparameters retrained on unblocked attempts (shot_features_fenwick). Removes the 2023-24 on-goal relabel from the target population.
+- **v1.1-fenwick**: v1-fenwick plus is_post_rebound (a rebound off a post or the crossbar), trained on 2022-23 + 2023-24, validated on 2024-25, tested on 2025-26.
 - **v2.2**: v1 architecture plus a static per-player shooter prior from skater_priors_train, pooled across the training seasons and applied to every shot regardless of date. Stops the v2/v2.1 leakage but the prior is stale.
 - **v2.3**: v1 architecture plus an expanding-window shooter prior (trailing 2-year window, resolved per player per game-date). Fixes the leakage and staleness introduced by the season-pooled priors in v2 and v2.2.
 - **v2.3-prepatch**: v1 architecture plus an expanding-window shooter prior (trailing 2-year window, resolved per player per game-date). Fixes the leakage and staleness introduced by the season-pooled priors in v2 and v2.2.

@@ -47,6 +47,17 @@ DIFFERENCES FROM build_features.py
    season), so as its own category it tells the model the answer. Leaving
    it NULL would not help: LightGBM learns a direction for missing values,
    and it would learn the same thing.
+8. is_post_rebound (new, not in build_features.py): an is_rebound whose
+   previous same-team shot was a missed shot off a post or the crossbar.
+   The reason labels changed after 2022-23 ('goalpost' became
+   'hit-left-post' / 'hit-right-post'; 'hit-crossbar' is in every season;
+   'above-crossbar' means over the net and is not a post), so all four post
+   labels count. The flag describes the previous shot only: on the shot
+   itself a post is never a goal, so it would give away the answer.
+   Posts per game still rise in 2024-25 (check 9), so the flag carries some
+   of that recording change.
+   Giveaway and takeaway stay separate last_event_type values: they mean
+   opposite things for the shooting team, so they are not merged.
 
 Every other feature is defined exactly as in build_features.py. The first
 verify query checks that claim: on 2022-23, where neither regime-only event
@@ -85,7 +96,8 @@ shots_kept AS (
            s.game_seconds, s.event_type, s.is_goal,
            s.distance_ft, s.angle_deg, s.x_raw, s.y_raw, s.x_norm, s.y_norm,
            s.shot_type, s.strength_state, s.empty_net, s.is_home_shot,
-           s.home_score_before, s.away_score_before, s.shooter_team_id
+           s.home_score_before, s.away_score_before, s.shooter_team_id,
+           s.raw_details_json::jsonb ->> 'reason' AS reason
     FROM shots s
     WHERE NOT EXISTS (
         SELECT 1 FROM regime_only r
@@ -136,7 +148,8 @@ shot_prev_same_team AS (
         s.game_id,
         s.event_idx,
         s2.game_seconds AS prev_shot_game_seconds,
-        s2.event_type   AS prev_shot_event_type
+        s2.event_type   AS prev_shot_event_type,
+        s2.reason       AS prev_shot_reason
     FROM pop s
     LEFT JOIN shots_kept s2
         ON s2.game_id = s.game_id
@@ -202,6 +215,18 @@ SELECT
         THEN TRUE
         ELSE FALSE
     END AS is_rebound,
+
+    -- Post rebound: a rebound whose previous shot hit a post or the crossbar.
+    CASE
+        WHEN spt.prev_shot_game_seconds IS NOT NULL
+         AND spt.prev_shot_event_type = 'missed-shot'
+         AND spt.prev_shot_reason IN ('goalpost', 'hit-left-post',
+                                      'hit-right-post', 'hit-crossbar')
+         AND (s.game_seconds - spt.prev_shot_game_seconds) <= 3
+         AND (s.game_seconds - spt.prev_shot_game_seconds) >= 0
+        THEN TRUE
+        ELSE FALSE
+    END AS is_post_rebound,
 
     -- Rush: offensive-zone shot within 5 s of a turnover, faceoff or hit
     -- near center ice (|raw x| < 25; plays_context is not normalized).
@@ -368,6 +393,23 @@ VERIFY_QUERIES = [
      HAVING (COUNT(*) >= 10  AND COUNT(*) FILTER (WHERE is_goal) = COUNT(*))
          OR (COUNT(*) >= 200 AND COUNT(*) FILTER (WHERE is_goal) = 0)
      ORDER BY 1, 3 DESC;
+     """),
+    ("9. Post rebounds by season: per game, and goal rate against other rebounds "
+     "(posts per game rise in 2024-25; see docstring item 8)",
+     """
+     SELECT substr(f.game_id::text, 1, 4) AS season_start,
+            ROUND((COUNT(*) FILTER (WHERE f.is_post_rebound))::numeric
+                  / COUNT(DISTINCT f.game_id), 3) AS post_rebounds_per_game,
+            COUNT(*) FILTER (WHERE f.is_post_rebound) AS post_rebounds,
+            ROUND(100.0 * COUNT(*) FILTER (WHERE f.is_post_rebound AND f.is_goal)
+                  / NULLIF(COUNT(*) FILTER (WHERE f.is_post_rebound), 0), 2) AS post_goal_pct,
+            ROUND(100.0 * COUNT(*) FILTER (WHERE f.is_rebound AND NOT f.is_post_rebound
+                                             AND f.is_goal)
+                  / NULLIF(COUNT(*) FILTER (WHERE f.is_rebound AND NOT f.is_post_rebound), 0),
+                  2) AS other_rebound_goal_pct
+     FROM shot_features_fenwick f
+     GROUP BY 1
+     ORDER BY 1;
      """),
 ]
 

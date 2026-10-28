@@ -1,0 +1,98 @@
+{
+  "version": "v1.1-fenwick",
+  "description": "v1-fenwick plus is_post_rebound (a rebound off a post or the crossbar), trained on 2022-23 + 2023-24, validated on 2024-25, tested on 2025-26.",
+  "generated_at_utc": "2026-10-28T20:06:09+00:00",
+  "git_commit": "ab0746a",
+  "git_dirty": true,
+  "data": {
+    "population": "fenwick",
+    "table": "shot_features_fenwick",
+    "n_shots": 482679,
+    "seasons": [
+      20222023,
+      20232024,
+      20242025,
+      20252026
+    ],
+    "split": {
+      "train": [
+        20222023,
+        20232024
+      ],
+      "val": 20242025,
+      "test": 20252026
+    }
+  },
+  "splits": {
+    "train": {
+      "auc": 0.8117451477605133,
+      "pr_auc": 0.30232155819752415,
+      "log_loss": 0.20962828017802113,
+      "brier": 0.057744978113683655,
+      "n": 244595,
+      "goal_rate": 0.07110120811954455,
+      "mean_pred": 0.07111668988702824,
+      "observed_rate": 0.07110120811954455,
+      "o_e": 0.9997823047232895,
+      "citl": 1.548176748368546e-05,
+      "cal_intercept": 0.5134751615438226,
+      "cal_slope": 1.2422823949381974
+    },
+    "val": {
+      "auc": 0.7844746376188811,
+      "pr_auc": 0.2737230228683887,
+      "log_loss": 0.21539650158888388,
+      "brier": 0.05843619170422371,
+      "n": 119479,
+      "goal_rate": 0.0705981804333816,
+      "mean_pred": 0.06877803576985068,
+      "observed_rate": 0.0705981804333816,
+      "o_e": 1.0264640396190086,
+      "citl": -0.0018201446635309204,
+      "cal_intercept": 0.09196962332613573,
+      "cal_slope": 1.0277180581782128
+    },
+    "test": {
+      "auc": 0.7722139945001609,
+      "pr_auc": 0.25874745744621686,
+      "log_loss": 0.22250724451603082,
+      "brier": 0.06045115234992857,
+      "n": 118605,
+      "goal_rate": 0.07227351292104042,
+      "mean_pred": 0.07335383408695402,
+      "observed_rate": 0.07227351292104042,
+      "o_e": 0.9852724649043841,
+      "citl": 0.0010803211659135975,
+      "cal_intercept": -0.05529340265105276,
+      "cal_slope": 0.9824655367676894
+    }
+  },
+  "calibration": {
+    "n_bins": 10,
+    "max_abs_gap": 0.008376185631850497,
+    "binning": "equal-count (qcut) on predicted probability"
+  },
+  "hyperparameters": {
+    "best_iteration": 220,
+    "settings": "identical to v1"
+  },
+  "features": [
+    "distance_ft",
+    "angle_deg",
+    "x_norm",
+    "y_norm",
+    "score_diff",
+    "seconds_since_last_event",
+    "distance_from_last_event_ft",
+    "period_num",
+    "seconds_remaining_in_period",
+    "is_rebound",
+    "is_rush",
+    "empty_net",
+    "is_post_rebound",
+    "shot_type",
+    "strength_state",
+    "last_event_type"
+  ],
+  "notes": "Tested on 2025-26, not 2024-25: test AUC is not comparable with earlier leaderboard rows. Compare against the three-model block in results/v1_1_fenwick_train.log instead."
+}

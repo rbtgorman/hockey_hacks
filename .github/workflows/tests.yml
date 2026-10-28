@@ -38,6 +38,9 @@ jobs:
       - name: Shift parser
         run: python tests/test_parser_shifts.py
 
+      - name: HTML shift report parser
+        run: python tests/test_parser_shifts_html.py
+
       - name: Boxscore/landing parser
         run: python tests/test_parser_landing.py
 

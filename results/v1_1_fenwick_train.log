@@ -1,0 +1,179 @@
+/home/bobert/my-projects/hockey-hacks/model/train_v1_fenwick.py:116: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df = pd.read_sql(query, conn)
+============================================================
+v1.1-fenwick: v1 features + is_post_rebound on shot_features_fenwick
+============================================================
+Loaded 482,679 unblocked attempts from shot_features_fenwick, 2022-10-07 to 2026-06-14
+Seasons present: [20222023, 20232024, 20242025, 20252026]
+
+Event mix by season (share of rows):
+event_type   goal  missed-shot  shot-on-goal
+season                                      
+20222023    0.072        0.283         0.645
+20232024    0.070        0.311         0.619
+20242025    0.071        0.339         0.591
+20252026    0.072        0.345         0.583
+Leakage check: 5,571/5,592 games (99.6%) have varying score_diff across shots — expect >80% for non-leaky in-game state.
+Train: seasons [20222023, 20232024], 244,595 attempts, 7.11% goals
+Val:   seasons [20242025], 119,479 attempts, 7.06% goals
+Test:  seasons [20252026], 118,605 attempts, 7.23% goals
+
+Training LightGBM on 16 features (early stopping on VALIDATION, test untouched)...
+[100]	val's auc: 0.783578
+[200]	val's auc: 0.784433
+Best iteration: 220
+
+--- v1.1-fenwick by split ---
+  train (244,595)            AUC 0.8117  log loss 0.2096  Brier 0.0577  O/E 1.000  slope 1.242
+  val (119,479)              AUC 0.7845  log loss 0.2154  Brier 0.0584  O/E 1.026  slope 1.028
+  test (118,605)             AUC 0.7722  log loss 0.2225  Brier 0.0605  O/E 0.985  slope 0.982
+
+--- Same test season (2025-26), three models ---
+  v1-fenwick (committed)     AUC 0.7552  log loss 0.2275  Brier 0.0616  O/E 0.989  slope 0.945
+
+Training LightGBM on 15 features (early stopping on VALIDATION, test untouched)...
+[100]	val's auc: 0.783501
+[200]	val's auc: 0.784222
+Best iteration: 188
+  ablation (no post flag)    AUC 0.7715  log loss 0.2227  Brier 0.0605  O/E 0.986  slope 0.990
+  v1.1-fenwick               AUC 0.7722  log loss 0.2225  Brier 0.0605  O/E 0.985  slope 0.982
+
+--- Reliability on VAL ---
+ bin     n  mean_pred  actual_rate  pred_vs_actual_gap
+   0 11948     0.0046       0.0033              0.0014
+   1 11948     0.0102       0.0112             -0.0010
+   2 11948     0.0166       0.0172             -0.0005
+   3 11948     0.0260       0.0278             -0.0018
+   4 11948     0.0386       0.0392             -0.0006
+   5 11947     0.0541       0.0506              0.0034
+   6 11948     0.0721       0.0749             -0.0028
+   7 11948     0.0956       0.0961             -0.0005
+   8 11948     0.1277       0.1343             -0.0067
+   9 11948     0.2423       0.2514             -0.0091
+Max gap (val): 0.0091
+
+--- Reliability on TEST ---
+ bin     n  mean_pred  actual_rate  pred_vs_actual_gap
+   0 11861     0.0050       0.0050              0.0000
+   1 11860     0.0111       0.0110              0.0001
+   2 11861     0.0187       0.0183              0.0004
+   3 11860     0.0291       0.0295             -0.0004
+   4 11861     0.0427       0.0430             -0.0003
+   5 11860     0.0590       0.0590              0.0000
+   6 11860     0.0781       0.0808             -0.0026
+   7 11861     0.1021       0.1031             -0.0010
+   8 11860     0.1349       0.1288              0.0062
+   9 11861     0.2526       0.2442              0.0084
+Max gap (test): 0.0084
+
+--- O/E by segment (val = 2024-25, test = 2025-26; 1.000 is right on average) ---
+
+  by net
+                val_n  val_oe  test_n  test_oe
+segment                                       
+goalie in net  118477   1.028  117537    0.989
+empty net        1002   1.010    1068    0.933
+
+  by strength
+         val_n  val_oe  test_n  test_oe
+segment                                
+5v5      97271   1.022   95052    1.004
+PP       15683   1.049   17004    0.948
+other     3940   1.003    3916    0.942
+PK        2585   1.063    2633    0.945
+
+  by shot_type
+              val_n  val_oe  test_n  test_oe
+segment                                     
+wrist-snap    82556   1.055   80934    1.030
+slap          13955   1.004   14088    0.992
+tip-in        10622   0.914   11319    0.755
+backhand       8460   1.038    8498    0.997
+deflected      2039   0.991    1965    1.006
+wrap-around     838   0.737     720    0.676
+bat             443   0.748     593    0.625
+poke            481   1.051     400    0.939
+between-legs     75   0.263      80    1.077
+cradle           10   0.000       8    1.079
+
+  by distance
+          val_n  val_oe  test_n  test_oe
+segment                                 
+20-40 ft  39571   1.070   39303    1.068
+<20 ft    34355   1.008   36402    0.939
+40-60 ft  29542   1.030   28340    1.041
+60+ ft    16011   0.928   14560    0.864
+
+  by angle
+           val_n  val_oe  test_n  test_oe
+segment                                  
+15-30 deg  29669   1.066   29066    1.039
+0-15 deg   27410   1.038   29004    0.954
+30-45 deg  29190   1.013   28411    0.970
+45-60 deg  18781   0.976   18576    0.994
+60+ deg    14429   0.996   13548    0.960
+
+  by last_event
+                val_n  val_oe  test_n  test_oe
+segment                                       
+unblocked-shot  35106   1.053   35772    0.978
+faceoff         29220   1.087   29094    1.015
+hit             20072   1.060   18943    1.037
+giveaway        15269   0.907   15986    0.908
+blocked-shot    14811   1.007   13769    0.978
+takeaway         4920   0.905    4956    1.036
+stoppage           51   0.701      48    1.178
+penalty            30   0.667      37    0.495
+
+  by post_rebound
+               val_n  val_oe  test_n  test_oe
+segment                                      
+other         119239   1.027  118358    0.985
+post rebound     240   0.929     247    0.979
+
+--- LightGBM gain importance ---
+                    feature          gain
+                distance_ft 155563.928866
+                  empty_net  61687.037961
+                  angle_deg  40308.425463
+   seconds_since_last_event  27440.664696
+                  shot_type  18345.889537
+distance_from_last_event_ft  17896.506320
+             strength_state  16628.579098
+seconds_remaining_in_period  12316.838066
+                     y_norm  12002.737317
+                     x_norm   7597.835763
+            last_event_type   6170.870174
+                 score_diff   3481.399786
+                 is_rebound   2190.276062
+                 period_num   1671.466663
+            is_post_rebound   1009.001369
+                    is_rush    286.729320
+
+--- Permutation importance on TEST ---
+                    feature  auc_drop_mean  auc_drop_std
+                distance_ft         0.1873        0.0013
+                  empty_net         0.0282        0.0004
+                  angle_deg         0.0275        0.0002
+                  shot_type         0.0242        0.0000
+   seconds_since_last_event         0.0234        0.0001
+             strength_state         0.0061        0.0004
+            last_event_type         0.0060        0.0008
+                     y_norm         0.0059        0.0001
+distance_from_last_event_ft         0.0031        0.0002
+                     x_norm         0.0014        0.0002
+                 is_rebound         0.0007        0.0001
+seconds_remaining_in_period         0.0003        0.0002
+                 score_diff         0.0003        0.0001
+                    is_rush         0.0002        0.0000
+            is_post_rebound         0.0001        0.0001
+                 period_num         0.0001        0.0001
+
+Model and meta saved to /home/bobert/my-projects/hockey-hacks/model/artifacts/xg_v1_1_fenwick*
+
+Results written to /home/bobert/my-projects/hockey-hacks/results/v1_1-fenwick/
+  metrics.json  reliability.csv  calibration.png  feature_importance.csv
+Leaderboard written to /home/bobert/my-projects/hockey-hacks/results/leaderboard.md
+Segment and permutation tables saved to /home/bobert/my-projects/hockey-hacks/results/v1_1-fenwick/
+
+Done.
