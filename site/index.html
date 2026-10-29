@@ -6,11 +6,12 @@
 <title>Hockey Hacks: NHL expected goals</title>
 <meta name="description" content="A personal NHL expected-goals model: what it found about how the league records shots, how it scores, and what is still open. Work in progress.">
 <meta name="author" content="Robert Gorman">
+<meta name="theme-color" content="#000000">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Hockey Hacks: NHL expected goals">
 <meta property="og:description" content="A personal NHL expected-goals model: what it found about how the league records shots, how it scores, and what is still open. Work in progress.">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%232a78d6'/><rect x='22' y='54' width='12' height='26' fill='white'/><rect x='44' y='38' width='12' height='42' fill='white'/><rect x='66' y='22' width='12' height='58' fill='white'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23f74902'/><rect x='22' y='54' width='12' height='26' fill='black'/><rect x='44' y='38' width='12' height='42' fill='black'/><rect x='66' y='22' width='12' height='58' fill='black'/></svg>">
 <style>
   /* baseline the artifact host supplies; needed for a standalone page */
   :root { padding-bottom: env(safe-area-inset-bottom, 0px); }
@@ -19,76 +20,32 @@
   [hidden] { display: none !important; }
 </style>
 <style>
+  /* Flyers-inspired: black surfaces, orange accent. One theme, dark in every color mode. */
   :root {
-    color-scheme: light;
-    --plane:       #f7f8f7;
-    --surface:     #fdfdfc;
-    --ink:         #0b0e0d;
-    --ink-2:       #4e5453;
-    --muted:       #8a908e;
-    --rule:        #e2e4e0;
-    --rule-soft:   #eceeea;
-    --axis:        #c3c7c3;
-    --s1:          #2a78d6;
-    --s2:          #eb6834;
-    --s3:          #1baf7a;
-    --good:        #0ca30c;
-    --warn:        #b4790a;
-    --idle:        #8a908e;
-    --chip:        rgba(11,14,13,0.05);
-    --ring:        rgba(11,14,13,0.10);
-    --shadow:      0 1px 2px rgba(11,14,13,0.05);
-    --shamrock:    #2f8f4e;
-    --accent-fill: #2a78d6;
-    --hot:         #e34948;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme: dark;
-      --plane:     #0d0f0e;
-      --surface:   #171a19;
-      --ink:       #f4f6f4;
-      --ink-2:     #c1c6c3;
-      --muted:     #8a908e;
-      --rule:      #2b2f2d;
-      --rule-soft: #242826;
-      --axis:      #3a3f3d;
-      --s1:        #3987e5;
-      --s2:        #d95926;
-      --s3:        #199e70;
-      --good:      #0ca30c;
-      --warn:      #fab219;
-      --idle:      #8a908e;
-      --chip:      rgba(255,255,255,0.06);
-      --ring:      rgba(255,255,255,0.10);
-      --shadow:    none;
-      --shamrock:  #4cae6b;
-      --accent-fill: #256abf;
-      --hot:       #e66767;
-    }
-  }
-  :root[data-theme="dark"] {
     color-scheme: dark;
-    --plane:     #0d0f0e;
-    --surface:   #171a19;
-    --ink:       #f4f6f4;
-    --ink-2:     #c1c6c3;
-    --muted:     #8a908e;
-    --rule:      #2b2f2d;
-    --rule-soft: #242826;
-    --axis:      #3a3f3d;
-    --s1:        #3987e5;
-    --s2:        #d95926;
-    --s3:        #199e70;
-    --good:      #0ca30c;
-    --warn:      #fab219;
-    --idle:      #8a908e;
-    --chip:      rgba(255,255,255,0.06);
-    --ring:      rgba(255,255,255,0.10);
-    --shadow:    none;
-    --shamrock:  #4cae6b;
-    --accent-fill: #256abf;
-    --hot:       #e66767;
+    --plane:       #0a0a0a;
+    --surface:     #161616;
+    --ink:         #f5f5f5;
+    --ink-2:       #c4c4c4;
+    --muted:       #8e8e8e;
+    --rule:        #2c2c2c;
+    --rule-soft:   #222222;
+    --axis:        #3d3d3d;
+    --s1:          #f74902;
+    --accent-fill: #f74902;
+    --on-accent:   #000000;
+    --white:       #ffffff;
+    --on-white-2:  #4a4a4a;
+    --hot:         #f74902;
+    --warn:        #fab219;
+    --chip:        rgba(255,255,255,0.07);
+    --ring:        rgba(255,255,255,0.12);
+    --shadow:      none;
+    --s2:          #3987e5;
+    --s3:          #199e70;
+    --good:        #0ca30c;
+    --idle:        #8e8e8e;
+    --shamrock:    #4cae6b;
   }
 
   body {
@@ -111,20 +68,20 @@
   code { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace; font-size: 0.86em; }
 
   /* ---- site navigation: same block in periods.html ---- */
-  .topnav { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--plane) 90%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); padding-top: env(safe-area-inset-top, 0px); }
+  .topnav { position: sticky; top: 0; z-index: 10; background: #000; border-bottom: 4px solid var(--accent-fill); box-shadow: 0 3px 0 var(--white); padding-top: env(safe-area-inset-top, 0px); }
   .topnav-in { max-width: 1120px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
   .brand { display: inline-flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; }
   .brand svg { width: 26px; height: 26px; flex: none; }
   .tabs { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 auto; }
-  .tab { display: flex; align-items: center; gap: 11px; min-height: 52px; padding: 8px 18px 8px 14px; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: var(--shadow); }
+  .tab { display: flex; align-items: center; gap: 11px; min-height: 52px; padding: 8px 18px 8px 14px; border: 2px solid var(--white); border-radius: 12px; background: var(--white); color: #000; text-decoration: none; }
   .tab:hover { border-color: var(--s1); }
   .tab .ic { width: 24px; height: 24px; flex: none; color: var(--s1); }
   .tab b { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 650; line-height: 1.2; }
-  .tab small { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.3; }
-  .tab[aria-current="page"] { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
-  .tab[aria-current="page"] .ic, .tab[aria-current="page"] small { color: rgba(255,255,255,0.88); }
-  .tab .new { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: var(--hot); color: #fff; }
-  .tab[aria-current="page"] .new { background: #fff; color: var(--accent-fill); }
+  .tab small { display: block; font-size: 12.5px; color: var(--on-white-2); line-height: 1.3; }
+  .tab[aria-current="page"] { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
+  .tab[aria-current="page"] .ic, .tab[aria-current="page"] small { color: rgba(0,0,0,0.78); }
+  .tab .new { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: var(--hot); color: var(--on-accent); }
+  .tab[aria-current="page"] .new { background: #000; color: var(--accent-fill); }
   @media (max-width: 720px) {
     .topnav { position: static; }
     .tabs { width: 100%; }
@@ -138,19 +95,19 @@
   .feature:hover .feature-cta { filter: brightness(1.08); }
   .feature-text { flex: 1 1 420px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
   .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--s1); }
-  .kicker .new { font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: var(--hot); color: #fff; }
+  .kicker .new { font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: var(--hot); color: var(--on-accent); }
   .feature-h { font-size: clamp(19px, 2.6vw, 24px); }
   .feature p { color: var(--ink-2); font-size: 15px; max-width: 70ch; }
   .feature .feature-meta { font-size: 13px; color: var(--muted); }
-  .feature-cta { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 10px; background: var(--accent-fill); color: #fff; font-size: 17px; font-weight: 650; }
+  .feature-cta { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 10px; background: var(--accent-fill); color: var(--on-accent); font-size: 17px; font-weight: 650; }
   /* ---- jump links ---- */
   .jump { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px; }
-  .jump a { text-decoration: none; font-size: 15px; font-weight: 600; padding: 8px 15px; border-radius: 999px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); }
-  .jump a:hover { border-color: var(--s1); color: var(--s1); }
+  .jump a { text-decoration: none; font-size: 15px; font-weight: 650; padding: 8px 16px; border-radius: 999px; border: 2px solid var(--white); background: var(--white); color: #000; }
+  .jump a:hover { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
   section[id] { scroll-margin-top: 92px; }
   @media (max-width: 720px) { section[id] { scroll-margin-top: 12px; } }
 
-  header.masthead { display: flex; flex-direction: column; gap: 14px; padding-bottom: 22px; border-bottom: 1px solid var(--rule); }
+  header.masthead { display: flex; flex-direction: column; gap: 14px; padding-bottom: 22px; border-bottom: 2px solid var(--white); }
   .lede { font-size: clamp(15px, 2.1vw, 17px); color: var(--ink-2); max-width: 62ch; }
   .meta-row { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 13px; color: var(--muted); }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -161,7 +118,7 @@
   .section-head .hint { font-size: 12.5px; color: var(--muted); }
 
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-  .stat { background: var(--surface); border: 1px solid var(--rule); border-top: 4px solid var(--axis); border-radius: 10px; padding: 12px 18px 14px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow); }
+  .stat { background: var(--surface); border: 1px solid var(--rule); border-top: 4px solid var(--white); border-radius: 10px; padding: 12px 18px 14px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow); }
   .stat.good { border-top-color: var(--good); }
   .stat.warn { border-top-color: var(--warn); }
   .stat.info { border-top-color: var(--s1); }
@@ -200,10 +157,10 @@
   thead th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--rule); }
   tbody tr.current td { font-weight: 650; background: color-mix(in srgb, var(--s1) 10%, var(--surface)); }
   tbody tr.current td:first-child { box-shadow: inset 4px 0 0 var(--s1); }
-  .cur { margin-left: 8px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; background: var(--accent-fill); color: #fff; }
+  .cur { margin-left: 8px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; background: var(--accent-fill); color: var(--on-accent); }
 
   .stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-  .stage { border: 1px solid var(--rule); border-top: 4px solid var(--axis); border-radius: 10px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .stage { border: 1px solid var(--rule); border-top: 4px solid var(--white); border-radius: 10px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
   .stage.done { border-top-color: var(--good); }
   .stage.active { border-top-color: var(--warn); }
   .stage.next { border-top-color: var(--s1); }
@@ -248,7 +205,7 @@
 
 <nav class="topnav" aria-label="Site">
   <div class="topnav-in">
-    <a class="brand" href="./"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="18" fill="var(--s1)"/><rect x="22" y="54" width="12" height="26" fill="#fff"/><rect x="44" y="38" width="12" height="42" fill="#fff"/><rect x="66" y="22" width="12" height="58" fill="#fff"/></svg>Hockey Hacks</a>
+    <a class="brand" href="./"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="18" fill="var(--s1)"/><rect x="22" y="54" width="12" height="26" fill="#000"/><rect x="44" y="38" width="12" height="42" fill="#000"/><rect x="66" y="22" width="12" height="58" fill="#000"/></svg>Hockey Hacks</a>
     <div class="tabs">
       <a class="tab" href="periods.html">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>

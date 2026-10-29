@@ -6,77 +6,40 @@
 <title>Hockey Hacks: period scoring</title>
 <meta name="description" content="How often each NHL team's games hit common period lines, with the range luck alone allows, a regressed estimate, and what the shots deserved by expected goals.">
 <meta name="author" content="Robert Gorman">
+<meta name="theme-color" content="#000000">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Hockey Hacks: period scoring">
 <meta property="og:description" content="NHL period scoring by team, with luck ranges and expected goals.">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%232a78d6'/><rect x='22' y='54' width='12' height='26' fill='white'/><rect x='44' y='38' width='12' height='42' fill='white'/><rect x='66' y='22' width='12' height='58' fill='white'/></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23f74902'/><rect x='22' y='54' width='12' height='26' fill='black'/><rect x='44' y='38' width='12' height='42' fill='black'/><rect x='66' y='22' width='12' height='58' fill='black'/></svg>">
 <style>
   /* Tokens and base styles shared with index.html so both pages read as one site. */
   :root { padding-bottom: env(safe-area-inset-bottom, 0px); }
   body { margin: 0; }
   [hidden] { display: none !important; }
+  /* Flyers-inspired: black surfaces, orange accent. One theme, dark in every color mode. */
   :root {
-    color-scheme: light;
-    --plane:       #f7f8f7;
-    --surface:     #fdfdfc;
-    --ink:         #0b0e0d;
-    --ink-2:       #4e5453;
-    --muted:       #8a908e;
-    --rule:        #e2e4e0;
-    --rule-soft:   #eceeea;
-    --axis:        #c3c7c3;
-    --s1:          #2a78d6;
-    --accent-fill: #2a78d6;
-    --hot:         #e34948;
-    --cold:        #2a78d6;
-    --neutral:     #8a908e;
-    --warn:        #b4790a;
-    --chip:        rgba(11,14,13,0.05);
-    --ring:        rgba(11,14,13,0.10);
-    --shadow:      0 1px 2px rgba(11,14,13,0.05);
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      color-scheme: dark;
-      --plane:     #0d0f0e;
-      --surface:   #171a19;
-      --ink:       #f4f6f4;
-      --ink-2:     #c1c6c3;
-      --muted:     #8a908e;
-      --rule:      #2b2f2d;
-      --rule-soft: #242826;
-      --axis:      #3a3f3d;
-      --s1:        #3987e5;
-      --accent-fill: #256abf;
-      --hot:       #e66767;
-      --cold:      #3987e5;
-      --neutral:   #8a908e;
-      --warn:      #fab219;
-      --chip:      rgba(255,255,255,0.06);
-      --ring:      rgba(255,255,255,0.10);
-      --shadow:    none;
-    }
-  }
-  :root[data-theme="dark"] {
     color-scheme: dark;
-    --plane:     #0d0f0e;
-    --surface:   #171a19;
-    --ink:       #f4f6f4;
-    --ink-2:     #c1c6c3;
-    --muted:     #8a908e;
-    --rule:      #2b2f2d;
-    --rule-soft: #242826;
-    --axis:      #3a3f3d;
-    --s1:        #3987e5;
-    --accent-fill: #256abf;
-    --hot:       #e66767;
-    --cold:      #3987e5;
-    --neutral:   #8a908e;
-    --warn:      #fab219;
-    --chip:      rgba(255,255,255,0.06);
-    --ring:      rgba(255,255,255,0.10);
-    --shadow:    none;
+    --plane:       #0a0a0a;
+    --surface:     #161616;
+    --ink:         #f5f5f5;
+    --ink-2:       #c4c4c4;
+    --muted:       #8e8e8e;
+    --rule:        #2c2c2c;
+    --rule-soft:   #222222;
+    --axis:        #3d3d3d;
+    --s1:          #f74902;
+    --accent-fill: #f74902;
+    --on-accent:   #000000;
+    --white:       #ffffff;
+    --on-white-2:  #4a4a4a;
+    --hot:         #f74902;
+    --warn:        #fab219;
+    --chip:        rgba(255,255,255,0.07);
+    --ring:        rgba(255,255,255,0.12);
+    --shadow:      none;
+    --cold:        #3987e5;
+    --neutral:     #8e8e8e;
   }
 
   body {
@@ -97,20 +60,20 @@
   a:focus-visible, button:focus-visible, select:focus-visible, svg:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; border-radius: 3px; }
 
   /* ---- site navigation: same block in index.html ---- */
-  .topnav { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--plane) 90%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); padding-top: env(safe-area-inset-top, 0px); }
+  .topnav { position: sticky; top: 0; z-index: 10; background: #000; border-bottom: 4px solid var(--accent-fill); box-shadow: 0 3px 0 var(--white); padding-top: env(safe-area-inset-top, 0px); }
   .topnav-in { max-width: 1120px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
   .brand { display: inline-flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; }
   .brand svg { width: 26px; height: 26px; flex: none; }
   .tabs { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 auto; }
-  .tab { display: flex; align-items: center; gap: 11px; min-height: 52px; padding: 8px 18px 8px 14px; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: var(--shadow); }
+  .tab { display: flex; align-items: center; gap: 11px; min-height: 52px; padding: 8px 18px 8px 14px; border: 2px solid var(--white); border-radius: 12px; background: var(--white); color: #000; text-decoration: none; }
   .tab:hover { border-color: var(--s1); }
   .tab .ic { width: 24px; height: 24px; flex: none; color: var(--s1); }
   .tab b { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 650; line-height: 1.2; }
-  .tab small { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.3; }
-  .tab[aria-current="page"] { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
-  .tab[aria-current="page"] .ic, .tab[aria-current="page"] small { color: rgba(255,255,255,0.88); }
-  .tab .new { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: var(--hot); color: #fff; }
-  .tab[aria-current="page"] .new { background: #fff; color: var(--accent-fill); }
+  .tab small { display: block; font-size: 12.5px; color: var(--on-white-2); line-height: 1.3; }
+  .tab[aria-current="page"] { background: var(--accent-fill); border-color: var(--accent-fill); color: var(--on-accent); }
+  .tab[aria-current="page"] .ic, .tab[aria-current="page"] small { color: rgba(0,0,0,0.78); }
+  .tab .new { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: var(--hot); color: var(--on-accent); }
+  .tab[aria-current="page"] .new { background: #000; color: var(--accent-fill); }
   @media (max-width: 720px) {
     .topnav { position: static; }
     .tabs { width: 100%; }
@@ -118,7 +81,7 @@
     .tab small, .tab.ext { display: none; }
   }
 
-  header.masthead { display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--rule); }
+  header.masthead { display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; border-bottom: 2px solid var(--white); }
   .lede { font-size: clamp(15px, 2.1vw, 17px); color: var(--ink-2); max-width: 66ch; }
   .meta-row { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 13px; color: var(--muted); }
 
@@ -131,22 +94,22 @@
   .filter-row { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: end; }
   .flabel { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 6px; }
   select { font: inherit; font-size: 15px; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 32px 8px 12px; min-height: 40px; max-width: 100%; }
-  .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  .seg { display: inline-flex; border: 1px solid var(--white); border-radius: 8px; overflow: hidden; }
   .seg button, .chip { font: inherit; cursor: pointer; color: var(--ink); background: var(--surface); border: 0; }
   .seg button { font-size: 15px; padding: 8px 16px; min-height: 40px; }
-  .seg button + button { border-left: 1px solid var(--rule); }
-  .seg button[aria-pressed="true"], .chip[aria-pressed="true"] { background: var(--accent-fill); color: #fff; }
+  .seg button + button { border-left: 1px solid var(--white); }
+  .seg button[aria-pressed="true"], .chip[aria-pressed="true"] { background: var(--accent-fill); color: var(--on-accent); }
   .mgroups { display: flex; flex-direction: column; gap: 10px; }
   .mgroup { display: flex; flex-direction: column; gap: 6px; }
   .mg-label { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .chip { font-size: 14px; padding: 7px 13px; border: 1px solid var(--rule); border-radius: 999px; min-height: 36px; text-align: left; }
-  .chip:hover { border-color: var(--s1); }
+  .chip { font-size: 14px; padding: 7px 13px; border: 1px solid rgba(255,255,255,0.55); border-radius: 999px; min-height: 36px; text-align: left; }
+  .chip:hover { border-color: var(--s1); color: var(--s1); }
   .chip[aria-pressed="true"] { border-color: var(--accent-fill); font-weight: 600; }
 
   /* ---- tiles ---- */
   .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
-  .stat { background: var(--surface); border: 1px solid var(--rule); border-top: 4px solid var(--axis); border-radius: 10px; padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 3px; box-shadow: var(--shadow); min-width: 0; }
+  .stat { background: var(--surface); border: 1px solid var(--rule); border-top: 4px solid var(--white); border-radius: 10px; padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 3px; box-shadow: var(--shadow); min-width: 0; }
   .stat.hot { border-top-color: var(--hot); }
   .stat.cold { border-top-color: var(--cold); }
   .stat.info { border-top-color: var(--s1); }
@@ -190,7 +153,7 @@
   .tick text { font-size: 10px; fill: var(--muted); font-weight: 500; letter-spacing: 0; text-transform: none; }
   td.num-strong { font-weight: 650; }
 
-  /* Color follows direction (red = more, blue = fewer); strength follows how unlikely luck is. */
+  /* Color follows direction (orange = more, blue = fewer); strength follows how unlikely luck is. */
   .hot1  { background: color-mix(in srgb, var(--hot) 13%, var(--surface)); }
   .hot2  { background: color-mix(in srgb, var(--hot) 30%, var(--surface)); }
   .cold1 { background: color-mix(in srgb, var(--cold) 13%, var(--surface)); }
@@ -229,7 +192,7 @@
 <body>
 <nav class="topnav" aria-label="Site">
   <div class="topnav-in">
-    <a class="brand" href="./"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="18" fill="var(--s1)"/><rect x="22" y="54" width="12" height="26" fill="#fff"/><rect x="44" y="38" width="12" height="42" fill="#fff"/><rect x="66" y="22" width="12" height="58" fill="#fff"/></svg>Hockey Hacks</a>
+    <a class="brand" href="./"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="18" fill="var(--s1)"/><rect x="22" y="54" width="12" height="26" fill="#000"/><rect x="44" y="38" width="12" height="42" fill="#000"/><rect x="66" y="22" width="12" height="58" fill="#000"/></svg>Hockey Hacks</a>
     <div class="tabs">
       <a class="tab" href="periods.html" aria-current="page">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>
@@ -338,7 +301,7 @@
     <div class="prose">
       <p class="callout">At 10 to 13 games, luck explains almost all of the spread between teams on these measures. A team that is exactly league average lands anywhere from about 25% to 80% over 10 games. That is why the shrunk column barely moves from the norm: the flatness is the finding.</p>
       <dl>
-        <dt>Colors</dt><dd>Red means more often (or more goals), blue means less often (or fewer). Light color: about a 1-in-3 result if it were all luck. Dark color: outside the 95% range, about 1 in 20.</dd>
+        <dt>Colors</dt><dd>Orange means more often (or more goals), blue means less often (or fewer). Light color: about a 1-in-3 result if it were all luck. Dark color: outside the 95% range, about 1 in 20.</dd>
         <dt>Regulation only</dt><dd>Periods 1–3. Overtime and shootout goals never count.</dd>
         <dt>Empty-net goals</dt><dd>They count. One measure removes them from the 3rd period, where they are about 17% of goals (2022-26).</dd>
         <dt>First 10 minutes</dt><dd>A goal by either team before 10:00 of the 1st period.</dd>
@@ -524,7 +487,7 @@ function renderLeague(file, by, m, rows) {
   } else {
     tiles.push({ k: "xG expected", v: "–", n: "No xG estimate for ties" });
   }
-  tiles.push({ k: "Teams outside their range", v: `${outside} of ${rows.length}`, cls: "info",
+  tiles.push({ k: "Teams outside their range", v: `${outside} of ${rows.length}`,
                n: "About 2 of 32 would land there by luck alone" });
   $("league").replaceChildren(...tiles.map(tile));
   $("glance-hint").textContent = `${m.label} · ${state.win === "all" ? "whole season" : "last 10 games"}`;
