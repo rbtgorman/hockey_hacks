@@ -58,6 +58,15 @@ DIFFERENCES FROM build_features.py
    of that recording change.
    Giveaway and takeaway stay separate last_event_type values: they mean
    opposite things for the shooting team, so they are not merged.
+9. last_event_by_shooting_team (new): TRUE when the previous event belongs
+   to the shooting team (plays_context.team_id, the NHL's eventOwnerTeamId):
+   its own giveaway, takeaway, faceoff win, hit or shot. FALSE covers the
+   opponent's events and events with no team ('none', stoppages). Without it
+   an opponent's giveaway, a turnover chance, looks the same as the shooting
+   team's own: in v1.1's training seasons shots after the shooting team's
+   own giveaway scored 0.80-0.95 of expected, against 1.05-1.07 after the
+   opponent's. Giveaways per game about doubled in 2024-25 (check 10), so
+   the opponent-giveaway group also carries that recording change.
 
 Every other feature is defined exactly as in build_features.py. The first
 verify query checks that claim: on 2022-23, where neither regime-only event
@@ -107,7 +116,7 @@ shots_kept AS (
 
 ctx_kept AS (
     SELECT c.game_id, c.event_idx, c.period, c.game_seconds,
-           c.event_type, c.x, c.y
+           c.event_type, c.x, c.y, c.team_id
     FROM plays_context c
     WHERE NOT EXISTS (
         SELECT 1 FROM regime_only r
@@ -132,7 +141,8 @@ shot_prev_any AS (
         c.event_type   AS prev_event_type,
         c.game_seconds AS prev_game_seconds,
         c.x            AS prev_x_raw,
-        c.y            AS prev_y_raw
+        c.y            AS prev_y_raw,
+        c.team_id      AS prev_team_id
     FROM pop s
     LEFT JOIN ctx_kept c
         ON c.game_id = s.game_id
@@ -205,6 +215,9 @@ SELECT
         WHEN sp.prev_event_type IN ('shot-on-goal', 'missed-shot') THEN 'unblocked-shot'
         ELSE COALESCE(sp.prev_event_type, 'none')
     END AS last_event_type,
+
+    -- Whose previous event: the shooting team's own, or not (item 9).
+    COALESCE(sp.prev_team_id = s.shooter_team_id, FALSE) AS last_event_by_shooting_team,
 
     -- Rebound: previous same-team shot was on goal or missed, within 3 s.
     CASE
@@ -410,6 +423,20 @@ VERIFY_QUERIES = [
      FROM shot_features_fenwick f
      GROUP BY 1
      ORDER BY 1;
+     """),
+    ("10. Shots after a giveaway or takeaway, by season and whose event it was "
+     "(giveaways about 2x from 2024-25; see docstring item 9)",
+     """
+     SELECT substr(f.game_id::text, 1, 4) AS season_start,
+            f.last_event_type,
+            CASE WHEN f.last_event_by_shooting_team THEN 'shooting team'
+                 ELSE 'opponent' END AS made_by,
+            COUNT(*) AS shots,
+            ROUND(100.0 * COUNT(*) FILTER (WHERE f.is_goal) / COUNT(*), 2) AS goal_pct
+     FROM shot_features_fenwick f
+     WHERE f.last_event_type IN ('giveaway', 'takeaway')
+     GROUP BY 1, 2, 3
+     ORDER BY 2, 1, 3;
      """),
 ]
 

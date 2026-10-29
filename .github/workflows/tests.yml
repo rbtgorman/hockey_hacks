@@ -44,6 +44,11 @@ jobs:
       - name: Boxscore/landing parser
         run: python tests/test_parser_landing.py
 
+      # export/period_math.py is stdlib-only for the same reason: the
+      # Poisson-binomial and regression-to-the-mean math behind the period page.
+      - name: Period table math
+        run: python tests/test_period_math.py
+
   compile:
     name: import-level syntax check
     runs-on: ubuntu-latest
@@ -58,7 +63,7 @@ jobs:
       # the modeling and feature code without needing lightgbm, pandas or a
       # database. Cheap guard against pushing a file that cannot even parse.
       - name: Byte-compile all modules
-        run: python -m compileall -q ingest features model tests
+        run: python -m compileall -q ingest features model export tests
 
   reporting-tests:
     name: calibration stats test

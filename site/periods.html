@@ -1,0 +1,619 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hockey Hacks: period scoring</title>
+<meta name="description" content="How often each NHL team's games hit common period lines, with the range luck alone allows, a regressed estimate, and what the shots deserved by expected goals.">
+<meta name="author" content="Robert Gorman">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Hockey Hacks: period scoring">
+<meta property="og:description" content="NHL period scoring by team, with luck ranges and expected goals.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%232a78d6'/><rect x='22' y='54' width='12' height='26' fill='white'/><rect x='44' y='38' width='12' height='42' fill='white'/><rect x='66' y='22' width='12' height='58' fill='white'/></svg>">
+<style>
+  /* Tokens and base styles copied from index.html so both pages read as one site. */
+  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; }
+  [hidden] { display: none !important; }
+  :root {
+    color-scheme: light;
+    --plane:       #f7f8f7;
+    --surface:     #fdfdfc;
+    --ink:         #0b0e0d;
+    --ink-2:       #4e5453;
+    --muted:       #8a908e;
+    --rule:        #e2e4e0;
+    --rule-soft:   #eceeea;
+    --axis:        #c3c7c3;
+    --s1:          #2a78d6;
+    --warn:        #b4790a;
+    --chip:        rgba(11,14,13,0.05);
+    --ring:        rgba(11,14,13,0.10);
+    --shadow:      0 1px 2px rgba(11,14,13,0.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --plane:     #0d0f0e;
+      --surface:   #171a19;
+      --ink:       #f4f6f4;
+      --ink-2:     #c1c6c3;
+      --muted:     #8a908e;
+      --rule:      #2b2f2d;
+      --rule-soft: #242826;
+      --axis:      #3a3f3d;
+      --s1:        #3987e5;
+      --warn:      #fab219;
+      --chip:      rgba(255,255,255,0.06);
+      --ring:      rgba(255,255,255,0.10);
+      --shadow:    none;
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --plane:     #0d0f0e;
+    --surface:   #171a19;
+    --ink:       #f4f6f4;
+    --ink-2:     #c1c6c3;
+    --muted:     #8a908e;
+    --rule:      #2b2f2d;
+    --rule-soft: #242826;
+    --axis:      #3a3f3d;
+    --s1:        #3987e5;
+    --warn:      #fab219;
+    --chip:      rgba(255,255,255,0.06);
+    --ring:      rgba(255,255,255,0.10);
+    --shadow:    none;
+  }
+
+  body {
+    background: var(--plane);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 56px; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.015em; }
+  h1 { font-size: clamp(26px, 4.6vw, 38px); font-weight: 650; line-height: 1.12; }
+  h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+  p { margin: 0; }
+  a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--axis); }
+  a:hover { text-decoration-color: currentColor; }
+  a:focus-visible, button:focus-visible, select:focus-visible, svg:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; border-radius: 3px; }
+
+  header.masthead { display: flex; flex-direction: column; gap: 14px; padding-bottom: 22px; border-bottom: 1px solid var(--rule); }
+  .crumb { font-size: 13px; color: var(--muted); }
+  .lede { font-size: clamp(15px, 2.1vw, 17px); color: var(--ink-2); max-width: 66ch; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 13px; color: var(--muted); }
+
+  section { margin-top: 32px; display: flex; flex-direction: column; gap: 14px; }
+  .section-head { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; justify-content: space-between; }
+  .section-head .hint { font-size: 12.5px; color: var(--muted); }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+  .controls label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
+  .controls select { font: inherit; font-size: 14px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 30px 7px 10px; max-width: 100%; }
+  .controls label.grow { flex: 1 1 260px; }
+  .controls label.grow select { width: 100%; }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  .stat { background: var(--surface); padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; }
+  .stat .k { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
+  .stat .v { font-size: 26px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
+  .stat .n { font-size: 12.5px; color: var(--ink-2); }
+
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 14px 10px; box-shadow: var(--shadow); position: relative; display: flex; flex-direction: column; gap: 10px; }
+  .card .cap { font-size: 12.5px; color: var(--muted); }
+  .key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); align-items: center; }
+  .key span { display: inline-flex; align-items: center; gap: 6px; }
+  .key svg { width: auto; height: 12px; display: inline-block; }
+
+  .tablewrap { overflow-x: auto; }
+  /* Flex children default to min-width:auto, which lets a wide table push the page sideways. */
+  section > *, .card, .tablewrap { min-width: 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  caption { text-align: left; font-size: 13px; font-weight: 600; padding-bottom: 8px; color: var(--ink); }
+  th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--rule-soft); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--rule); vertical-align: bottom; }
+  thead th button { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
+  thead th button:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; border-radius: 3px; }
+  thead th[aria-sort] button::after { content: ""; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; }
+  thead th[aria-sort="descending"] button::after { border-top: 5px solid currentColor; }
+  thead th[aria-sort="ascending"] button::after { border-bottom: 5px solid currentColor; }
+  thead th.grp { text-align: center; border-bottom: 1px solid var(--rule-soft); }
+  td.team { font-weight: 600; }
+  td .sub { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.25; }
+  td.range, th.range { padding-block: 0; }
+  td.range svg, th.range svg { width: 168px; height: 22px; display: block; margin-left: auto; overflow: visible; }
+  th.range svg { height: 16px; }
+  .tick text { font-size: 10px; fill: var(--muted); font-weight: 500; letter-spacing: 0; text-transform: none; }
+  .badge { display: inline-block; margin-left: 6px; font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); background: var(--chip); border-radius: 4px; padding: 1px 5px; font-weight: 600; }
+  tr.league td { border-top: 1px solid var(--rule); font-weight: 600; color: var(--ink-2); }
+
+  .prose { max-width: 70ch; color: var(--ink-2); font-size: 14.5px; display: flex; flex-direction: column; gap: 10px; }
+  .prose strong { color: var(--ink); font-weight: 600; }
+  .prose dl { margin: 0; display: grid; grid-template-columns: minmax(120px, max-content) 1fr; gap: 6px 16px; }
+  .prose dt { color: var(--ink); font-weight: 600; }
+  .prose dd { margin: 0; }
+  .callout { border-left: 2px solid var(--warn); padding: 2px 0 2px 14px; color: var(--ink-2); font-size: 14px; max-width: 70ch; }
+  .error { color: var(--ink); border-left: 2px solid var(--warn); padding-left: 12px; }
+
+  .tip { position: fixed; pointer-events: none; opacity: 0; transition: opacity .12s; background: var(--surface); border: 1px solid var(--ring); border-radius: 6px; padding: 7px 10px; font-size: 12.5px; color: var(--ink-2); box-shadow: 0 4px 14px rgba(0,0,0,0.12); z-index: 5; max-width: 260px; }
+  .tip strong { display: block; color: var(--ink); font-size: 14px; font-weight: 600; }
+  .tip.on { opacity: 1; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  footer { margin-top: 44px; padding-top: 18px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+
+  @media (max-width: 560px) {
+    th, td { padding: 6px 7px; }
+    td.range svg, th.range svg { width: 120px; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <p class="crumb"><a href="./">Hockey Hacks</a> / Period scoring</p>
+      <h1>Period scoring</h1>
+      <p class="lede">How often each team's games hit common period lines, such as 2+ goals in a period or a goal in the first 10 minutes. Each count comes with the range that luck alone allows, a rate pulled toward the league norm, and what the shots deserved by expected goals (xG).</p>
+    </div>
+    <div class="meta-row">
+      <span id="meta-data">Loading data…</span>
+      <span id="meta-model"></span>
+      <span><a href="https://github.com/rbtgorman/hockey_hacks">github.com/rbtgorman/hockey_hacks</a></span>
+    </div>
+  </header>
+
+  <section aria-label="Filters">
+    <div class="controls">
+      <label>Season <select id="season"></select></label>
+      <label>Games <select id="window">
+        <option value="all">Whole season</option>
+        <option value="10">Last 10</option>
+      </select></label>
+      <label class="grow">Measure <select id="metric"></select></label>
+    </div>
+    <div class="stats" id="league" aria-live="polite"></div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2 id="metric-title">Teams</h2>
+      <span class="hint">Select a column heading to sort</span>
+    </div>
+    <div class="card">
+      <div class="key" aria-hidden="true">
+        <span><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/></svg>Rate</span>
+        <span><svg viewBox="0 0 26 12"><rect x="1" y="3" width="24" height="6" rx="3" fill="color-mix(in srgb, var(--s1) 30%, var(--surface))"/></svg>95% range from luck alone</span>
+        <span><svg viewBox="0 0 6 12"><line x1="3" y1="0" x2="3" y2="12" stroke="var(--ink-2)" stroke-width="1"/></svg>League norm, 2022-26</span>
+      </div>
+      <div class="tablewrap">
+        <table id="teams">
+          <caption class="sr" id="teams-caption"></caption>
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p class="cap" id="teams-note"></p>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>Goals by period</h2>
+      <span class="hint">Goals, with xG underneath · regulation only</span>
+    </div>
+    <div class="card">
+      <div class="tablewrap">
+        <table id="goals">
+          <thead></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>How to read this</h2>
+    <div class="prose">
+      <p class="callout">At 10 to 13 games, luck explains almost all of the spread between teams on these measures. A team that is exactly league average lands anywhere from about 25% to 80% over 10 games. That is why the shrunk column barely moves from the norm: the flatness is the finding.</p>
+      <dl>
+        <dt>Regulation only</dt><dd>Periods 1–3. Overtime and shootout goals never count.</dd>
+        <dt>Empty-net goals</dt><dd>They count. One measure removes them from the 3rd period, where they are about 17% of goals (2022-26).</dd>
+        <dt>First 10 minutes</dt><dd>A goal by either team before 10:00 of the 1st period.</dd>
+        <dt>Last 10</dt><dd>Each team's ten most recent games.</dd>
+        <dt>95% range</dt><dd>The Wilson interval for the team's rate: where a team with that true rate would land 95% of the time over the same number of games.</dd>
+        <dt>Shrunk</dt><dd id="def-shrunk">The team's record pulled toward the norm: (hits + k × norm) ÷ (games + k). k comes from four seasons of team records, using Tango's regression to the mean.</dd>
+        <dt>xG expected</dt><dd id="def-xg">What the shots deserved. Each game's actual unblocked shots, with xG from the model, treated as independent chances, then scaled to the measure's 2022-26 league ratio. Ties get no xG estimate, because treating shots as independent misses them by about 7 points.</dd>
+      </dl>
+      <p>The list of measures follows the period charts at Otto's Hockey Portal (@PsuOtto). Every number here is computed from NHL play-by-play by this project.</p>
+    </div>
+  </section>
+
+  <footer>
+    <div>Data: NHL public play-by-play, regular season. Not affiliated with the NHL.</div>
+    <div>For information only, not betting advice. If gambling is a problem, call 1-800-GAMBLER (US).</div>
+    <div><a href="./">Model and its test results</a></div>
+  </footer>
+</div>
+<div class="tip" id="tip" aria-hidden="true"></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const pct = (x, d = 1) => (x == null || !isFinite(x)) ? "–" : (100 * x).toFixed(d) + "%";
+const fmt1 = (x) => (x == null || !isFinite(x)) ? "–" : x.toFixed(1);
+const num = (x) => x.toLocaleString("en-US");
+
+const state = { index: null, files: {}, season: null, win: "all", metric: "p1_ov15",
+                sort: { key: "rate", dir: -1 }, gsort: { key: "team", dir: 1 } };
+
+function wilson(h, n, z = 1.96) {
+  if (!n) return [0, 1];
+  const p = h / n, z2 = z * z, d = 1 + z2 / n;
+  const c = (p + z2 / (2 * n)) / d;
+  const half = z * Math.sqrt(p * (1 - p) / n + z2 / (4 * n * n)) / d;
+  return [Math.max(0, c - half), Math.min(1, c + half)];
+}
+
+function el(tag, attrs = {}, text) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (text != null) e.textContent = text;
+  return e;
+}
+const SVG = "http://www.w3.org/2000/svg";
+function sv(tag, attrs = {}) {
+  const e = document.createElementNS(SVG, tag);
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  return e;
+}
+
+/* ---------- state in the URL hash, so a view can be shared ---------- */
+function readHash() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  if (h.get("s")) state.season = Number(h.get("s"));
+  if (h.get("w")) state.win = h.get("w");
+  if (h.get("m")) state.metric = h.get("m");
+}
+function writeHash() {
+  const h = new URLSearchParams({ s: state.season, w: state.win, m: state.metric });
+  history.replaceState(null, "", "#" + h.toString());
+}
+
+/* ---------- data ---------- */
+async function loadSeason(season) {
+  if (!state.files[season]) {
+    const meta = state.index.seasons.find((s) => s.season === season);
+    const r = await fetch("data/" + meta.file);
+    if (!r.ok) throw new Error(`HTTP ${r.status} for ${meta.file}`);
+    const j = await r.json();
+    const ci = Object.fromEntries(j.columns.map((c, i) => [c, i]));
+    state.files[season] = { rows: j.rows, ci };
+  }
+  return state.files[season];
+}
+
+function windows(file) {
+  const ci = file.ci, by = new Map();
+  for (const r of file.rows) {
+    const t = r[ci.team];
+    if (!by.has(t)) by.set(t, []);
+    by.get(t).push(r);
+  }
+  for (const [t, rs] of by) {
+    rs.sort((a, b) => (a[ci.date] < b[ci.date] ? -1 : a[ci.date] > b[ci.date] ? 1 : 0));
+    if (state.win !== "all") by.set(t, rs.slice(-Number(state.win)));
+  }
+  return by;
+}
+
+function metricRows(file, by, m) {
+  const yi = file.ci["y_" + m.key];
+  const ei = m.has_xg ? file.ci["e_" + m.key] : null;
+  const out = [];
+  for (const [team, rs] of by) {
+    const n = rs.length;
+    const hits = rs.reduce((s, r) => s + r[yi], 0);
+    const [lo, hi] = wilson(hits, n);
+    const shrunk = m.k == null ? m.baseline : (hits + m.k * m.baseline) / (n + m.k);
+    const xg = ei == null ? null : rs.reduce((s, r) => s + Math.min(1, r[ei] * m.xg_factor), 0);
+    out.push({ team, n, hits, rate: n ? hits / n : null, lo, hi, shrunk, xg,
+               outside: lo > m.baseline || hi < m.baseline });
+  }
+  return out;
+}
+
+/* ---------- league tiles ---------- */
+function renderLeague(file, by, m, rows) {
+  const all = [...by.values()].flat();
+  const yi = file.ci["y_" + m.key];
+  const hits = all.reduce((s, r) => s + r[yi], 0);
+  const per = state.win === "all" && m.game_level;
+  const shownHits = per ? hits / 2 : hits, shownN = per ? all.length / 2 : all.length;
+  const unit = per ? "games" : "team-games";
+  const outside = rows.filter((r) => r.outside).length;
+  const season = state.index.seasons.find((s) => s.season === state.season);
+  let xgTile = { v: "–", n: "No xG estimate for ties" };
+  if (m.has_xg) {
+    const ei = file.ci["e_" + m.key];
+    const exp = all.reduce((s, r) => s + Math.min(1, r[ei] * m.xg_factor), 0) / all.length;
+    xgTile = { v: pct(exp), n: "What the shots deserved, same games" };
+  }
+  const tiles = [
+    { k: state.win === "all" ? `League, ${season.label}` : "League, each team's last 10", v: pct(hits / all.length),
+      n: `${num(Math.round(shownHits))} of ${num(shownN)} ${unit}` },
+    { k: "League norm, 2022-26", v: pct(m.baseline), n: `${state.index.history_seasons.length} regular seasons, ${num(historyGames())} games` },
+    { k: "xG expected", ...xgTile },
+    { k: "Teams outside their range", v: String(outside), n: "About 2 of 32 would be by luck alone" },
+  ];
+  const box = $("league");
+  box.replaceChildren(...tiles.map((t) => {
+    const d = el("div", { class: "stat" });
+    d.append(el("span", { class: "k" }, t.k), el("span", { class: "v" }, t.v), el("span", { class: "n" }, t.n));
+    return d;
+  }));
+}
+
+function historyGames() {
+  const h = new Set(state.index.history_seasons);
+  return state.index.seasons.filter((s) => h.has(s.season)).reduce((t, s) => t + s.games, 0);
+}
+
+/* ---------- range chart ---------- */
+const W = () => (matchMedia("(max-width: 560px)").matches ? 120 : 168);
+const PAD = 6;
+function xs(p) { return PAD + p * (W() - 2 * PAD); }
+
+function rangeSvg(r, m) {
+  const s = sv("svg", { viewBox: `0 0 ${W()} 22`, role: "img", tabindex: "0",
+                        "aria-label": tipText(r, m).join(". ") });
+  s.append(sv("line", { x1: xs(0), x2: xs(1), y1: 11, y2: 11, stroke: "var(--rule)", "stroke-width": 1 }));
+  s.append(sv("line", { x1: xs(m.baseline), x2: xs(m.baseline), y1: 2, y2: 20,
+                        stroke: "var(--ink-2)", "stroke-width": 1 }));
+  s.append(sv("rect", { x: xs(r.lo), y: 8, width: Math.max(2, xs(r.hi) - xs(r.lo)), height: 6, rx: 3,
+                        fill: "color-mix(in srgb, var(--s1) 30%, var(--surface))" }));
+  if (r.rate != null) {
+    s.append(sv("circle", { cx: xs(r.rate), cy: 11, r: 4.5, fill: "var(--s1)",
+                            stroke: "var(--surface)", "stroke-width": 2 }));
+  }
+  const show = (ev) => showTip(ev, r, m);
+  s.addEventListener("pointermove", show);
+  s.addEventListener("focus", show);
+  s.addEventListener("pointerleave", hideTip);
+  s.addEventListener("blur", hideTip);
+  return s;
+}
+
+function axisSvg() {
+  const s = sv("svg", { viewBox: `0 0 ${W()} 16`, "aria-hidden": "true", class: "tick" });
+  for (const [p, label, anchor] of [[0, "0%", "start"], [0.5, "50%", "middle"], [1, "100%", "end"]]) {
+    const t = sv("text", { x: xs(p), y: 12, "text-anchor": anchor });
+    t.textContent = label;
+    s.append(t);
+  }
+  return s;
+}
+
+function tipText(r, m) {
+  const lines = [`${r.team}: ${pct(r.rate)}, ${r.hits} of ${r.n}`,
+                 `95% range ${pct(r.lo, 0)} to ${pct(r.hi, 0)}`,
+                 `Shrunk ${pct(r.shrunk)}`, `League norm ${pct(m.baseline)}`];
+  if (r.xg != null) lines.push(`xG expected ${fmt1(r.xg)} of ${r.n}`);
+  return lines;
+}
+
+const tip = $("tip");
+function showTip(ev, r, m) {
+  const [head, ...rest] = tipText(r, m);
+  const strong = el("strong", {}, head);
+  tip.replaceChildren(strong, ...rest.map((t) => el("div", {}, t)));
+  let x, y;
+  if (ev.type === "focus") {
+    const b = ev.currentTarget.getBoundingClientRect();
+    x = b.left; y = b.bottom + 6;
+  } else {
+    x = ev.clientX + 14; y = ev.clientY + 14;
+  }
+  tip.classList.add("on");
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  tip.style.left = Math.max(8, Math.min(x, innerWidth - tw - 8)) + "px";
+  tip.style.top = (y + th > innerHeight - 8 ? y - th - 28 : y) + "px";
+}
+function hideTip() { tip.classList.remove("on"); }
+
+/* ---------- teams table ---------- */
+const COLS = [
+  { key: "team", label: "Team", cls: "" },
+  { key: "n", label: "GP" },
+  { key: "hits", label: "Hits" },
+  { key: "xg", label: "Exp. (xG)" },
+  { key: "rate", label: "Rate" },
+  { key: "range", label: "Range", cls: "range", sortable: false },
+  { key: "shrunk", label: "Shrunk" },
+];
+
+function sortRows(rows, sort) {
+  const { key, dir } = sort;
+  return rows.slice().sort((a, b) => {
+    const av = a[key], bv = b[key];
+    if (av == null && bv == null) return 0;
+    if (av == null) return 1;
+    if (bv == null) return -1;
+    const c = typeof av === "string" ? av.localeCompare(bv) : av - bv;
+    return c !== 0 ? dir * c : a.team.localeCompare(b.team);
+  });
+}
+
+function headerCell(col, sort, onSort) {
+  const th = el("th", { scope: "col", class: col.cls || "" });
+  if (col.sortable === false) {
+    th.append(el("span", {}, col.label), axisSvg());
+    return th;
+  }
+  if (sort.key === col.key) th.setAttribute("aria-sort", sort.dir < 0 ? "descending" : "ascending");
+  const b = el("button", { type: "button" }, col.label);
+  b.addEventListener("click", () => {
+    sort.dir = sort.key === col.key ? -sort.dir : (col.key === "team" ? 1 : -1);
+    sort.key = col.key;
+    onSort();
+  });
+  th.append(b);
+  return th;
+}
+
+function renderTeams(rows, m) {
+  const t = $("teams");
+  const head = el("tr");
+  for (const c of COLS) {
+    if (c.key === "xg" && !m.has_xg) continue;
+    head.append(headerCell(c, state.sort, render));
+  }
+  t.tHead.replaceChildren(head);
+
+  const body = sortRows(rows, state.sort).map((r) => {
+    const tr = el("tr");
+    const team = el("td", { class: "team" }, r.team);
+    if (r.outside) team.append(el("span", { class: "badge", title: "The 95% range misses the league norm" }, "outside"));
+    tr.append(team);
+    tr.append(el("td", {}, String(r.n)));
+    tr.append(el("td", {}, String(r.hits)));
+    if (m.has_xg) tr.append(el("td", {}, fmt1(r.xg)));
+    tr.append(el("td", {}, pct(r.rate)));
+    const rc = el("td", { class: "range" });
+    rc.append(rangeSvg(r, m));
+    tr.append(rc);
+    tr.append(el("td", {}, m.k == null ? "= norm" : pct(r.shrunk)));
+    return tr;
+  });
+  t.tBodies[0].replaceChildren(...body);
+  $("teams-caption").textContent = m.label;
+}
+
+/* ---------- goals table ---------- */
+const GCOLS = [["gf1", "ga1", "1st"], ["gf2", "ga2", "2nd"], ["gf3", "ga3", "3rd"], ["gfr", "gar", "Regulation"]];
+
+function goalRows(file, by) {
+  const ci = file.ci, out = [];
+  for (const [team, rs] of by) {
+    const r = { team, n: rs.length };
+    for (const p of [1, 2, 3]) {
+      r["gf" + p] = rs.reduce((s, x) => s + x[ci["gf" + p]], 0);
+      r["ga" + p] = rs.reduce((s, x) => s + x[ci["ga" + p]], 0);
+      r["xgf" + p] = rs.reduce((s, x) => s + x[ci["xgf" + p]], 0);
+      r["xga" + p] = rs.reduce((s, x) => s + x[ci["xga" + p]], 0);
+    }
+    r.gfr = r.gf1 + r.gf2 + r.gf3; r.gar = r.ga1 + r.ga2 + r.ga3;
+    r.xgfr = r.xgf1 + r.xgf2 + r.xgf3; r.xgar = r.xga1 + r.xga2 + r.xga3;
+    out.push(r);
+  }
+  return out;
+}
+
+function renderGoals(rows) {
+  const t = $("goals");
+  const top = el("tr");
+  top.append(el("th", { scope: "col", rowspan: "2" }), el("th", { scope: "col", rowspan: "2" }, ""));
+  const sub = el("tr");
+  for (const [f, a, label] of GCOLS) {
+    top.append(el("th", { scope: "colgroup", colspan: "2", class: "grp" }, label));
+    sub.append(headerCell({ key: f, label: "For" }, state.gsort, render),
+               headerCell({ key: a, label: "Against" }, state.gsort, render));
+  }
+  top.children[0].append(headerCell({ key: "team", label: "Team" }, state.gsort, render).firstChild);
+  top.children[1].append(headerCell({ key: "n", label: "GP" }, state.gsort, render).firstChild);
+  for (const [i, k] of [[0, "team"], [1, "n"]]) {
+    if (state.gsort.key === k) top.children[i].setAttribute("aria-sort", state.gsort.dir < 0 ? "descending" : "ascending");
+  }
+  t.tHead.replaceChildren(top, sub);
+
+  const body = sortRows(rows, state.gsort).map((r) => {
+    const tr = el("tr");
+    tr.append(el("td", { class: "team" }, r.team), el("td", {}, String(r.n)));
+    for (const [f, a] of GCOLS) {
+      for (const k of [f, a]) {
+        const td = el("td", {}, String(r[k]));
+        td.append(el("span", { class: "sub" }, fmt1(r["x" + k])));
+        tr.append(td);
+      }
+    }
+    return tr;
+  });
+  t.tBodies[0].replaceChildren(...body);
+}
+
+/* ---------- page ---------- */
+async function render() {
+  const m = state.index.metrics.find((x) => x.key === state.metric) || state.index.metrics[0];
+  state.metric = m.key;
+  writeHash();
+  let file;
+  try {
+    file = await loadSeason(state.season);
+  } catch (e) {
+    $("league").replaceChildren(el("p", { class: "error" }, "Could not load this season's data: " + e.message));
+    return;
+  }
+  const by = windows(file);
+  const rows = metricRows(file, by, m);
+  $("metric-title").textContent = m.label;
+  renderLeague(file, by, m, rows);
+  renderTeams(rows, m);
+  renderGoals(goalRows(file, by));
+  $("teams-note").textContent = m.k == null
+    ? "Four seasons of team records show no team differences beyond luck on this measure, so every shrunk rate is the norm."
+    : `Shrunk with k = ${Math.round(m.k)} games: a team needs ${Math.round(m.k)} games before its own record counts as much as the norm.`
+      + (m.has_xg ? ` xG expected is scaled ×${m.xg_factor.toFixed(3)}, the measure's 2022-26 league ratio of actual to expected.` : "");
+}
+
+async function init() {
+  readHash();
+  try {
+    const r = await fetch("data/periods_index.json");
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    state.index = await r.json();
+  } catch (e) {
+    $("meta-data").textContent = "Could not load the period data: " + e.message;
+    return;
+  }
+  const idx = state.index;
+  if (!idx.seasons.some((s) => s.season === state.season)) state.season = idx.seasons[0].season;
+
+  const sSel = $("season");
+  for (const s of idx.seasons) {
+    const o = el("option", { value: s.season }, s === idx.seasons[0] ? `${s.label} (to ${s.last_date})` : s.label);
+    sSel.append(o);
+  }
+  sSel.value = state.season;
+  $("window").value = state.win === "10" ? "10" : "all";
+  state.win = $("window").value;
+
+  const mSel = $("metric"), groups = new Map();
+  for (const m of idx.metrics) {
+    if (!groups.has(m.group)) groups.set(m.group, el("optgroup", { label: m.group }));
+    groups.get(m.group).append(el("option", { value: m.key }, m.label));
+  }
+  mSel.append(...groups.values());
+  if (!idx.metrics.some((m) => m.key === state.metric)) state.metric = idx.metrics[0].key;
+  mSel.value = state.metric;
+
+  sSel.addEventListener("change", () => { state.season = Number(sSel.value); render(); });
+  $("window").addEventListener("change", (e) => { state.win = e.target.value; render(); });
+  mSel.addEventListener("change", () => { state.metric = mSel.value; render(); });
+  addEventListener("resize", () => { clearTimeout(init.t); init.t = setTimeout(render, 150); });
+
+  const latest = idx.seasons[0];
+  $("meta-data").textContent = `Games through ${latest.last_date} · built ${idx.generated_at.slice(0, 10)}`;
+  $("meta-model").textContent = `xG model ${idx.model_version}`;
+  render();
+}
+init();
+</script>
+</body>
+</html>

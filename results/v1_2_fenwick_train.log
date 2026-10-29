@@ -1,0 +1,181 @@
+============================================================
+v1.2-fenwick: v1.1 features + last_event_by_shooting_team on shot_features_fenwick
+============================================================
+Loaded 499,443 unblocked attempts from shot_features_fenwick, 2022-10-07 to 2026-10-28
+Seasons present: [20222023, 20232024, 20242025, 20252026, 20262027]
+
+Event mix by season (share of rows):
+event_type   goal  missed-shot  shot-on-goal
+season                                      
+20222023    0.072        0.283         0.645
+20232024    0.070        0.311         0.619
+20242025    0.071        0.339         0.591
+20252026    0.072        0.345         0.583
+20262027    0.075        0.341         0.585
+Leakage check: 5,770/5,794 games (99.6%) have varying score_diff across shots — expect >80% for non-leaky in-game state.
+select_train:  seasons [20222023, 20232024], 244,595 attempts, 7.11% goals
+val:           seasons [20242025], 119,479 attempts, 7.06% goals
+refit_train:   seasons [20222023, 20232024, 20242025], 364,074 attempts, 7.09% goals
+test:          seasons [20252026], 118,605 attempts, 7.23% goals
+forward:       seasons [20262027], 16,764 attempts, 7.46% goals
+
+--- Step 1: choose the tree count (train 2022-24, early stop on 2024-25) ---
+[100]	val's auc: 0.783602
+[200]	val's auc: 0.784414
+Best iteration: 167
+  select, val 2024-25        AUC 0.7845  log loss 0.2154  Brier 0.0584  O/E 1.026  slope 1.046
+  select, test 2025-26       AUC 0.7720  log loss 0.2226  Brier 0.0604  O/E 0.985  slope 0.998
+
+--- Step 2: refit on 2022-25 with 167 trees ---
+  train 2022-25 (in-sample) (364,074) AUC 0.7982  log loss 0.2126  Brier 0.0582  O/E 1.000  slope 1.147
+  test 2025-26 (118,605)     AUC 0.7788  log loss 0.2206  Brier 0.0600  O/E 0.980  slope 1.022
+  forward 2026-27 (16,764)   AUC 0.7746  log loss 0.2266  Brier 0.0618  O/E 0.986  slope 1.026
+
+--- Same test seasons, three models ---
+
+  test: 2025-26, 118,605 attempts
+  v1.1-fenwick (saved)       AUC 0.7722  log loss 0.2225  Brier 0.0605  O/E 0.985  slope 0.982
+  ablation (refit, 220 trees) AUC 0.7792  log loss 0.2204  Brier 0.0600  O/E 0.981  slope 1.013
+  v1.2-fenwick               AUC 0.7788  log loss 0.2206  Brier 0.0600  O/E 0.980  slope 1.022
+
+  forward: 2026-27 to date, 16,764 attempts
+  v1.1-fenwick (saved)       AUC 0.7672  log loss 0.2287  Brier 0.0623  O/E 0.993  slope 0.981
+  ablation (refit, 220 trees) AUC 0.7750  log loss 0.2263  Brier 0.0618  O/E 0.987  slope 1.017
+  v1.2-fenwick               AUC 0.7746  log loss 0.2266  Brier 0.0618  O/E 0.986  slope 1.026
+
+--- Reliability on TEST (2025-26) ---
+ bin     n  mean_pred  actual_rate  pred_vs_actual_gap
+   0 11861     0.0053       0.0042              0.0011
+   1 11860     0.0116       0.0108              0.0008
+   2 11861     0.0194       0.0181              0.0013
+   3 11860     0.0297       0.0283              0.0014
+   4 11861     0.0430       0.0393              0.0038
+   5 11860     0.0593       0.0601             -0.0009
+   6 11860     0.0778       0.0750              0.0029
+   7 11861     0.1020       0.1042             -0.0022
+   8 11860     0.1368       0.1341              0.0027
+   9 11861     0.2523       0.2486              0.0037
+Max gap (test): 0.0038
+
+--- O/E by segment (test = 2025-26 for each model; fwd = 2026-27 to date, v1.2) ---
+
+  by net
+               test_n  oe_v1.1  oe_ablation  oe_v1.2  fwd_n  fwd_oe_v1.2
+segment                                                                 
+goalie in net  117537    0.989        0.984    0.983  16615        0.994
+empty net        1068    0.933        0.939    0.940    149        0.859
+
+  by strength
+         test_n  oe_v1.1  oe_ablation  oe_v1.2  fwd_n  fwd_oe_v1.2
+segment                                                           
+5v5       95052    1.004        0.999    0.997  13284        0.988
+PP        17004    0.948        0.938    0.941   2509        0.994
+other      3916    0.942        0.951    0.951    548        0.937
+PK         2633    0.945        0.934    0.937    423        1.015
+
+  by shot_type
+              test_n  oe_v1.1  oe_ablation  oe_v1.2  fwd_n  fwd_oe_v1.2
+segment                                                                
+wrist-snap     80934    1.030        1.015    1.014  11537        1.044
+slap           14088    0.992        0.998    1.004   1804        0.908
+tip-in         11319    0.755        0.781    0.779   1692        0.760
+backhand        8498    0.997        0.983    0.980   1243        0.937
+deflected       1965    1.006        1.039    1.041    254        1.104
+wrap-around      720    0.676        0.710    0.692     97        0.403
+bat              593    0.625        0.714    0.724     73        0.675
+poke             400    0.939        0.916    0.902     55        0.961
+between-legs      80    1.077        1.313    1.302      9        1.024
+cradle             8    1.079        1.095    1.086   <NA>          NaN
+
+  by distance
+          test_n  oe_v1.1  oe_ablation  oe_v1.2  fwd_n  fwd_oe_v1.2
+segment                                                            
+20-40 ft   39303    1.068        1.046    1.044   5708        1.014
+<20 ft     36402    0.939        0.943    0.944   5314        0.969
+40-60 ft   28340    1.041        1.028    1.023   3862        1.103
+60+ ft     14560    0.864        0.881    0.875   1880        0.793
+
+  by angle
+           test_n  oe_v1.1  oe_ablation  oe_v1.2  fwd_n  fwd_oe_v1.2
+segment                                                             
+15-30 deg   29066    1.039        1.017    1.018   4149        0.995
+0-15 deg    29004    0.954        0.956    0.958   4003        1.015
+30-45 deg   28411    0.970        0.968    0.967   3983        0.819
+45-60 deg   18576    0.994        1.000    0.999   2699        1.056
+60+ deg     13548    0.960        0.954    0.948   1930        1.115
+
+  by last_event
+                test_n  oe_v1.1  oe_ablation  oe_v1.2  fwd_n  fwd_oe_v1.2
+segment                                                                  
+unblocked-shot   35772    0.978        0.967    0.968   4877        1.035
+faceoff          29094    1.015        0.987    0.983   4229        0.954
+hit              18943    1.037        1.023    1.019   2742        0.960
+giveaway         15986    0.908        0.941    0.944   2316        0.870
+blocked-shot     13769    0.978        0.983    0.981   1951        1.003
+takeaway          4956    1.036        1.049    1.052    637        1.133
+stoppage            48    1.178        1.268    1.283      5        1.605
+penalty             37    0.495        0.575    0.588      7        0.881
+
+  by post_rebound
+              test_n  oe_v1.1  oe_ablation  oe_v1.2  fwd_n  fwd_oe_v1.2
+segment                                                                
+other         118358    0.985        0.980    0.980  16740        0.988
+post rebound     247    0.979        1.033    1.056     24        0.625
+
+  by turnover
+                           test_n  oe_v1.1  oe_ablation  oe_v1.2  fwd_n  fwd_oe_v1.2
+segment                                                                             
+other                       97663    0.996        0.984    0.982  13811        0.999
+giveaway by opponent        11537    0.884        0.934    0.937   1702        0.888
+giveaway by shooting team    4449    0.986        0.959    0.962    614        0.817
+takeaway by shooting team    3563    1.017        1.043    1.048    465        1.124
+takeaway by opponent         1393    1.105        1.067    1.065    172        1.165
+
+--- LightGBM gain importance ---
+                    feature          gain
+                distance_ft 227306.641597
+                  empty_net  97771.298870
+                  angle_deg  53595.238165
+   seconds_since_last_event  37134.342506
+             strength_state  26770.142241
+                  shot_type  26346.394963
+distance_from_last_event_ft  16526.509478
+                     y_norm  11309.918186
+                     x_norm   7843.059690
+seconds_remaining_in_period   7675.314988
+            last_event_type   7638.062723
+                 is_rebound   6544.021490
+                 score_diff   2577.912157
+            is_post_rebound   1238.880261
+                 period_num   1056.919231
+last_event_by_shooting_team    679.713079
+                    is_rush    420.133749
+
+--- Permutation importance on TEST ---
+                    feature  auc_drop_mean  auc_drop_std
+                distance_ft         0.1911        0.0014
+   seconds_since_last_event         0.0302        0.0006
+                  angle_deg         0.0298        0.0001
+                  empty_net         0.0285        0.0004
+                  shot_type         0.0242        0.0005
+            last_event_type         0.0078        0.0001
+             strength_state         0.0065        0.0003
+                     y_norm         0.0052        0.0004
+distance_from_last_event_ft         0.0041        0.0001
+                     x_norm         0.0010        0.0000
+                 is_rebound         0.0010        0.0001
+                 score_diff         0.0002        0.0000
+last_event_by_shooting_team         0.0002        0.0001
+            is_post_rebound         0.0001        0.0000
+                    is_rush         0.0001        0.0000
+seconds_remaining_in_period         0.0001        0.0001
+                 period_num         0.0000        0.0000
+
+Model and meta saved to /home/bobert/my-projects/hockey-hacks/model/artifacts/xg_v1_2_fenwick*
+
+Results written to /home/bobert/my-projects/hockey-hacks/results/v1_2-fenwick/
+  metrics.json  reliability.csv  calibration.png  feature_importance.csv
+Leaderboard written to /home/bobert/my-projects/hockey-hacks/results/leaderboard.md
+Segment and permutation tables saved to /home/bobert/my-projects/hockey-hacks/results/v1_2-fenwick/
+
+Done.

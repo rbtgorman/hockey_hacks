@@ -1,0 +1,294 @@
+{
+ "generated_at": "2026-10-29T17:17:24+00:00",
+ "model_version": "v1.2-fenwick",
+ "history_seasons": [
+  20222023,
+  20232024,
+  20242025,
+  20252026
+ ],
+ "seasons": [
+  {
+   "season": 20262027,
+   "label": "2026-27",
+   "file": "periods_20262027.json",
+   "games": 202,
+   "first_date": "2026-09-29",
+   "last_date": "2026-10-28"
+  },
+  {
+   "season": 20252026,
+   "label": "2025-26",
+   "file": "periods_20252026.json",
+   "games": 1312,
+   "first_date": "2025-10-07",
+   "last_date": "2026-04-16"
+  },
+  {
+   "season": 20242025,
+   "label": "2024-25",
+   "file": "periods_20242025.json",
+   "games": 1312,
+   "first_date": "2024-10-04",
+   "last_date": "2025-04-17"
+  },
+  {
+   "season": 20232024,
+   "label": "2023-24",
+   "file": "periods_20232024.json",
+   "games": 1312,
+   "first_date": "2023-10-10",
+   "last_date": "2024-04-18"
+  },
+  {
+   "season": 20222023,
+   "label": "2022-23",
+   "file": "periods_20222023.json",
+   "games": 1312,
+   "first_date": "2022-10-07",
+   "last_date": "2023-04-14"
+  }
+ ],
+ "metrics": [
+  {
+   "key": "p1_ov15",
+   "label": "1st period: 2+ goals",
+   "group": "Period totals (both teams)",
+   "game_level": true,
+   "has_xg": true,
+   "baseline": 0.5375,
+   "baseline_by_season": {
+    "20222023": 0.5465,
+    "20232024": 0.5412,
+    "20242025": 0.5252,
+    "20252026": 0.5373
+   },
+   "k": 355.7,
+   "xg_factor": 1.0085
+  },
+  {
+   "key": "p2_ov15",
+   "label": "2nd period: 2+ goals",
+   "group": "Period totals (both teams)",
+   "game_level": true,
+   "has_xg": true,
+   "baseline": 0.6332,
+   "baseline_by_season": {
+    "20222023": 0.6601,
+    "20232024": 0.6319,
+    "20242025": 0.6014,
+    "20252026": 0.6395
+   },
+   "k": 255.0,
+   "xg_factor": 1.0456
+  },
+  {
+   "key": "p3_ov15",
+   "label": "3rd period: 2+ goals",
+   "group": "Period totals (both teams)",
+   "game_level": true,
+   "has_xg": true,
+   "baseline": 0.6503,
+   "baseline_by_season": {
+    "20222023": 0.654,
+    "20232024": 0.6471,
+    "20242025": 0.6532,
+    "20252026": 0.6471
+   },
+   "k": 511.7,
+   "xg_factor": 1.0257
+  },
+  {
+   "key": "p3_ov15_noen",
+   "label": "3rd period: 2+ goals, empty-net goals removed",
+   "group": "Period totals (both teams)",
+   "game_level": true,
+   "has_xg": true,
+   "baseline": 0.5356,
+   "baseline_by_season": {
+    "20222023": 0.5534,
+    "20232024": 0.5434,
+    "20242025": 0.5206,
+    "20252026": 0.5252
+   },
+   "k": 925.5,
+   "xg_factor": 0.9994
+  },
+  {
+   "key": "f10",
+   "label": "Goal in the first 10 minutes",
+   "group": "Period totals (both teams)",
+   "game_level": true,
+   "has_xg": true,
+   "baseline": 0.5821,
+   "baseline_by_season": {
+    "20222023": 0.5983,
+    "20232024": 0.577,
+    "20242025": 0.5655,
+    "20252026": 0.5877
+   },
+   "k": 506.3,
+   "xg_factor": 1.0068
+  },
+  {
+   "key": "p1_tt_for",
+   "label": "1st period: team scores 2+",
+   "group": "1st period",
+   "game_level": false,
+   "has_xg": true,
+   "baseline": 0.2194,
+   "baseline_by_season": {
+    "20222023": 0.221,
+    "20232024": 0.2271,
+    "20242025": 0.2107,
+    "20252026": 0.2188
+   },
+   "k": 339.6,
+   "xg_factor": 0.9611
+  },
+  {
+   "key": "p1_tt_against",
+   "label": "1st period: opponent scores 2+",
+   "group": "1st period",
+   "game_level": false,
+   "has_xg": true,
+   "baseline": 0.2194,
+   "baseline_by_season": {
+    "20222023": 0.221,
+    "20232024": 0.2271,
+    "20242025": 0.2107,
+    "20252026": 0.2188
+   },
+   "k": 123.3,
+   "xg_factor": 0.9611
+  },
+  {
+   "key": "p1_shut_for",
+   "label": "1st period: team scores 0",
+   "group": "1st period",
+   "game_level": false,
+   "has_xg": true,
+   "baseline": 0.4079,
+   "baseline_by_season": {
+    "20222023": 0.3948,
+    "20232024": 0.4116,
+    "20242025": 0.415,
+    "20252026": 0.4101
+   },
+   "k": 328.0,
+   "xg_factor": 0.975
+  },
+  {
+   "key": "p1_shut_against",
+   "label": "1st period: opponent scores 0",
+   "group": "1st period",
+   "game_level": false,
+   "has_xg": true,
+   "baseline": 0.4079,
+   "baseline_by_season": {
+    "20222023": 0.3948,
+    "20232024": 0.4116,
+    "20242025": 0.415,
+    "20252026": 0.4101
+   },
+   "k": 171.0,
+   "xg_factor": 0.975
+  },
+  {
+   "key": "p1_00",
+   "label": "1st period ends 0-0",
+   "group": "1st period",
+   "game_level": true,
+   "has_xg": true,
+   "baseline": 0.1692,
+   "baseline_by_season": {
+    "20222023": 0.1562,
+    "20232024": 0.1677,
+    "20242025": 0.1761,
+    "20252026": 0.1768
+   },
+   "k": 664.8,
+   "xg_factor": 0.9924
+  },
+  {
+   "key": "p1_btts",
+   "label": "1st period: both teams score",
+   "group": "1st period",
+   "game_level": true,
+   "has_xg": true,
+   "baseline": 0.3535,
+   "baseline_by_season": {
+    "20222023": 0.3666,
+    "20232024": 0.3445,
+    "20242025": 0.346,
+    "20252026": 0.3567
+   },
+   "k": 254.9,
+   "xg_factor": 1.0588
+  },
+  {
+   "key": "p1_tied",
+   "label": "1st period: tied",
+   "group": "1st period",
+   "game_level": true,
+   "has_xg": false,
+   "baseline": 0.3396,
+   "baseline_by_season": {
+    "20222023": 0.3361,
+    "20232024": 0.3354,
+    "20242025": 0.3331,
+    "20252026": 0.3537
+   },
+   "k": null,
+   "xg_factor": null
+  },
+  {
+   "key": "p2_btts",
+   "label": "2nd period: both teams score",
+   "group": "2nd period and regulation",
+   "game_level": true,
+   "has_xg": true,
+   "baseline": 0.4217,
+   "baseline_by_season": {
+    "20222023": 0.4505,
+    "20232024": 0.4184,
+    "20242025": 0.3933,
+    "20252026": 0.4245
+   },
+   "k": null,
+   "xg_factor": 1.0755
+  },
+  {
+   "key": "reg_tied",
+   "label": "Tied after regulation",
+   "group": "2nd period and regulation",
+   "game_level": true,
+   "has_xg": false,
+   "baseline": 0.2231,
+   "baseline_by_season": {
+    "20222023": 0.2302,
+    "20232024": 0.2073,
+    "20242025": 0.2066,
+    "20252026": 0.2485
+   },
+   "k": 1348.4,
+   "xg_factor": null
+  },
+  {
+   "key": "reg_ov55",
+   "label": "Regulation: 6+ goals",
+   "group": "2nd period and regulation",
+   "game_level": true,
+   "has_xg": true,
+   "baseline": 0.5703,
+   "baseline_by_season": {
+    "20222023": 0.5976,
+    "20232024": 0.5732,
+    "20242025": 0.5373,
+    "20252026": 0.5732
+   },
+   "k": 154.6,
+   "xg_factor": 1.0262
+  }
+ ]
+}

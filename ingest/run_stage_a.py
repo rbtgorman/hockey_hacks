@@ -52,7 +52,9 @@ def ingest_shifts_for_game(game_id: int, season: int) -> tuple[bool, int, str | 
     """Fetch + parse + insert shifts for one game."""
     cache = RAW_DATA_DIR / f"shifts/{season}/{game_id}.json"
     try:
-        payload = fetch_json(SHIFTS_URL.format(game_id=game_id), cache_path=cache)
+        # An empty chart is not cached: the API can lag behind a just-finished game.
+        payload = fetch_json(SHIFTS_URL.format(game_id=game_id), cache_path=cache,
+                             cache_ok=lambda d: (d.get("total") or 0) > 0)
     except FetchError as e:
         return (False, 0, f"fetch: {e}")
 
@@ -84,7 +86,8 @@ def ingest_rosters_for_game(game_id: int, season: int) -> tuple[bool, int, str |
     """
     cache = RAW_DATA_DIR / f"boxscore/{season}/{game_id}.json"
     try:
-        payload = fetch_json(BOXSCORE_URL.format(game_id=game_id), cache_path=cache)
+        payload = fetch_json(BOXSCORE_URL.format(game_id=game_id), cache_path=cache,
+                             cache_ok=lambda d: d.get("gameState") == "OFF")
     except FetchError as e:
         return (False, 0, f"fetch: {e}")
 

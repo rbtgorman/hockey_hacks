@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Callable, Optional
 
 import requests
 from tenacity import (
@@ -49,16 +49,24 @@ def _http_get(url: str) -> requests.Response:
     return resp
 
 
-def fetch_json(url: str, cache_path: Path | None = None) -> dict:
+def fetch_json(url: str, cache_path: Path | None = None,
+               cache_ok: Callable[[dict], bool] | None = None) -> dict:
     """Fetch JSON with optional disk cache.
 
     If cache_path is provided and the file exists, load from disk.
     Otherwise fetch, write to disk, return.
     Raises FetchError on 4xx or parsing failure.
+
+    cache_ok, if given, decides whether a payload is complete enough to keep.
+    A cached file that fails it is fetched again, and a fresh payload that
+    fails it is returned but not written. In a season still being played,
+    this stops a game fetched before it was final from being frozen on disk.
     """
     if cache_path is not None and cache_path.exists():
         with cache_path.open("r") as f:
-            return json.load(f)
+            cached = json.load(f)
+        if cache_ok is None or cache_ok(cached):
+            return cached
 
     resp = _http_get(url)
 
@@ -72,7 +80,7 @@ def fetch_json(url: str, cache_path: Path | None = None) -> dict:
     except ValueError as e:
         raise FetchError(f"Invalid JSON from {url}: {e}")
 
-    if cache_path is not None:
+    if cache_path is not None and (cache_ok is None or cache_ok(data)):
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         # Atomic write: write to .tmp then rename (avoids half-written files on Ctrl-C)
         tmp = cache_path.with_suffix(cache_path.suffix + ".tmp")

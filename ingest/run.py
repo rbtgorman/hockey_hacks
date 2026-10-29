@@ -11,6 +11,11 @@ Flow per season:
   2. For each game_id not already in ingest_log, fetch /gamecenter/{id}/play-by-play
   3. Parse -> upsert game, insert shots + contexts, log success
   4. Raw JSONs cached to raw_data/{season}/{game_id}.json
+
+A season still being played is safe to re-run nightly: the date walk stops at
+yesterday, and only games the NHL marks official (gameState OFF) are ingested
+or cached. FINAL can still change until OFF, and a game fetched while live or
+before it started is fetched again on the next run instead of being kept.
 """
 from __future__ import annotations
 
@@ -40,19 +45,35 @@ def iter_dates(start: str, end: str):
         d += timedelta(days=1)
 
 
+def _is_official(payload: dict) -> bool:
+    """True once the NHL marks a game official. FINAL can still change until OFF."""
+    return payload.get("gameState") == "OFF"
+
+
+def _schedule_day_final(d: str):
+    """Cache predicate for /schedule/{d}: keep the day only when all its games are official."""
+    def ok(data: dict) -> bool:
+        days = [w for w in data.get("gameWeek", []) or [] if w.get("date") == d]
+        return all(_is_official(g) for w in days for g in w.get("games", []) or [])
+    return ok
+
+
 def collect_game_ids_for_season(season_id: int, start: str, end: str) -> list[tuple[int, str]]:
     """Return list of (game_id, game_date) for one season.
 
     The /schedule/{date} endpoint returns a 'gameWeek' with ~7 days of games,
     but we call it per-date and dedupe because week boundaries are unstable.
+    The walk stops at yesterday, so a season in progress lists only played dates.
     """
     seen: dict[int, str] = {}
-    dates = list(iter_dates(start, end))
+    yesterday = (date.today() - timedelta(days=1)).isoformat()
+    dates = list(iter_dates(start, min(end, yesterday)))
 
     for d in tqdm(dates, desc=f"schedule {season_id}", unit="day"):
         cache = RAW_DATA_DIR / f"schedule/{season_id}/{d}.json"
         try:
-            data = fetch_json(SCHEDULE_URL.format(date=d), cache_path=cache)
+            data = fetch_json(SCHEDULE_URL.format(date=d), cache_path=cache,
+                              cache_ok=_schedule_day_final(d))
         except FetchError as e:
             # Most schedule fetches succeed; log and continue
             tqdm.write(f"  schedule fail {d}: {e}")
@@ -79,7 +100,8 @@ def ingest_one_game(game_id: int, season_id: int) -> tuple[bool, int, str | None
     """Fetch + parse + write a single game. Returns (ok, shots_parsed, err_msg)."""
     cache = RAW_DATA_DIR / f"pbp/{season_id}/{game_id}.json"
     try:
-        payload = fetch_json(PBP_URL.format(game_id=game_id), cache_path=cache)
+        payload = fetch_json(PBP_URL.format(game_id=game_id), cache_path=cache,
+                             cache_ok=_is_official)
     except FetchError as e:
         return (False, 0, f"fetch: {e}")
 
@@ -88,9 +110,10 @@ def ingest_one_game(game_id: int, season_id: int) -> tuple[bool, int, str | None
     except Exception as e:
         return (False, 0, f"parse: {type(e).__name__}: {e}")
 
-    # Skip games that haven't happened yet (state FUT / PRE)
-    if result.game.game_state in ("FUT", "PRE"):
-        return (False, 0, f"game not played yet (state={result.game.game_state})")
+    # Only official games: FUT/PRE haven't started, LIVE/CRIT are in progress,
+    # and FINAL can still be corrected until the NHL marks it OFF.
+    if result.game.game_state != "OFF":
+        return (False, 0, f"game not official yet (state={result.game.game_state})")
 
     # Write to DB in a single transaction per game
     try:
