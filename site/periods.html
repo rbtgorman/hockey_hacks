@@ -12,8 +12,8 @@
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%232a78d6'/><rect x='22' y='54' width='12' height='26' fill='white'/><rect x='44' y='38' width='12' height='42' fill='white'/><rect x='66' y='22' width='12' height='58' fill='white'/></svg>">
 <style>
-  /* Tokens and base styles copied from index.html so both pages read as one site. */
-  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  /* Tokens and base styles shared with index.html so both pages read as one site. */
+  :root { padding-bottom: env(safe-area-inset-bottom, 0px); }
   body { margin: 0; }
   [hidden] { display: none !important; }
   :root {
@@ -27,6 +27,10 @@
     --rule-soft:   #eceeea;
     --axis:        #c3c7c3;
     --s1:          #2a78d6;
+    --accent-fill: #2a78d6;
+    --hot:         #e34948;
+    --cold:        #2a78d6;
+    --neutral:     #8a908e;
     --warn:        #b4790a;
     --chip:        rgba(11,14,13,0.05);
     --ring:        rgba(11,14,13,0.10);
@@ -44,6 +48,10 @@
       --rule-soft: #242826;
       --axis:      #3a3f3d;
       --s1:        #3987e5;
+      --accent-fill: #256abf;
+      --hot:       #e66767;
+      --cold:      #3987e5;
+      --neutral:   #8a908e;
       --warn:      #fab219;
       --chip:      rgba(255,255,255,0.06);
       --ring:      rgba(255,255,255,0.10);
@@ -61,6 +69,10 @@
     --rule-soft: #242826;
     --axis:      #3a3f3d;
     --s1:        #3987e5;
+    --accent-fill: #256abf;
+    --hot:       #e66767;
+    --cold:      #3987e5;
+    --neutral:   #8a908e;
     --warn:      #fab219;
     --chip:      rgba(255,255,255,0.06);
     --ring:      rgba(255,255,255,0.10);
@@ -75,74 +87,125 @@
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 56px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 56px; }
   h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.015em; }
   h1 { font-size: clamp(26px, 4.6vw, 38px); font-weight: 650; line-height: 1.12; }
-  h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+  h2 { font-size: 21px; font-weight: 650; line-height: 1.25; color: var(--ink); }
   p { margin: 0; }
   a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--axis); }
   a:hover { text-decoration-color: currentColor; }
   a:focus-visible, button:focus-visible, select:focus-visible, svg:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; border-radius: 3px; }
 
-  header.masthead { display: flex; flex-direction: column; gap: 14px; padding-bottom: 22px; border-bottom: 1px solid var(--rule); }
-  .crumb { font-size: 13px; color: var(--muted); }
+  /* ---- site navigation: same block in index.html ---- */
+  .topnav { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--plane) 90%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); padding-top: env(safe-area-inset-top, 0px); }
+  .topnav-in { max-width: 1120px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
+  .brand { display: inline-flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; }
+  .brand svg { width: 26px; height: 26px; flex: none; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 auto; }
+  .tab { display: flex; align-items: center; gap: 11px; min-height: 52px; padding: 8px 18px 8px 14px; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: var(--shadow); }
+  .tab:hover { border-color: var(--s1); }
+  .tab .ic { width: 24px; height: 24px; flex: none; color: var(--s1); }
+  .tab b { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 650; line-height: 1.2; }
+  .tab small { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.3; }
+  .tab[aria-current="page"] { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
+  .tab[aria-current="page"] .ic, .tab[aria-current="page"] small { color: rgba(255,255,255,0.88); }
+  .tab .new { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: var(--hot); color: #fff; }
+  .tab[aria-current="page"] .new { background: #fff; color: var(--accent-fill); }
+  @media (max-width: 720px) {
+    .topnav { position: static; }
+    .tabs { width: 100%; }
+    .tab { flex: 1 1 0; padding: 8px 12px; min-width: 0; }
+    .tab small, .tab.ext { display: none; }
+  }
+
+  header.masthead { display: flex; flex-direction: column; gap: 12px; padding-bottom: 20px; border-bottom: 1px solid var(--rule); }
   .lede { font-size: clamp(15px, 2.1vw, 17px); color: var(--ink-2); max-width: 66ch; }
   .meta-row { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; font-size: 13px; color: var(--muted); }
 
-  section { margin-top: 32px; display: flex; flex-direction: column; gap: 14px; }
+  section { margin-top: 30px; display: flex; flex-direction: column; gap: 14px; }
   .section-head { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; justify-content: space-between; }
   .section-head .hint { font-size: 12.5px; color: var(--muted); }
 
-  .controls { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
-  .controls label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; }
-  .controls select { font: inherit; font-size: 14px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 7px 30px 7px 10px; max-width: 100%; }
-  .controls label.grow { flex: 1 1 260px; }
-  .controls label.grow select { width: 100%; }
+  /* ---- filters ---- */
+  .filters { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; box-shadow: var(--shadow); }
+  .filter-row { display: flex; flex-wrap: wrap; gap: 12px 22px; align-items: end; }
+  .flabel { display: block; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 6px; }
+  select { font: inherit; font-size: 15px; color: var(--ink); background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 8px 32px 8px 12px; min-height: 40px; max-width: 100%; }
+  .seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
+  .seg button, .chip { font: inherit; cursor: pointer; color: var(--ink); background: var(--surface); border: 0; }
+  .seg button { font-size: 15px; padding: 8px 16px; min-height: 40px; }
+  .seg button + button { border-left: 1px solid var(--rule); }
+  .seg button[aria-pressed="true"], .chip[aria-pressed="true"] { background: var(--accent-fill); color: #fff; }
+  .mgroups { display: flex; flex-direction: column; gap: 10px; }
+  .mgroup { display: flex; flex-direction: column; gap: 6px; }
+  .mg-label { font-size: 12.5px; color: var(--ink-2); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip { font-size: 14px; padding: 7px 13px; border: 1px solid var(--rule); border-radius: 999px; min-height: 36px; text-align: left; }
+  .chip:hover { border-color: var(--s1); }
+  .chip[aria-pressed="true"] { border-color: var(--accent-fill); font-weight: 600; }
 
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
-  .stat { background: var(--surface); padding: 14px 16px; display: flex; flex-direction: column; gap: 3px; }
-  .stat .k { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
-  .stat .v { font-size: 26px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
-  .stat .n { font-size: 12.5px; color: var(--ink-2); }
+  /* ---- tiles ---- */
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .stat { background: var(--surface); border: 1px solid var(--rule); border-top: 4px solid var(--axis); border-radius: 10px; padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 3px; box-shadow: var(--shadow); min-width: 0; }
+  .stat.hot { border-top-color: var(--hot); }
+  .stat.cold { border-top-color: var(--cold); }
+  .stat.info { border-top-color: var(--s1); }
+  .stat .k { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 600; }
+  .stat .v { font-size: 28px; font-weight: 650; line-height: 1.1; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .stat .v.teams { font-size: 22px; }
+  .stat .n { font-size: 13px; color: var(--ink-2); }
+  .stat .d { font-size: 13px; color: var(--ink); font-weight: 600; }
+  .gl { font-style: normal; font-size: 0.85em; margin-right: 3px; }
+  .gl.hot { color: var(--hot); }
+  .gl.cold { color: var(--cold); }
 
-  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 14px 14px 10px; box-shadow: var(--shadow); position: relative; display: flex; flex-direction: column; gap: 10px; }
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 14px 10px; box-shadow: var(--shadow); position: relative; display: flex; flex-direction: column; gap: 10px; }
   .card .cap { font-size: 12.5px; color: var(--muted); }
-  .key { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); align-items: center; }
+  .key { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--ink-2); align-items: center; }
   .key span { display: inline-flex; align-items: center; gap: 6px; }
   .key svg { width: auto; height: 12px; display: inline-block; }
+  .sw { width: 22px; height: 14px; border-radius: 3px; display: inline-block; border: 1px solid var(--ring); }
 
   .tablewrap { overflow-x: auto; }
   /* Flex children default to min-width:auto, which lets a wide table push the page sideways. */
   section > *, .card, .tablewrap { min-width: 0; }
-  table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; font-variant-numeric: tabular-nums; }
   caption { text-align: left; font-size: 13px; font-weight: 600; padding-bottom: 8px; color: var(--ink); }
-  th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--rule-soft); white-space: nowrap; }
+  th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--rule-soft); white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; }
   thead th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--rule); vertical-align: bottom; }
   thead th button { all: unset; cursor: pointer; display: inline-flex; gap: 4px; align-items: center; }
   thead th button:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; border-radius: 3px; }
+  thead th[aria-sort] { color: var(--ink); }
   thead th[aria-sort] button::after { content: ""; width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; }
   thead th[aria-sort="descending"] button::after { border-top: 5px solid currentColor; }
   thead th[aria-sort="ascending"] button::after { border-bottom: 5px solid currentColor; }
   thead th.grp { text-align: center; border-bottom: 1px solid var(--rule-soft); }
-  td.team { font-weight: 600; }
+  tbody tr:hover td { box-shadow: inset 0 -1px 0 var(--axis); }
+  td.team { font-weight: 650; }
   td .sub { display: block; font-size: 11.5px; color: var(--muted); line-height: 1.25; }
   td.range, th.range { padding-block: 0; }
   td.range svg, th.range svg { width: 168px; height: 22px; display: block; margin-left: auto; overflow: visible; }
   th.range svg { height: 16px; }
   .tick text { font-size: 10px; fill: var(--muted); font-weight: 500; letter-spacing: 0; text-transform: none; }
-  .badge { display: inline-block; margin-left: 6px; font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink-2); background: var(--chip); border-radius: 4px; padding: 1px 5px; font-weight: 600; }
-  tr.league td { border-top: 1px solid var(--rule); font-weight: 600; color: var(--ink-2); }
+  td.num-strong { font-weight: 650; }
+
+  /* Color follows direction (red = more, blue = fewer); strength follows how unlikely luck is. */
+  .hot1  { background: color-mix(in srgb, var(--hot) 13%, var(--surface)); }
+  .hot2  { background: color-mix(in srgb, var(--hot) 30%, var(--surface)); }
+  .cold1 { background: color-mix(in srgb, var(--cold) 13%, var(--surface)); }
+  .cold2 { background: color-mix(in srgb, var(--cold) 30%, var(--surface)); }
+  .badge { display: inline-flex; align-items: center; gap: 3px; margin-left: 7px; font-size: 10.5px; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink); border-radius: 4px; padding: 1px 6px; font-weight: 700; vertical-align: 1px; }
 
   .prose { max-width: 70ch; color: var(--ink-2); font-size: 14.5px; display: flex; flex-direction: column; gap: 10px; }
   .prose strong { color: var(--ink); font-weight: 600; }
   .prose dl { margin: 0; display: grid; grid-template-columns: minmax(120px, max-content) 1fr; gap: 6px 16px; }
   .prose dt { color: var(--ink); font-weight: 600; }
   .prose dd { margin: 0; }
-  .callout { border-left: 2px solid var(--warn); padding: 2px 0 2px 14px; color: var(--ink-2); font-size: 14px; max-width: 70ch; }
-  .error { color: var(--ink); border-left: 2px solid var(--warn); padding-left: 12px; }
+  .callout { border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 8%, var(--surface)); border-radius: 0 8px 8px 0; padding: 10px 14px; color: var(--ink-2); font-size: 14px; max-width: 70ch; }
+  .error { color: var(--ink); border-left: 3px solid var(--warn); padding-left: 12px; }
 
-  .tip { position: fixed; pointer-events: none; opacity: 0; transition: opacity .12s; background: var(--surface); border: 1px solid var(--ring); border-radius: 6px; padding: 7px 10px; font-size: 12.5px; color: var(--ink-2); box-shadow: 0 4px 14px rgba(0,0,0,0.12); z-index: 5; max-width: 260px; }
+  .tip { position: fixed; pointer-events: none; opacity: 0; transition: opacity .12s; background: var(--surface); border: 1px solid var(--ring); border-radius: 6px; padding: 7px 10px; font-size: 12.5px; color: var(--ink-2); box-shadow: 0 4px 14px rgba(0,0,0,0.12); z-index: 20; max-width: 260px; }
   .tip strong { display: block; color: var(--ink); font-size: 14px; font-weight: 600; }
   .tip.on { opacity: 1; }
   .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -152,15 +215,41 @@
   @media (max-width: 560px) {
     th, td { padding: 6px 7px; }
     td.range svg, th.range svg { width: 120px; }
+    .stat .v { font-size: 24px; }
+    .stats { grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; }
+    .stat { padding: 10px 12px 12px; }
+    .stat .v.teams { font-size: 19px; }
+  }
+  @media (forced-colors: active) {
+    .hot1, .hot2, .cold1, .cold2 { forced-color-adjust: none; }
   }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
 <body>
+<nav class="topnav" aria-label="Site">
+  <div class="topnav-in">
+    <a class="brand" href="./"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="18" fill="var(--s1)"/><rect x="22" y="54" width="12" height="26" fill="#fff"/><rect x="44" y="38" width="12" height="42" fill="#fff"/><rect x="66" y="22" width="12" height="58" fill="#fff"/></svg>Hockey Hacks</a>
+    <div class="tabs">
+      <a class="tab" href="periods.html" aria-current="page">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>
+        <span><b>Period scoring <span class="new">New</span></b><small>Every team, period by period</small></span>
+      </a>
+      <a class="tab" href="./">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+        <span><b>xG model</b><small>How it was built and tested</small></span>
+      </a>
+      <a class="tab ext" href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>
+        <span><b>Findings ↗</b><small>Full write-up on GitHub</small></span>
+      </a>
+    </div>
+  </div>
+</nav>
+
 <div class="wrap">
   <header class="masthead">
     <div>
-      <p class="crumb"><a href="./">Hockey Hacks</a> / Period scoring</p>
       <h1>Period scoring</h1>
       <p class="lede">How often each team's games hit common period lines, such as 2+ goals in a period or a goal in the first 10 minutes. Each count comes with the range that luck alone allows, a rate pulled toward the league norm, and what the shots deserved by expected goals (xG).</p>
     </div>
@@ -172,15 +261,29 @@
   </header>
 
   <section aria-label="Filters">
-    <div class="controls">
-      <label>Season <select id="season"></select></label>
-      <label>Games <select id="window">
-        <option value="all">Whole season</option>
-        <option value="10">Last 10</option>
-      </select></label>
-      <label class="grow">Measure <select id="metric"></select></label>
+    <div class="filters">
+      <div class="filter-row">
+        <label><span class="flabel">Season</span><select id="season"></select></label>
+        <div role="group" aria-labelledby="win-label"><span class="flabel" id="win-label">Games</span>
+          <div class="seg" id="window">
+            <button type="button" data-win="all">Whole season</button>
+            <button type="button" data-win="10">Last 10</button>
+          </div>
+        </div>
+      </div>
+      <div role="group" aria-labelledby="m-label"><span class="flabel" id="m-label">Measure</span>
+        <div class="mgroups" id="metric"></div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="league-title">
+    <div class="section-head">
+      <h2 id="league-title">At a glance</h2>
+      <span class="hint" id="glance-hint"></span>
     </div>
     <div class="stats" id="league" aria-live="polite"></div>
+    <div class="stats" id="notes"></div>
   </section>
 
   <section>
@@ -190,8 +293,13 @@
     </div>
     <div class="card">
       <div class="key" aria-hidden="true">
-        <span><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="var(--s1)" stroke="var(--surface)" stroke-width="2"/></svg>Rate</span>
-        <span><svg viewBox="0 0 26 12"><rect x="1" y="3" width="24" height="6" rx="3" fill="color-mix(in srgb, var(--s1) 30%, var(--surface))"/></svg>95% range from luck alone</span>
+        <span><i class="sw hot2"></i><i class="gl hot">▲</i>More often than the league norm</span>
+        <span><i class="sw cold2"></i><i class="gl cold">▼</i>Less often</span>
+        <span>Darker color: luck alone would rarely do this. No color: within normal luck.</span>
+      </div>
+      <div class="key" aria-hidden="true">
+        <span><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="var(--neutral)" stroke="var(--surface)" stroke-width="2"/></svg>Rate</span>
+        <span><svg viewBox="0 0 26 12"><rect x="1" y="3" width="24" height="6" rx="3" fill="color-mix(in srgb, var(--neutral) 35%, var(--surface))"/></svg>95% range from luck alone</span>
         <span><svg viewBox="0 0 6 12"><line x1="3" y1="0" x2="3" y2="12" stroke="var(--ink-2)" stroke-width="1"/></svg>League norm, 2022-26</span>
       </div>
       <div class="tablewrap">
@@ -211,6 +319,11 @@
       <span class="hint">Goals, with xG underneath · regulation only</span>
     </div>
     <div class="card">
+      <div class="key" aria-hidden="true">
+        <span><i class="sw hot2"></i>More goals than the shots deserved</span>
+        <span><i class="sw cold2"></i>Fewer</span>
+        <span>Darker color: further than luck usually goes.</span>
+      </div>
       <div class="tablewrap">
         <table id="goals">
           <thead></thead>
@@ -225,6 +338,7 @@
     <div class="prose">
       <p class="callout">At 10 to 13 games, luck explains almost all of the spread between teams on these measures. A team that is exactly league average lands anywhere from about 25% to 80% over 10 games. That is why the shrunk column barely moves from the norm: the flatness is the finding.</p>
       <dl>
+        <dt>Colors</dt><dd>Red means more often (or more goals), blue means less often (or fewer). Light color: about a 1-in-3 result if it were all luck. Dark color: outside the 95% range, about 1 in 20.</dd>
         <dt>Regulation only</dt><dd>Periods 1–3. Overtime and shootout goals never count.</dd>
         <dt>Empty-net goals</dt><dd>They count. One measure removes them from the 3rd period, where they are about 17% of goals (2022-26).</dd>
         <dt>First 10 minutes</dt><dd>A goal by either team before 10:00 of the 1st period.</dd>
@@ -232,6 +346,7 @@
         <dt>95% range</dt><dd>The Wilson interval for the team's rate: where a team with that true rate would land 95% of the time over the same number of games.</dd>
         <dt>Shrunk</dt><dd id="def-shrunk">The team's record pulled toward the norm: (hits + k × norm) ÷ (games + k). k comes from four seasons of team records, using Tango's regression to the mean.</dd>
         <dt>xG expected</dt><dd id="def-xg">What the shots deserved. Each game's actual unblocked shots, with xG from the model, treated as independent chances, then scaled to the measure's 2022-26 league ratio. Ties get no xG estimate, because treating shots as independent misses them by about 7 points.</dd>
+        <dt>vs xG</dt><dd>Hits minus xG expected. Positive means the team's games hit more often than their shots deserved.</dd>
       </dl>
       <p>The list of measures follows the period charts at Otto's Hockey Portal (@PsuOtto). Every number here is computed from NHL play-by-play by this project.</p>
     </div>
@@ -240,7 +355,7 @@
   <footer>
     <div>Data: NHL public play-by-play, regular season. Not affiliated with the NHL.</div>
     <div>For information only, not betting advice. If gambling is a problem, call 1-800-GAMBLER (US).</div>
-    <div><a href="./">Model and its test results</a></div>
+    <div><a href="./">Model and its test results</a> · <a href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">Full findings</a></div>
   </footer>
 </div>
 <div class="tip" id="tip" aria-hidden="true"></div>
@@ -249,6 +364,8 @@
 const $ = (id) => document.getElementById(id);
 const pct = (x, d = 1) => (x == null || !isFinite(x)) ? "–" : (100 * x).toFixed(d) + "%";
 const fmt1 = (x) => (x == null || !isFinite(x)) ? "–" : x.toFixed(1);
+const signed = (x) => (x == null || !isFinite(x)) ? "–" : (x > 0 ? "+" : x < 0 ? "−" : "") + Math.abs(x).toFixed(1);
+const pts = (x) => Math.abs(100 * x).toFixed(1) + " pts";
 const num = (x) => x.toLocaleString("en-US");
 
 const state = { index: null, files: {}, season: null, win: "all", metric: "p1_ov15",
@@ -260,6 +377,18 @@ function wilson(h, n, z = 1.96) {
   const c = (p + z2 / (2 * n)) / d;
   const half = z * Math.sqrt(p * (1 - p) / n + z2 / (4 * n * n)) / d;
   return [Math.max(0, c - half), Math.min(1, c + half)];
+}
+
+/* Direction and strength of a result against what luck allows.
+   level 2: beyond the 95% range; level 1: more than one standard deviation; 0: normal luck. */
+function tone(z, beyond) {
+  if (z == null || !isFinite(z)) return { dir: "", level: 0, cls: "" };
+  const level = beyond ? 2 : Math.abs(z) >= 1 ? 1 : 0;
+  const dir = level ? (z > 0 ? "hot" : "cold") : "";
+  return { dir, level, cls: level ? dir + level : "" };
+}
+function glyph(dir) {
+  return dir ? el("i", { class: "gl " + dir, "aria-hidden": "true" }, dir === "hot" ? "▲" : "▼") : null;
 }
 
 function el(tag, attrs = {}, text) {
@@ -314,51 +443,91 @@ function windows(file) {
   return by;
 }
 
+const xgProb = (r, ei, m) => Math.min(1, r[ei] * m.xg_factor);
+
 function metricRows(file, by, m) {
   const yi = file.ci["y_" + m.key];
   const ei = m.has_xg ? file.ci["e_" + m.key] : null;
+  const p = m.baseline;
   const out = [];
   for (const [team, rs] of by) {
     const n = rs.length;
     const hits = rs.reduce((s, r) => s + r[yi], 0);
     const [lo, hi] = wilson(hits, n);
     const shrunk = m.k == null ? m.baseline : (hits + m.k * m.baseline) / (n + m.k);
-    const xg = ei == null ? null : rs.reduce((s, r) => s + Math.min(1, r[ei] * m.xg_factor), 0);
-    out.push({ team, n, hits, rate: n ? hits / n : null, lo, hi, shrunk, xg,
-               outside: lo > m.baseline || hi < m.baseline });
+    const outside = lo > p || hi < p;
+    const t = tone(n ? (hits - n * p) / Math.sqrt(n * p * (1 - p)) : null, outside);
+    let xg = null, luck = null, lt = tone(null);
+    if (ei != null) {
+      const qs = rs.map((r) => xgProb(r, ei, m));
+      xg = qs.reduce((s, q) => s + q, 0);
+      const sd = Math.sqrt(qs.reduce((s, q) => s + q * (1 - q), 0));
+      luck = hits - xg;
+      const z = sd > 0 ? luck / sd : null;
+      lt = tone(z, z != null && Math.abs(z) >= 1.96);
+    }
+    out.push({ team, n, hits, rate: n ? hits / n : null, lo, hi, shrunk, xg, luck, outside, t, lt });
   }
   return out;
 }
 
-/* ---------- league tiles ---------- */
+/* ---------- at a glance: league tiles ---------- */
+function tile({ k, kdir, v, n, d, cls = "", vcls = "" }) {
+  const box = el("div", { class: "stat " + cls });
+  const head = el("span", { class: "k" });
+  if (kdir) head.append(glyph(kdir));
+  head.append(document.createTextNode(k));
+  box.append(head);
+  box.append(el("span", { class: "v " + vcls }, v));
+  if (d) {
+    const line = el("span", { class: "d" });
+    if (d.dir) line.append(glyph(d.dir));
+    line.append(document.createTextNode(d.text));
+    box.append(line);
+  }
+  if (n) box.append(el("span", { class: "n" }, n));
+  return box;
+}
+
 function renderLeague(file, by, m, rows) {
   const all = [...by.values()].flat();
   const yi = file.ci["y_" + m.key];
   const hits = all.reduce((s, r) => s + r[yi], 0);
+  // A game-level measure appears once per team, so each game is counted twice.
   const per = state.win === "all" && m.game_level;
+  const div = m.game_level ? 2 : 1;
   const shownHits = per ? hits / 2 : hits, shownN = per ? all.length / 2 : all.length;
   const unit = per ? "games" : "team-games";
+  const rate = hits / all.length, p = m.baseline;
+  const nEff = all.length / div;
+  const zNorm = (rate - p) / Math.sqrt(p * (1 - p) / nEff);
+  const tNorm = tone(zNorm, Math.abs(zNorm) >= 1.96);
   const outside = rows.filter((r) => r.outside).length;
   const season = state.index.seasons.find((s) => s.season === state.season);
-  let xgTile = { v: "–", n: "No xG estimate for ties" };
+
+  const tiles = [
+    { k: state.win === "all" ? `League, ${season.label}` : "League, each team's last 10", v: pct(rate),
+      d: { dir: tNorm.dir, text: `${pts(rate - p)} ${rate >= p ? "above" : "below"} the norm` },
+      n: `${num(Math.round(shownHits))} of ${num(shownN)} ${unit}`, cls: tNorm.dir },
+    { k: "League norm, 2022-26", v: pct(p), n: `${state.index.history_seasons.length} regular seasons, ${num(historyGames())} games` },
+  ];
   if (m.has_xg) {
     const ei = file.ci["e_" + m.key];
-    const exp = all.reduce((s, r) => s + Math.min(1, r[ei] * m.xg_factor), 0) / all.length;
-    xgTile = { v: pct(exp), n: "What the shots deserved, same games" };
+    const qs = all.map((r) => xgProb(r, ei, m));
+    const exp = qs.reduce((s, q) => s + q, 0) / all.length;
+    const sd = Math.sqrt(qs.reduce((s, q) => s + q * (1 - q), 0) / div) / nEff;
+    const zx = (rate - exp) / sd;
+    const tx = tone(zx, Math.abs(zx) >= 1.96);
+    tiles.push({ k: "xG expected", v: pct(exp), cls: tx.dir,
+                 d: { dir: tx.dir, text: `Actual is ${pts(rate - exp)} ${rate >= exp ? "above" : "below"}` },
+                 n: "What the shots deserved, same games" });
+  } else {
+    tiles.push({ k: "xG expected", v: "–", n: "No xG estimate for ties" });
   }
-  const tiles = [
-    { k: state.win === "all" ? `League, ${season.label}` : "League, each team's last 10", v: pct(hits / all.length),
-      n: `${num(Math.round(shownHits))} of ${num(shownN)} ${unit}` },
-    { k: "League norm, 2022-26", v: pct(m.baseline), n: `${state.index.history_seasons.length} regular seasons, ${num(historyGames())} games` },
-    { k: "xG expected", ...xgTile },
-    { k: "Teams outside their range", v: String(outside), n: "About 2 of 32 would be by luck alone" },
-  ];
-  const box = $("league");
-  box.replaceChildren(...tiles.map((t) => {
-    const d = el("div", { class: "stat" });
-    d.append(el("span", { class: "k" }, t.k), el("span", { class: "v" }, t.v), el("span", { class: "n" }, t.n));
-    return d;
-  }));
+  tiles.push({ k: "Teams outside their range", v: `${outside} of ${rows.length}`, cls: "info",
+               n: "About 2 of 32 would land there by luck alone" });
+  $("league").replaceChildren(...tiles.map(tile));
+  $("glance-hint").textContent = `${m.label} · ${state.win === "all" ? "whole season" : "last 10 games"}`;
 }
 
 function historyGames() {
@@ -366,21 +535,58 @@ function historyGames() {
   return state.index.seasons.filter((s) => h.has(s.season)).reduce((t, s) => t + s.games, 0);
 }
 
+/* ---------- at a glance: teams to note ---------- */
+function extreme(rows, f, sign) {
+  const vals = rows.map(f).filter((v) => v != null && isFinite(v));
+  if (!vals.length) return null;
+  const best = sign > 0 ? Math.max(...vals) : Math.min(...vals);
+  return { best, teams: rows.filter((r) => f(r) != null && Math.abs(f(r) - best) < 1e-9) };
+}
+function teamList(rs) {
+  const names = rs.map((r) => r.team).sort();
+  return names.length > 3 ? `${names.slice(0, 3).join(", ")} +${names.length - 3}` : names.join(", ");
+}
+
+function renderNotes(rows, m) {
+  const cards = [];
+  const hi = extreme(rows, (r) => r.rate, 1), lo = extreme(rows, (r) => r.rate, -1);
+  const rangeNote = (rs) => rs.some((r) => r.outside)
+    ? "Outside the luck range"
+    : "Inside the luck range: could be luck";
+  if (hi) cards.push({ k: "Hits most often", kdir: "hot", v: teamList(hi.teams), vcls: "teams", cls: "hot",
+    d: { text: `${pct(hi.best)} · ${hi.teams[0].hits} of ${hi.teams[0].n}` }, n: rangeNote(hi.teams) });
+  if (lo) cards.push({ k: "Hits least often", kdir: "cold", v: teamList(lo.teams), vcls: "teams", cls: "cold",
+    d: { text: `${pct(lo.best)} · ${lo.teams[0].hits} of ${lo.teams[0].n}` }, n: rangeNote(lo.teams) });
+  if (m.has_xg) {
+    const up = extreme(rows, (r) => r.luck, 1), dn = extreme(rows, (r) => r.luck, -1);
+    const luckNote = (rs) => rs.some((r) => r.lt.level === 2)
+      ? "Further than luck usually goes"
+      : "Within normal luck";
+    if (up) cards.push({ k: "Most above xG", kdir: "hot", v: teamList(up.teams), vcls: "teams", cls: "hot",
+      d: { text: `${signed(up.best)} hits (${up.teams[0].hits} vs ${fmt1(up.teams[0].xg)} expected)` }, n: luckNote(up.teams) });
+    if (dn) cards.push({ k: "Most below xG", kdir: "cold", v: teamList(dn.teams), vcls: "teams", cls: "cold",
+      d: { text: `${signed(dn.best)} hits (${dn.teams[0].hits} vs ${fmt1(dn.teams[0].xg)} expected)` }, n: luckNote(dn.teams) });
+  }
+  $("notes").replaceChildren(...cards.map(tile));
+}
+
 /* ---------- range chart ---------- */
 const W = () => (matchMedia("(max-width: 560px)").matches ? 120 : 168);
 const PAD = 6;
 function xs(p) { return PAD + p * (W() - 2 * PAD); }
+const dirColor = (dir) => dir ? `var(--${dir})` : "var(--neutral)";
 
 function rangeSvg(r, m) {
+  const c = dirColor(r.t.dir);
   const s = sv("svg", { viewBox: `0 0 ${W()} 22`, role: "img", tabindex: "0",
                         "aria-label": tipText(r, m).join(". ") });
   s.append(sv("line", { x1: xs(0), x2: xs(1), y1: 11, y2: 11, stroke: "var(--rule)", "stroke-width": 1 }));
+  s.append(sv("rect", { x: xs(r.lo), y: 8, width: Math.max(2, xs(r.hi) - xs(r.lo)), height: 6, rx: 3,
+                        fill: `color-mix(in srgb, ${c} 35%, var(--surface))` }));
   s.append(sv("line", { x1: xs(m.baseline), x2: xs(m.baseline), y1: 2, y2: 20,
                         stroke: "var(--ink-2)", "stroke-width": 1 }));
-  s.append(sv("rect", { x: xs(r.lo), y: 8, width: Math.max(2, xs(r.hi) - xs(r.lo)), height: 6, rx: 3,
-                        fill: "color-mix(in srgb, var(--s1) 30%, var(--surface))" }));
   if (r.rate != null) {
-    s.append(sv("circle", { cx: xs(r.rate), cy: 11, r: 4.5, fill: "var(--s1)",
+    s.append(sv("circle", { cx: xs(r.rate), cy: 11, r: 4.5, fill: c,
                             stroke: "var(--surface)", "stroke-width": 2 }));
   }
   const show = (ev) => showTip(ev, r, m);
@@ -433,7 +639,8 @@ const COLS = [
   { key: "team", label: "Team", cls: "" },
   { key: "n", label: "GP" },
   { key: "hits", label: "Hits" },
-  { key: "xg", label: "Exp. (xG)" },
+  { key: "xg", label: "Exp. (xG)", xg: true },
+  { key: "luck", label: "vs xG", xg: true },
   { key: "rate", label: "Rate" },
   { key: "range", label: "Range", cls: "range", sortable: false },
   { key: "shrunk", label: "Shrunk" },
@@ -472,7 +679,7 @@ function renderTeams(rows, m) {
   const t = $("teams");
   const head = el("tr");
   for (const c of COLS) {
-    if (c.key === "xg" && !m.has_xg) continue;
+    if (c.xg && !m.has_xg) continue;
     head.append(headerCell(c, state.sort, render));
   }
   t.tHead.replaceChildren(head);
@@ -480,12 +687,23 @@ function renderTeams(rows, m) {
   const body = sortRows(rows, state.sort).map((r) => {
     const tr = el("tr");
     const team = el("td", { class: "team" }, r.team);
-    if (r.outside) team.append(el("span", { class: "badge", title: "The 95% range misses the league norm" }, "outside"));
+    if (r.outside) {
+      const b = el("span", { class: "badge " + r.t.dir + "2", title: "The 95% range misses the league norm" });
+      b.append(r.t.dir === "hot" ? "▲ above range" : "▼ below range");
+      team.append(b);
+    }
     tr.append(team);
     tr.append(el("td", {}, String(r.n)));
     tr.append(el("td", {}, String(r.hits)));
-    if (m.has_xg) tr.append(el("td", {}, fmt1(r.xg)));
-    tr.append(el("td", {}, pct(r.rate)));
+    if (m.has_xg) {
+      tr.append(el("td", {}, fmt1(r.xg)));
+      tr.append(el("td", { class: r.lt.cls }, signed(r.luck)));
+    }
+    const rate = el("td", { class: ("num-strong " + r.t.cls).trim() });
+    const g = glyph(r.t.dir);
+    if (g) rate.append(g);
+    rate.append(document.createTextNode(pct(r.rate)));
+    tr.append(rate);
     const rc = el("td", { class: "range" });
     rc.append(rangeSvg(r, m));
     tr.append(rc);
@@ -538,8 +756,11 @@ function renderGoals(rows) {
     tr.append(el("td", { class: "team" }, r.team), el("td", {}, String(r.n)));
     for (const [f, a] of GCOLS) {
       for (const k of [f, a]) {
-        const td = el("td", {}, String(r[k]));
-        td.append(el("span", { class: "sub" }, fmt1(r["x" + k])));
+        const g = r[k], x = r["x" + k];
+        // Goals against xG, as a Poisson count: sd is about the square root of xG.
+        const z = x > 0 ? (g - x) / Math.sqrt(x) : null;
+        const td = el("td", { class: tone(z, z != null && Math.abs(z) >= 1.96).cls }, String(g));
+        td.append(el("span", { class: "sub" }, fmt1(x)));
         tr.append(td);
       }
     }
@@ -548,11 +769,22 @@ function renderGoals(rows) {
   t.tBodies[0].replaceChildren(...body);
 }
 
+/* ---------- controls ---------- */
+function shortLabel(m) {
+  const prefix = m.group + ": ";
+  return m.label.startsWith(prefix) ? m.label.slice(prefix.length) : m.label;
+}
+function syncControls() {
+  for (const b of $("window").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.win === state.win));
+  for (const b of $("metric").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.m === state.metric));
+}
+
 /* ---------- page ---------- */
 async function render() {
   const m = state.index.metrics.find((x) => x.key === state.metric) || state.index.metrics[0];
   state.metric = m.key;
   writeHash();
+  syncControls();
   let file;
   try {
     file = await loadSeason(state.season);
@@ -564,6 +796,7 @@ async function render() {
   const rows = metricRows(file, by, m);
   $("metric-title").textContent = m.label;
   renderLeague(file, by, m, rows);
+  renderNotes(rows, m);
   renderTeams(rows, m);
   renderGoals(goalRows(file, by));
   $("teams-note").textContent = m.k == null
@@ -587,25 +820,29 @@ async function init() {
 
   const sSel = $("season");
   for (const s of idx.seasons) {
-    const o = el("option", { value: s.season }, s === idx.seasons[0] ? `${s.label} (to ${s.last_date})` : s.label);
-    sSel.append(o);
+    sSel.append(el("option", { value: s.season }, s === idx.seasons[0] ? `${s.label} (to ${s.last_date})` : s.label));
   }
   sSel.value = state.season;
-  $("window").value = state.win === "10" ? "10" : "all";
-  state.win = $("window").value;
+  if (state.win !== "10") state.win = "all";
 
-  const mSel = $("metric"), groups = new Map();
+  const groups = new Map();
   for (const m of idx.metrics) {
-    if (!groups.has(m.group)) groups.set(m.group, el("optgroup", { label: m.group }));
-    groups.get(m.group).append(el("option", { value: m.key }, m.label));
+    if (!groups.has(m.group)) {
+      const g = el("div", { class: "mgroup" });
+      g.append(el("span", { class: "mg-label" }, m.group), el("div", { class: "chips" }));
+      groups.set(m.group, g);
+    }
+    const b = el("button", { type: "button", class: "chip", "data-m": m.key, title: m.label }, shortLabel(m));
+    b.addEventListener("click", () => { state.metric = m.key; render(); });
+    groups.get(m.group).lastChild.append(b);
   }
-  mSel.append(...groups.values());
+  $("metric").replaceChildren(...groups.values());
   if (!idx.metrics.some((m) => m.key === state.metric)) state.metric = idx.metrics[0].key;
-  mSel.value = state.metric;
 
   sSel.addEventListener("change", () => { state.season = Number(sSel.value); render(); });
-  $("window").addEventListener("change", (e) => { state.win = e.target.value; render(); });
-  mSel.addEventListener("change", () => { state.metric = mSel.value; render(); });
+  for (const b of $("window").querySelectorAll("button")) {
+    b.addEventListener("click", () => { state.win = b.dataset.win; render(); });
+  }
   addEventListener("resize", () => { clearTimeout(init.t); init.t = setTimeout(render, 150); });
 
   const latest = idx.seasons[0];

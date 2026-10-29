@@ -13,7 +13,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%232a78d6'/><rect x='22' y='54' width='12' height='26' fill='white'/><rect x='44' y='38' width='12' height='42' fill='white'/><rect x='66' y='22' width='12' height='58' fill='white'/></svg>">
 <style>
   /* baseline the artifact host supplies; needed for a standalone page */
-  :root { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+  :root { padding-bottom: env(safe-area-inset-bottom, 0px); }
   body { margin: 0; }
   img { max-width: 100%; }
   [hidden] { display: none !important; }
@@ -39,6 +39,8 @@
     --ring:        rgba(11,14,13,0.10);
     --shadow:      0 1px 2px rgba(11,14,13,0.05);
     --shamrock:    #2f8f4e;
+    --accent-fill: #2a78d6;
+    --hot:         #e34948;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -61,6 +63,8 @@
       --ring:      rgba(255,255,255,0.10);
       --shadow:    none;
       --shamrock:  #4cae6b;
+      --accent-fill: #256abf;
+      --hot:       #e66767;
     }
   }
   :root[data-theme="dark"] {
@@ -83,6 +87,8 @@
     --ring:      rgba(255,255,255,0.10);
     --shadow:    none;
     --shamrock:  #4cae6b;
+    --accent-fill: #256abf;
+    --hot:       #e66767;
   }
 
   body {
@@ -93,16 +99,56 @@
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
-  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 20px; padding-block: 28px 56px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 56px; }
   h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.015em; }
   h1 { font-size: clamp(26px, 4.6vw, 38px); font-weight: 650; line-height: 1.12; }
-  h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-2); }
+  h2 { font-size: 21px; font-weight: 650; line-height: 1.25; color: var(--ink); }
   h3 { font-size: 16px; font-weight: 600; }
   p { margin: 0; }
   a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--axis); }
   a:hover { text-decoration-color: currentColor; }
   a:focus-visible, button:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; border-radius: 3px; }
   code { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace; font-size: 0.86em; }
+
+  /* ---- site navigation: same block in periods.html ---- */
+  .topnav { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--plane) 90%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); padding-top: env(safe-area-inset-top, 0px); }
+  .topnav-in { max-width: 1120px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
+  .brand { display: inline-flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; }
+  .brand svg { width: 26px; height: 26px; flex: none; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 auto; }
+  .tab { display: flex; align-items: center; gap: 11px; min-height: 52px; padding: 8px 18px 8px 14px; border: 1px solid var(--rule); border-radius: 12px; background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: var(--shadow); }
+  .tab:hover { border-color: var(--s1); }
+  .tab .ic { width: 24px; height: 24px; flex: none; color: var(--s1); }
+  .tab b { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 650; line-height: 1.2; }
+  .tab small { display: block; font-size: 12.5px; color: var(--muted); line-height: 1.3; }
+  .tab[aria-current="page"] { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
+  .tab[aria-current="page"] .ic, .tab[aria-current="page"] small { color: rgba(255,255,255,0.88); }
+  .tab .new { font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; background: var(--hot); color: #fff; }
+  .tab[aria-current="page"] .new { background: #fff; color: var(--accent-fill); }
+  @media (max-width: 720px) {
+    .topnav { position: static; }
+    .tabs { width: 100%; }
+    .tab { flex: 1 1 0; padding: 8px 12px; min-width: 0; }
+    .tab small, .tab.ext { display: none; }
+  }
+
+  /* ---- period scoring banner ---- */
+  .feature { margin-top: 22px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 28px; padding: 20px 22px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--s1) 40%, var(--rule)); border-left: 6px solid var(--s1); background: color-mix(in srgb, var(--s1) 9%, var(--surface)); text-decoration: none; color: var(--ink); box-shadow: var(--shadow); }
+  .feature:hover { border-color: var(--s1); }
+  .feature:hover .feature-cta { filter: brightness(1.08); }
+  .feature-text { flex: 1 1 420px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--s1); }
+  .kicker .new { font-size: 10.5px; padding: 2px 6px; border-radius: 4px; background: var(--hot); color: #fff; }
+  .feature-h { font-size: clamp(19px, 2.6vw, 24px); }
+  .feature p { color: var(--ink-2); font-size: 15px; max-width: 70ch; }
+  .feature .feature-meta { font-size: 13px; color: var(--muted); }
+  .feature-cta { flex: none; display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 10px; background: var(--accent-fill); color: #fff; font-size: 17px; font-weight: 650; }
+  /* ---- jump links ---- */
+  .jump { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 8px; }
+  .jump a { text-decoration: none; font-size: 15px; font-weight: 600; padding: 8px 15px; border-radius: 999px; border: 1px solid var(--rule); background: var(--surface); color: var(--ink); }
+  .jump a:hover { border-color: var(--s1); color: var(--s1); }
+  section[id] { scroll-margin-top: 92px; }
+  @media (max-width: 720px) { section[id] { scroll-margin-top: 12px; } }
 
   header.masthead { display: flex; flex-direction: column; gap: 14px; padding-bottom: 22px; border-bottom: 1px solid var(--rule); }
   .lede { font-size: clamp(15px, 2.1vw, 17px); color: var(--ink-2); max-width: 62ch; }
@@ -114,9 +160,16 @@
   .section-head { display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; justify-content: space-between; }
   .section-head .hint { font-size: 12.5px; color: var(--muted); }
 
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; }
-  .stat { background: var(--surface); padding: 16px 18px; display: flex; flex-direction: column; gap: 3px; }
-  .stat .v { font-size: 27px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+  .stat { background: var(--surface); border: 1px solid var(--rule); border-top: 4px solid var(--axis); border-radius: 10px; padding: 12px 18px 14px; display: flex; flex-direction: column; gap: 4px; box-shadow: var(--shadow); }
+  .stat.good { border-top-color: var(--good); }
+  .stat.warn { border-top-color: var(--warn); }
+  .stat.info { border-top-color: var(--s1); }
+  .flag { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink); }
+  .flag::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--idle); flex: none; }
+  .flag.good::before { background: var(--good); }
+  .flag.warn::before { background: var(--warn); border-radius: 2px; transform: rotate(45deg) scale(0.85); }
+  .stat .v { font-size: 30px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
   .stat .v .arrow { color: var(--muted); font-weight: 400; margin: 0 4px; }
   .stat .v .now { color: var(--s1); }
   .stat .k { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); }
@@ -124,7 +177,8 @@
 
   .prose { max-width: 68ch; color: var(--ink-2); font-size: 15.5px; }
   .prose strong { color: var(--ink); font-weight: 600; }
-  .callout { border-left: 2px solid var(--warn); padding: 2px 0 2px 14px; color: var(--ink-2); font-size: 14px; max-width: 68ch; }
+  .card.story { border-left: 5px solid var(--s1); }
+  .callout { border-left: 3px solid var(--warn); background: color-mix(in srgb, var(--warn) 8%, var(--surface)); border-radius: 0 8px 8px 0; padding: 10px 14px; color: var(--ink-2); font-size: 14px; max-width: 68ch; }
 
   .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(420px, 100%), 1fr)); gap: 16px; }
   .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 16px 16px 12px; box-shadow: var(--shadow); position: relative; display: flex; flex-direction: column; gap: 10px; }
@@ -144,17 +198,24 @@
   th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--rule-soft); white-space: nowrap; }
   th:first-child, td:first-child { text-align: left; }
   thead th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--rule); }
-  tbody tr.current td { font-weight: 600; }
-  tbody tr.current td:first-child { box-shadow: inset 2px 0 0 var(--s1); }
+  tbody tr.current td { font-weight: 650; background: color-mix(in srgb, var(--s1) 10%, var(--surface)); }
+  tbody tr.current td:first-child { box-shadow: inset 4px 0 0 var(--s1); }
+  .cur { margin-left: 8px; font-size: 10.5px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; padding: 1px 6px; border-radius: 4px; background: var(--accent-fill); color: #fff; }
 
   .stages { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
-  .stage { border: 1px solid var(--rule); border-radius: 8px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 2px; }
+  .stage { border: 1px solid var(--rule); border-top: 4px solid var(--axis); border-radius: 10px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .stage.done { border-top-color: var(--good); }
+  .stage.active { border-top-color: var(--warn); }
+  .stage.next { border-top-color: var(--s1); }
   .stage .nm { font-size: 14px; font-weight: 600; }
   .stage .st { font-size: 12px; color: var(--ink-2); }
 
   .steps { display: flex; flex-direction: column; gap: 0; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--surface); }
   .step { display: grid; grid-template-columns: 26px 1fr auto; gap: 12px; padding: 13px 16px; align-items: start; border-top: 1px solid var(--rule-soft); }
   .step:first-child { border-top: 0; }
+  .step.done { box-shadow: inset 4px 0 0 var(--good); }
+  .step.active { box-shadow: inset 4px 0 0 var(--warn); }
+  .step.next { box-shadow: inset 4px 0 0 var(--s1); }
   .step .idx { font-size: 12.5px; color: var(--muted); font-variant-numeric: tabular-nums; padding-top: 2px; }
   .step .ttl { font-size: 14.5px; font-weight: 600; }
   .step .nt { font-size: 13px; color: var(--ink-2); }
@@ -166,8 +227,9 @@
   .status.idle { color: var(--idle); background: var(--chip); }
 
   .issues { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
-  .issue { border: 1px solid var(--rule); border-left: 2px solid var(--axis); border-radius: 6px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 4px; }
-  .issue .h { font-size: 14px; font-weight: 600; }
+  .issue { border: 1px solid var(--rule); border-left: 4px solid var(--warn); border-radius: 8px; padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 4px; }
+  .issue .h { font-size: 14.5px; font-weight: 650; display: flex; gap: 8px; align-items: center; }
+  .issue .h::before { content: "!"; flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--warn); color: var(--surface); font-size: 12px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
   .issue .b { font-size: 13px; color: var(--ink-2); }
 
   footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; }
@@ -175,8 +237,34 @@
   .credit { margin-top: 10px; padding-top: 14px; border-top: 1px solid var(--rule-soft); display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--muted); }
   .credit svg { width: 15px; height: 15px; flex: none; color: var(--shamrock); }
 
+  @media (max-width: 560px) {
+    .stats { grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: 10px; }
+    .stat { padding: 10px 12px 12px; }
+    .stat .v { font-size: 24px; }
+    .stat:first-child, .stat:last-child { grid-column: 1 / -1; }
+  }
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
+
+<nav class="topnav" aria-label="Site">
+  <div class="topnav-in">
+    <a class="brand" href="./"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="18" fill="var(--s1)"/><rect x="22" y="54" width="12" height="26" fill="#fff"/><rect x="44" y="38" width="12" height="42" fill="#fff"/><rect x="66" y="22" width="12" height="58" fill="#fff"/></svg>Hockey Hacks</a>
+    <div class="tabs">
+      <a class="tab" href="periods.html">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>
+        <span><b>Period scoring <span class="new">New</span></b><small>Every team, period by period</small></span>
+      </a>
+      <a class="tab" href="./" aria-current="page">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+        <span><b>xG model</b><small>How it was built and tested</small></span>
+      </a>
+      <a class="tab ext" href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>
+        <span><b>Findings ↗</b><small>Full write-up on GitHub</small></span>
+      </a>
+    </div>
+  </div>
+</nav>
 
 <div class="wrap">
   <header class="masthead">
@@ -188,22 +276,35 @@
     <div class="meta-row">
       <span><a href="https://github.com/rbtgorman/hockey_hacks">github.com/rbtgorman/hockey_hacks</a></span>
       <span><a href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">Full findings</a></span>
-      <span><a href="periods.html">Period scoring</a></span>
       <span id="meta-updated"></span>
     </div>
   </header>
 
-  <section>
+  <a class="feature" href="periods.html">
+    <div class="feature-text">
+      <span class="kicker"><span class="new">New</span>Period scoring</span>
+      <h2 class="feature-h">Which teams' games get 2+ goals in a period, score in the first 10 minutes, or stay tied</h2>
+      <p>15 period measures for all 32 teams, 2022-23 to now. Each one shows the range luck allows and what the shots deserved by expected goals.</p>
+      <p class="feature-meta" id="feature-meta"></p>
+    </div>
+    <span class="feature-cta">Open period scoring <span aria-hidden="true">→</span></span>
+  </a>
+
+  <nav class="jump" aria-label="On this page">
+    <a href="#summary">Summary</a><a href="#evidence">Evidence</a><a href="#results">Results</a><a href="#progress">Progress</a><a href="#open-issues">Open issues</a>
+  </nav>
+
+  <section id="summary">
+    <h2>Summary</h2>
     <div class="stats" id="stats"></div>
+    <div class="card story">
+      <h3>What happened</h3>
+      <p class="prose" id="story"></p>
+      <p class="callout" id="caveat"></p>
+    </div>
   </section>
 
-  <section>
-    <h2>What happened</h2>
-    <p class="prose" id="story"></p>
-    <p class="callout" id="caveat"></p>
-  </section>
-
-  <section>
+  <section id="evidence">
     <div class="section-head">
       <h2>Evidence</h2>
       <span class="hint">O/E is observed ÷ predicted goals. 1.00 is right on average.</span>
@@ -244,7 +345,7 @@
     </div>
   </section>
 
-  <section>
+  <section id="results">
     <div class="section-head">
       <h2>Results</h2>
       <span class="hint">Held-out 2024-25 test season</span>
@@ -256,7 +357,7 @@
     <p class="cap" style="color:var(--muted);font-size:12.5px">AUC, log loss and Brier don't compare across the two tables, because the sets of shots differ. O/E does, because both models predict the same season's goals.</p>
   </section>
 
-  <section>
+  <section id="progress">
     <div class="section-head">
       <h2>Progress</h2>
       <span class="hint" id="progress-hint"></span>
@@ -265,7 +366,7 @@
     <div class="steps" id="steps"></div>
   </section>
 
-  <section>
+  <section id="open-issues">
     <h2>Open issues</h2>
     <div class="issues" id="issues"></div>
   </section>
@@ -289,10 +390,10 @@ const DATA = {
   stack: ["Python", "LightGBM", "PostgreSQL 14", "NHL public API", "SQL", "GitHub Actions CI"],
 
   stats: [
-    { v: "1.071|1.031", k: "2024-25 O/E", n: "Observed ÷ predicted goals, shots on goal → unblocked attempts" },
-    { v: "4,198", k: "Games ingested", n: "2022-23 to 2024-25, regular season and playoffs" },
-    { v: "364,074", k: "Unblocked attempts", n: "Goals, shots on goal and missed shots in the current table" },
-    { v: "0.7661", k: "Test AUC", n: "Current model; the target is 0.78, so this isn't there yet" }
+    { v: "1.071|1.031", k: "2024-25 O/E", tone: "good", flag: "Miss cut from 7% to 3%", n: "Observed ÷ predicted goals, shots on goal → unblocked attempts" },
+    { v: "4,198", k: "Games ingested", tone: "info", n: "2022-23 to 2024-25, regular season and playoffs" },
+    { v: "364,074", k: "Unblocked attempts", tone: "info", n: "Goals, shots on goal and missed shots in the current table" },
+    { v: "0.7661", k: "Test AUC", tone: "warn", flag: "Below the 0.78 target", n: "Current model; the target is 0.78, so this isn't there yet" }
   ],
 
   story: "Trained on 2022-23 shots on goal, the model under-predicted the 2024-25 test season by 7%, and so did every other shots-on-goal version. Scoring hadn't risen. Within each distance band under 60 ft, goals per shot on goal rose 6–9% from 2022-23 to 2024-25, while goals per unblocked attempt barely moved. That fits some saves being logged as misses, which David Johnson at Hockey Analysis suggested puck tracking now allows. Retraining on unblocked attempts (goals, saves and misses, the population most public expected-goals models use) cut the 2024-25 miss to 3%.",
@@ -449,7 +550,8 @@ $("stats").innerHTML = DATA.stats.map((s) => {
   const v = s.v.includes("|")
     ? `${s.v.split("|")[0]}<span class="arrow">→</span><span class="now">${s.v.split("|")[1]}</span>`
     : esc(s.v);
-  return `<div class="stat"><div class="k">${esc(s.k)}</div><div class="v">${v}</div><div class="n">${esc(s.n)}</div></div>`;
+  const flag = s.flag ? `<div class="flag ${s.tone}">${esc(s.flag)}</div>` : "";
+  return `<div class="stat ${s.tone || ""}"><div class="k">${esc(s.k)}</div><div class="v">${v}</div>${flag}<div class="n">${esc(s.n)}</div></div>`;
 }).join("");
 
 /* ---------------------- chart 1: O/E by version ------------------- */
@@ -588,7 +690,7 @@ function renderTable(id, t) {
   node.innerHTML =
     `<caption>${esc(t.caption)}</caption>` +
     `<thead><tr>${t.cols.map((c) => `<th>${esc(c)}</th>`).join("")}</tr></thead>` +
-    `<tbody>${t.rows.map((r, i) => `<tr class="${i === t.current ? "current" : ""}">${r.map((c) => `<td>${esc(c)}</td>`).join("")}</tr>`).join("")}</tbody>`;
+    `<tbody>${t.rows.map((r, i) => `<tr class="${i === t.current ? "current" : ""}">${r.map((c, j) => `<td>${esc(c)}${i === t.current && j === 0 ? '<span class="cur">Current</span>' : ""}</td>`).join("")}</tr>`).join("")}</tbody>`;
 }
 renderTable("tbl-sog", DATA.tables.sog);
 renderTable("tbl-fen", DATA.tables.fen);
@@ -596,13 +698,18 @@ renderTable("tbl-fen", DATA.tables.fen);
 /* ----------------------------- progress --------------------------- */
 const STATUS_TEXT = { done: "Done", active: "In progress", next: "Next", idle: "Planned" };
 $("stages").innerHTML = DATA.stages.map((s) =>
-  `<div class="stage"><div class="nm">${esc(s.nm)}</div><div class="st">${esc(s.st)}</div></div>`).join("");
+  `<div class="stage ${s.s}"><span class="status ${s.s}">${STATUS_TEXT[s.s]}</span><div class="nm">${esc(s.nm)}</div><div class="st">${esc(s.st)}</div></div>`).join("");
 $("steps").innerHTML = DATA.steps.map((s, i) =>
-  `<div class="step"><div class="idx">${i + 1}</div><div><div class="ttl">${esc(s.t)}</div><div class="nt">${esc(s.n)}</div></div><span class="status ${s.s}">${STATUS_TEXT[s.s]}</span></div>`).join("");
+  `<div class="step ${s.s}"><div class="idx">${i + 1}</div><div><div class="ttl">${esc(s.t)}</div><div class="nt">${esc(s.n)}</div></div><span class="status ${s.s}">${STATUS_TEXT[s.s]}</span></div>`).join("");
 $("issues").innerHTML = DATA.issues.map((i) =>
   `<div class="issue"><div class="h">${esc(i.h)}</div><div class="b">${esc(i.b)}</div></div>`).join("");
 $("sources").innerHTML = DATA.sources.map((s) => `<li><a href="${esc(s.u)}">${esc(s.t)}</a></li>`).join("");
 $("verified").textContent = DATA.verified;
+fetch("data/periods_index.json").then((r) => (r.ok ? r.json() : null)).then((idx) => {
+  if (!idx) return;
+  const s = idx.seasons[0];
+  $("feature-meta").textContent = `${s.label} games through ${s.last_date} · ${idx.metrics.length} measures · xG model ${idx.model_version}`;
+}).catch(() => {});
 $("credit").innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true" fill="none"><g fill="currentColor"><path d="M12 11C8.2 8.6 6.4 5.6 8.2 3.6 9.6 2 11.4 2.6 12 4.4 12.6 2.6 14.4 2 15.8 3.6 17.6 5.6 15.8 8.6 12 11Z"/><path d="M12 11C8.2 8.6 6.4 5.6 8.2 3.6 9.6 2 11.4 2.6 12 4.4 12.6 2.6 14.4 2 15.8 3.6 17.6 5.6 15.8 8.6 12 11Z" transform="rotate(120 12 11)"/><path d="M12 11C8.2 8.6 6.4 5.6 8.2 3.6 9.6 2 11.4 2.6 12 4.4 12.6 2.6 14.4 2 15.8 3.6 17.6 5.6 15.8 8.6 12 11Z" transform="rotate(240 12 11)"/></g><path d="M12.2 11.4C13.1 14.2 13 17.6 11.6 21.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span>&copy; ${DATA.credit.year} ${esc(DATA.credit.holder)}</span>`;
 </script>
 </html>
