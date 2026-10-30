@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hockey Hacks: how the numbers work</title>
-<meta name="description" content="Every number on Hockey Hacks: what it is, where it comes from, how it is calculated and what it means.">
+<meta name="description" content="Every number on Hockey Hacks: what it is, where it's from, how it's figured and what it actually tells you.">
 <meta name="author" content="Robert Gorman">
 <meta name="theme-color" content="#111111">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Hockey Hacks: how the numbers work">
-<meta property="og:description" content="Every number on Hockey Hacks: what it is, where it comes from, how it is calculated and what it means.">
+<meta property="og:description" content="Every number on Hockey Hacks: what it is, where it's from, how it's figured and what it actually tells you.">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23f74902'/><rect x='22' y='54' width='12' height='26' fill='black'/><rect x='44' y='38' width='12' height='42' fill='black'/><rect x='66' y='22' width='12' height='58' fill='black'/></svg>">
 <style>
@@ -125,7 +125,7 @@
     <div class="tabs">
       <a class="tab" href="./">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
-        <span><b>xG model</b><small>What this is and how good it is</small></span>
+        <span><b>xG model</b><small>What this is, and is it any good</small></span>
       </a>
       <a class="tab" href="periods.html">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>
@@ -143,10 +143,10 @@
   <header class="masthead">
     <div>
       <h1>How the numbers work</h1>
-      <p class="lede">Every number on this site, in the same four parts: what it is, where it comes from, how it's calculated, and what it means. All of them are computed by this project from the NHL's public data, and the code is on <a href="https://github.com/rbtgorman/hockey_hacks">GitHub</a>.</p>
+      <p class="lede">Every number on this site, broken down the same way: what it is, where it's from, how it's figured, and what it actually tells you. I calculate all of it myself from the NHL's public data, and the code's on <a href="https://github.com/rbtgorman/hockey_hacks">GitHub</a>.</p>
     </div>
     <nav class="toc" aria-label="On this page">
-      <a href="#data">The data</a><a href="#shot-quality">Shot quality (xG)</a><a href="#checks">Checking the model</a><a href="#periods">Period scoring</a><a href="#limits">What it can't tell you yet</a>
+      <a href="#data">The data</a><a href="#shot-quality">Shot quality (xG)</a><a href="#checks">Is the model any good?</a><a href="#periods">Period scoring</a><a href="#limits">What it can't tell you yet</a>
     </nav>
   </header>
 
@@ -155,22 +155,22 @@
     <h2>The data</h2>
 
     <article class="entry" id="games">
-      <h3>Games and shot attempts</h3>
+      <h3>Games and shots</h3>
       <dl class="parts">
-        <dt>What it is</dt><dd>The games and shot attempts every other number is built from.</dd>
-        <dt>Where it comes from</dt><dd>The NHL's public API (<code>api-web.nhle.com</code> and <code>api.nhle.com</code>): play-by-play, shift charts and boxscores, stored in a PostgreSQL database by the code in <code>ingest/</code>. Counts from <code>results/v1_2_fenwick_train.log</code> and <code>site/data/periods_index.json</code>.</dd>
-        <dt>How it's counted</dt><dd>Only finished games are loaded, so a game in progress never counts. <span class="ex">5,794 games (regular season and playoffs, October 7, 2022 to October 28, 2026) with 499,443 unblocked shot attempts.</span> The period page uses regular-season games only: 1,312 in each full season and <span id="cur-games">202</span> so far in <span id="cur-label">2026-27</span>.</dd>
-        <dt>What it means</dt><dd>Lots of shots, but not many games per team: 82 a season. That gap is the main reason this site describes teams instead of projecting them.</dd>
+        <dt>What it is</dt><dd>The games and shots everything else is built on.</dd>
+        <dt>Where it's from</dt><dd>The NHL's public API (<code>api-web.nhle.com</code> and <code>api.nhle.com</code>): play-by-play, shift charts and box scores. It all goes into a PostgreSQL database (the code's in <code>ingest/</code>). The counts come from <code>results/v1_2_fenwick_train.log</code> and <code>site/data/periods_index.json</code>.</dd>
+        <dt>How it's figured</dt><dd>Only finished games get loaded, so a game that's still going never counts. <span class="ex">5,794 games (regular season and playoffs, October 7, 2022 to October 28, 2026) with 499,443 unblocked shots.</span> The period page only uses the regular season: 1,312 games in each full season and <span id="cur-games">202</span> so far in <span id="cur-label">2026-27</span>.</dd>
+        <dt>What it tells you</dt><dd>Tons of shots, but not a lot of games per team, just 82 a season. That's the main reason this site sizes teams up instead of predicting them.</dd>
       </dl>
     </article>
 
     <article class="entry" id="unblocked">
-      <h3>Unblocked shot attempts</h3>
+      <h3>Unblocked shots</h3>
       <dl class="parts">
-        <dt>What it is</dt><dd>Every shot attempt that wasn't blocked: goals, shots on goal (saves) and missed shots. Hockey analysts call this Fenwick.</dd>
-        <dt>Where it comes from</dt><dd><code>features/build_features_fenwick.py</code>, which builds the <code>shot_features_fenwick</code> table.</dd>
-        <dt>How it's counted</dt><dd>Blocked shots and shootout attempts are left out. So are two event types the NHL logs in only part of the window: teammate blocks (from 2023-24) and failed bank attempts (from 2024-25).</dd>
-        <dt>What it means</dt><dd>Saves and misses are counted together, so a change in how the league splits them doesn't change the total. That change happened: <span class="ex">missed shots went from 28.3% of attempts in 2022-23 to 34.5% in 2025-26, while goals stayed at about 7%</span> (event mix in the training log).</dd>
+        <dt>What it is</dt><dd>Every shot that didn't get blocked: goals, saves and missed shots. Analytics people call this Fenwick.</dd>
+        <dt>Where it's from</dt><dd><code>features/build_features_fenwick.py</code>, which builds the <code>shot_features_fenwick</code> table.</dd>
+        <dt>How it's figured</dt><dd>Blocked shots and shootout attempts are out. So are two things the NHL only started logging partway through: shots blocked by your own teammate (from 2023-24) and failed bank attempts (from 2024-25).</dd>
+        <dt>What it tells you</dt><dd>Saves and misses get counted together, so if the league changes how it splits them up, the total stays the same. And it did change: <span class="ex">missed shots went from 28.3% of attempts in 2022-23 to 34.5% in 2025-26, while goals stayed around 7%</span> (the event mix in the training log).</dd>
       </dl>
     </article>
   </section>
@@ -180,74 +180,74 @@
     <h2>Shot quality (xG)</h2>
 
     <article class="entry" id="xg">
-      <h3>Expected goals (xG) of a shot</h3>
-      <p class="shown">Shown on: xG model, Period scoring</p>
+      <h3>Expected goals (xG) on a shot</h3>
+      <p class="shown">On the site: xG model, Period scoring</p>
       <dl class="parts">
-        <dt>What it is</dt><dd>The chance that an unblocked attempt becomes a goal, from 0 to 1. An xG of 0.10 is a 1-in-10 chance.</dd>
-        <dt>Where it comes from</dt><dd>Model v1.2-fenwick (<code>model/train_v1_2_fenwick.py</code>). Each attempt's xG is stored in the <code>shot_xg</code> table by <code>model/score_fenwick.py</code>.</dd>
-        <dt>How it's calculated</dt><dd>A machine-learning model (LightGBM, 167 decision trees) learned from <span class="ex">364,074 attempts in 2022-23 to 2024-25</span> which situations end in goals. For each attempt it looks at 17 facts: distance and angle to the net; where on the ice it came from; shot type; strength (5-on-5, power play and so on); whether the net was empty; the score difference; the period and time left in it; what happened just before (the event, which team did it, how many seconds and feet ago); and whether it was a rebound, a rebound off the post, or on a rush. Distance, empty net and angle matter most (<code>results/v1_2-fenwick/feature_importance.csv</code>).</dd>
-        <dt>What it means</dt><dd>Of many attempts like this one, the share that would score. It describes the chance, not the player: the model doesn't know who shot or who was in goal. Adding up xG over many shots gives expected goals for a team, a period or a season.</dd>
+        <dt>What it is</dt><dd>How likely a shot was to go in, from 0 to 1. An xG of 0.10 is a 1-in-10 chance.</dd>
+        <dt>Where it's from</dt><dd>Model v1.2-fenwick (<code>model/train_v1_2_fenwick.py</code>). Every shot's xG gets saved in the <code>shot_xg</code> table by <code>model/score_fenwick.py</code>.</dd>
+        <dt>How it's figured</dt><dd>A machine-learning model (LightGBM, 167 decision trees) went through <span class="ex">364,074 shots from 2022-23 to 2024-25</span> and learned which ones end up in the net. For each shot it looks at 17 things: how far out and what angle; where on the ice it came from; the type of shot; 5-on-5, power play and so on; whether the net was empty; the score; the period and how much time is left; what happened right before (what it was, which team did it, and how many seconds and feet ago); and whether it was a rebound, a rebound off the post, or off the rush. Distance, empty net and angle matter most (<code>results/v1_2-fenwick/feature_importance.csv</code>).</dd>
+        <dt>What it tells you</dt><dd>Out of a bunch of shots just like this one, how many you'd expect to go in. It's about the chance, not the player: the model doesn't know who shot it or who was in net. Add up xG over a bunch of shots and you get expected goals for a team, a period or a season.</dd>
       </dl>
     </article>
 
     <article class="entry" id="goals-per-attempt">
-      <h3>Goals per attempt</h3>
-      <p class="shown">Shown on: xG model</p>
+      <h3>How often shots go in</h3>
+      <p class="shown">On the site: xG model</p>
       <dl class="parts">
-        <dt>What it is</dt><dd>The share of unblocked attempts that became goals.</dd>
-        <dt>Where it comes from</dt><dd><code>results/v1_2-fenwick/metrics.json</code>, test season.</dd>
-        <dt>How it's calculated</dt><dd>Goals ÷ unblocked attempts. <span class="ex">2025-26: 8,572 ÷ 118,605 = 7.2%</span>, about 1 in 14.</dd>
-        <dt>What it means</dt><dd>The average shot. Every xG is a chance measured against this.</dd>
+        <dt>What it is</dt><dd>How many unblocked shots turned into goals.</dd>
+        <dt>Where it's from</dt><dd><code>results/v1_2-fenwick/metrics.json</code>, test season.</dd>
+        <dt>How it's figured</dt><dd>Goals ÷ unblocked shots. <span class="ex">2025-26: 8,572 ÷ 118,605 = 7.2%</span>, about 1 in 14.</dd>
+        <dt>What it tells you</dt><dd>That's your average shot. Every xG number is measured against it.</dd>
       </dl>
     </article>
   </section>
 
   <!-- ========================= CHECKING THE MODEL ========================= -->
   <section id="checks">
-    <h2>Checking the model</h2>
-    <p class="intro">All three checks use the 2025-26 season: 118,605 attempts the model never saw while it was built. Testing on unseen games is the only honest way to know whether it works.</p>
+    <h2>Is the model any good?</h2>
+    <p class="intro">All three checks use the 2025-26 season: 118,605 shots the model never saw while I was building it. Testing on games it's never seen is the only honest way to know if it works.</p>
 
     <article class="entry" id="oe">
-      <h3>Goals ÷ predicted (O/E)</h3>
-      <p class="shown">Shown on: xG model</p>
+      <h3>Goals vs. what it predicted (O/E)</h3>
+      <p class="shown">On the site: xG model</p>
       <dl class="parts">
-        <dt>What it is</dt><dd>Goals actually scored ÷ goals the model predicted. O/E stands for observed over expected.</dd>
-        <dt>Where it comes from</dt><dd><code>results/v1_2-fenwick/metrics.json</code>, test split.</dd>
-        <dt>How it's calculated</dt><dd>Add up the xG of every 2025-26 attempt to get predicted goals, then divide actual goals by it. <span class="ex">8,572 goals ÷ 8,745 predicted = 0.98.</span></dd>
-        <dt>What it means</dt><dd>1.00 is right on average. 0.98 means the model expected about 2% too many goals. The earlier models that learned from shots on goal only were at 1.07 to 1.08 on 2024-25 (<code>results/leaderboard.md</code>).</dd>
+        <dt>What it is</dt><dd>Real goals ÷ the goals the model called for. O/E is short for observed over expected.</dd>
+        <dt>Where it's from</dt><dd><code>results/v1_2-fenwick/metrics.json</code>, test season.</dd>
+        <dt>How it's figured</dt><dd>Add up the xG on every 2025-26 shot to get predicted goals, then divide the real goals by that. <span class="ex">8,572 goals ÷ 8,745 predicted = 0.98.</span></dd>
+        <dt>What it tells you</dt><dd>1.00 means it's right on average. 0.98 means it called for about 2% too many goals. My older models, which only learned from shots on goal, were at 1.07 to 1.08 on 2024-25 (<code>results/leaderboard.md</code>).</dd>
       </dl>
     </article>
 
     <article class="entry" id="auc">
-      <h3>Ranking (AUC)</h3>
-      <p class="shown">Shown on: xG model</p>
+      <h3>Good chance vs. bad (AUC)</h3>
+      <p class="shown">On the site: xG model</p>
       <dl class="parts">
-        <dt>What it is</dt><dd>How well the model sorts shots: does a goal get a higher xG than a shot that didn't go in?</dd>
-        <dt>Where it comes from</dt><dd><code>results/v1_2-fenwick/metrics.json</code>, test split.</dd>
-        <dt>How it's calculated</dt><dd>Take every pair of one goal and one non-goal from 2025-26. AUC is the share of pairs where the goal had the higher xG (a tie counts half). <span class="ex">0.779.</span></dd>
-        <dt>What it means</dt><dd>0.5 is a coin flip and 1.0 would be perfect. AUC says nothing about whether the percentages themselves are right; O/E and calibration check that.</dd>
+        <dt>What it is</dt><dd>How well the model sorts shots. Does a goal get a higher xG than a shot that didn't go in?</dd>
+        <dt>Where it's from</dt><dd><code>results/v1_2-fenwick/metrics.json</code>, test season.</dd>
+        <dt>How it's figured</dt><dd>Take every pair of one goal and one non-goal from 2025-26. AUC is how often the goal had the higher xG (a tie counts as half). <span class="ex">0.779.</span></dd>
+        <dt>What it tells you</dt><dd>0.5 is a coin flip and 1.0 would be perfect. It doesn't tell you if the percentages themselves are right. That's what O/E and the next check are for.</dd>
       </dl>
     </article>
 
     <article class="entry" id="calibration">
-      <h3>Largest calibration gap</h3>
-      <p class="shown">Shown on: xG model, with the chart</p>
+      <h3>Biggest miss</h3>
+      <p class="shown">On the site: xG model, with the chart</p>
       <dl class="parts">
-        <dt>What it is</dt><dd>Whether the model's percentages can be taken at face value across the whole range, not just on average.</dd>
-        <dt>Where it comes from</dt><dd><code>results/v1_2-fenwick/reliability.csv</code>.</dd>
-        <dt>How it's calculated</dt><dd>Sort the 2025-26 attempts by xG and cut them into ten equal groups of about 11,860. In each group, compare the average xG with the share that scored. <span class="ex">The largest gap is in the fifth group: 4.30% predicted, 3.93% scored, a gap of 0.38 percentage points.</span></dd>
-        <dt>What it means</dt><dd>A small gap in every group means a 5% shot and a 25% shot are both priced right. A game simulator adds these chances up, so it needs them right more than it needs a perfect ranking.</dd>
+        <dt>What it is</dt><dd>Whether you can take the model's percentages at face value all the way up and down, not just on average.</dd>
+        <dt>Where it's from</dt><dd><code>results/v1_2-fenwick/reliability.csv</code>.</dd>
+        <dt>How it's figured</dt><dd>Sort the 2025-26 shots by xG and split them into ten even groups of about 11,860. In each group, compare the average xG with how many actually went in. <span class="ex">The biggest gap is in the fifth group: 4.30% predicted, 3.93% went in, 0.38 percentage points apart.</span></dd>
+        <dt>What it tells you</dt><dd>If every group is close, a 5% shot and a 25% shot are both priced right. A game simulator adds these chances up, so getting them right matters more than ranking shots perfectly.</dd>
       </dl>
     </article>
 
     <article class="entry" id="weak-spots">
-      <h3>Goals for every 100 predicted</h3>
-      <p class="shown">Shown on: xG model, under "Where it's still weak"</p>
+      <h3>Goals for every 100 expected</h3>
+      <p class="shown">On the site: xG model, under "Where it still struggles"</p>
       <dl class="parts">
-        <dt>What it is</dt><dd>O/E for one group of shots, times 100.</dd>
-        <dt>Where it comes from</dt><dd><code>results/v1_2-fenwick/segments.csv</code>, column <code>oe_v1.2</code>.</dd>
-        <dt>How it's calculated</dt><dd>Goals ÷ summed xG for that group in 2025-26, × 100. <span class="ex">Tip-ins 78, shots from 60+ feet 88, power play 94.</span></dd>
-        <dt>What it means</dt><dd>100 is right. Below 100, the model over-rates that kind of shot. These are where the next version should improve.</dd>
+        <dt>What it is</dt><dd>O/E for one kind of shot, times 100.</dd>
+        <dt>Where it's from</dt><dd><code>results/v1_2-fenwick/segments.csv</code>, the <code>oe_v1.2</code> column.</dd>
+        <dt>How it's figured</dt><dd>Goals ÷ total xG for that kind of shot in 2025-26, × 100. <span class="ex">Tip-ins 78, shots from 60+ feet 88, power play 94.</span></dd>
+        <dt>What it tells you</dt><dd>100 means it's right. Under 100, the model's too high on that kind of shot. That's where the next version needs to get better.</dd>
       </dl>
     </article>
   </section>
@@ -255,65 +255,65 @@
   <!-- ============================ PERIOD SCORING ============================ -->
   <section id="periods">
     <h2>Period scoring</h2>
-    <p class="intro">The <a href="periods.html">period page</a> reads <code>site/data/periods_&lt;season&gt;.json</code>, one row per team per regular-season game, and <code>site/data/periods_index.json</code>, which holds each measure's league norm and constants. <code>export/period_tables.py</code> builds both from the database; the page does the rest of the math in your browser, so every number updates when you change the season, window or measure.</p>
+    <p class="intro">The <a href="periods.html">period page</a> pulls from <code>site/data/periods_&lt;season&gt;.json</code> (one row per team per regular-season game) and <code>site/data/periods_index.json</code> (each stat's league norm and a couple of constants). <code>export/period_tables.py</code> builds both from the database. Your browser does the rest of the math, so every number updates when you switch the season, the window or the stat.</p>
 
     <article class="entry" id="gp-hits">
       <h3>GP and Hits</h3>
       <dl class="parts">
-        <dt>What it is</dt><dd>GP: games played in the window you picked (whole season or last 10). Hits: how many of those games the outcome happened in.</dd>
-        <dt>Where it comes from</dt><dd>The <code>y_</code> columns in <code>periods_&lt;season&gt;.json</code>: a 1 or 0 for each game and measure.</dd>
-        <dt>How it's counted</dt><dd>Each game gets a yes or no for each of the 15 measures, from the goals in periods 1–3. <span class="ex">A 2–1 first period is a hit for "1st period: 2+ goals" and "1st period: both teams score", and a miss for "1st period ends 0-0".</span></dd>
-        <dt>What it means</dt><dd>The raw record. On its own it says nothing about luck.</dd>
+        <dt>What it is</dt><dd>GP is games played in whatever window you picked (whole season or last 10). Hits is how many of those games it actually happened.</dd>
+        <dt>Where it's from</dt><dd>The <code>y_</code> columns in <code>periods_&lt;season&gt;.json</code>: a 1 or a 0 for each game and stat.</dd>
+        <dt>How it's figured</dt><dd>Every game gets a yes or no for each of the 15 stats, based on the goals in periods 1 through 3. <span class="ex">A 2–1 first period counts for "1st period: 2+ goals" and "1st period: both teams score," but not for "1st period ends 0-0."</span></dd>
+        <dt>What it tells you</dt><dd>The raw record. By itself it doesn't tell you anything about luck.</dd>
       </dl>
     </article>
 
     <article class="entry" id="rate">
       <h3>Rate</h3>
       <dl class="parts">
-        <dt>What it is</dt><dd>How often the outcome happened.</dd>
-        <dt>Where it comes from</dt><dd>Calculated in the page.</dd>
-        <dt>How it's calculated</dt><dd>Hits ÷ GP. <span class="ex">6 hits in 10 games is 60%.</span></dd>
-        <dt>What it means</dt><dd>What happened, not what will happen. Over 10 games, one extra hit moves the rate by 10 points.</dd>
+        <dt>What it is</dt><dd>How often it happened.</dd>
+        <dt>Where it's from</dt><dd>Figured right on the page.</dd>
+        <dt>How it's figured</dt><dd>Hits ÷ GP. <span class="ex">6 hits in 10 games is 60%.</span></dd>
+        <dt>What it tells you</dt><dd>What happened, not what's going to happen. Over 10 games, one more hit moves it 10 points.</dd>
       </dl>
     </article>
 
     <article class="entry" id="norm">
       <h3>League norm</h3>
       <dl class="parts">
-        <dt>What it is</dt><dd>How often the outcome happens in a typical NHL game.</dd>
-        <dt>Where it comes from</dt><dd><code>baseline</code> for each measure in <code>periods_index.json</code>.</dd>
-        <dt>How it's calculated</dt><dd>The share of all 5,248 regular-season games from 2022-23 to 2025-26 where it happened. <span class="ex">"1st period: 2+ goals": 53.8% (by season 54.7%, 54.1%, 52.5% and 53.7%).</span></dd>
-        <dt>What it means</dt><dd>The yardstick every team is compared with. It covers four complete seasons, so it doesn't move during the current one.</dd>
+        <dt>What it is</dt><dd>How often it happens in a normal NHL game.</dd>
+        <dt>Where it's from</dt><dd><code>baseline</code> for each stat in <code>periods_index.json</code>.</dd>
+        <dt>How it's figured</dt><dd>How often it happened across all 5,248 regular-season games from 2022-23 through 2025-26. <span class="ex">"1st period: 2+ goals": 53.8% (54.7%, 54.1%, 52.5% and 53.7% by season).</span></dd>
+        <dt>What it tells you</dt><dd>The measuring stick every team gets compared to. It's four full seasons, so it doesn't move during this one.</dd>
       </dl>
     </article>
 
     <article class="entry" id="range">
-      <h3>95% range</h3>
+      <h3>Range</h3>
       <dl class="parts">
-        <dt>What it is</dt><dd>Where the team's true rate could be, given only its games so far.</dd>
-        <dt>Where it comes from</dt><dd>Calculated in the page (<code>wilson()</code> in <code>periods.html</code>).</dd>
-        <dt>How it's calculated</dt><dd>The Wilson interval, with p = Rate, n = GP and z = 1.96: center = (p + z²/2n) ÷ (1 + z²/n), and half-width = z × √(p(1 − p)/n + z²/4n²) ÷ (1 + z²/n). <span class="ex">6 hits in 10 games gives 31% to 83%.</span></dd>
-        <dt>What it means</dt><dd>If the range covers the league norm, the record could be pure luck. Wide ranges are normal early in a season. Even if all 32 teams were exactly average, about 2 would land outside their range by chance.</dd>
+        <dt>What it is</dt><dd>Where the team's real rate could be, based on just the games so far.</dd>
+        <dt>Where it's from</dt><dd>Figured right on the page (<code>wilson()</code> in <code>periods.html</code>).</dd>
+        <dt>How it's figured</dt><dd>It's called a Wilson interval, set to 95%. With p = Rate, n = GP and z = 1.96: the middle is (p + z²/2n) ÷ (1 + z²/n), and it stretches z × √(p(1 − p)/n + z²/4n²) ÷ (1 + z²/n) each way. <span class="ex">6 hits in 10 games gives 31% to 83%.</span></dd>
+        <dt>What it tells you</dt><dd>If the range covers the league norm, you can't rule out luck. Wide ranges are normal early in the season. Even if all 32 teams were exactly average, about 2 would land outside their range just by chance.</dd>
       </dl>
     </article>
 
     <article class="entry" id="shrunk">
       <h3>Shrunk</h3>
       <dl class="parts">
-        <dt>What it is</dt><dd>The best single guess of the team's true rate.</dd>
-        <dt>Where it comes from</dt><dd><code>k</code> for each measure in <code>periods_index.json</code>, from <code>regression_k()</code> in <code>export/period_math.py</code>.</dd>
-        <dt>How it's calculated</dt><dd>(Hits + k × norm) ÷ (GP + k). k is Tango's regression constant. From four seasons of team records, take how much team rates spread around the league rate, subtract the spread luck alone would cause, and what's left is real team differences. Then k = norm × (1 − norm) ÷ that real spread. <span class="ex">"1st period: 2+ goals" has k = 356. A team with 6 hits in 10 games: (6 + 356 × 0.5375) ÷ (10 + 356) = 53.9%.</span></dd>
-        <dt>What it means</dt><dd>k is the number of games at which a team's own record and the league norm count equally. Where luck explains all of the spread, there is no k and every team's Shrunk is the norm.</dd>
+        <dt>What it is</dt><dd>My best guess at the team's real rate.</dd>
+        <dt>Where it's from</dt><dd><code>k</code> for each stat in <code>periods_index.json</code>, from <code>regression_k()</code> in <code>export/period_math.py</code>.</dd>
+        <dt>How it's figured</dt><dd>(Hits + k × norm) ÷ (GP + k). The k comes from Tom Tango's regression to the mean, a method out of baseball stats. Take four seasons of team records and see how spread out the teams are. Take away the spread luck alone would cause, and what's left is the real difference between teams. Then k = norm × (1 − norm) ÷ that real spread. <span class="ex">"1st period: 2+ goals" has k = 356. A team that's 6 for 10: (6 + 356 × 0.5375) ÷ (10 + 356) = 53.9%.</span></dd>
+        <dt>What it tells you</dt><dd>k is how many games it takes before a team's own record counts as much as the league norm. When luck explains all of the spread, there's no k, and every team's Shrunk is just the norm.</dd>
       </dl>
     </article>
 
     <article class="entry" id="xg-expected">
-      <h3>Exp. (xG) and "What the shots deserved"</h3>
+      <h3>Exp. (xG) and "What the shots say"</h3>
       <dl class="parts">
-        <dt>What it is</dt><dd>How many games the outcome should have happened in, given the shots both teams actually took.</dd>
-        <dt>Where it comes from</dt><dd>The <code>e_</code> columns in <code>periods_&lt;season&gt;.json</code>, from <code>expected()</code> in <code>export/period_tables.py</code>; the scaling factor is <code>xg_factor</code> in <code>periods_index.json</code>.</dd>
-        <dt>How it's calculated</dt><dd>In each game, every unblocked attempt in the period counts as a separate chance at its xG. That gives the probability of each number of goals (a Poisson-binomial distribution), and from it the chance of the outcome. <span class="ex">Two shots at 0.30 xG each: no goals 49%, 2+ goals 9%.</span> Add those chances up over the team's games. Treating shots as separate chances runs a little low on "2+ goals" and high on scoreless periods, so each measure is scaled by its 2022-26 ratio of actual to expected: <span class="ex">× 1.0085 for "1st period: 2+ goals"</span>.</dd>
-        <dt>What it means</dt><dd>What the team's games deserved on shot quality alone. Ties get no xG estimate, because treating shots as separate chances misses ties by about 7 points.</dd>
+        <dt>What it is</dt><dd>How many games it should've happened in, going by the shots both teams actually took.</dd>
+        <dt>Where it's from</dt><dd>The <code>e_</code> columns in <code>periods_&lt;season&gt;.json</code>, from <code>expected()</code> in <code>export/period_tables.py</code>. The adjustment is <code>xg_factor</code> in <code>periods_index.json</code>.</dd>
+        <dt>How it's figured</dt><dd>In each game, every unblocked shot in the period counts as its own chance at its xG. That gives you the odds of 0 goals, 1 goal, 2 goals and so on (a Poisson-binomial distribution, if you want the name), and from there the odds it happened. <span class="ex">Two shots at 0.30 xG each: no goals 49%, 2+ goals 9%.</span> Add those odds up over the team's games. Treating every shot as its own chance runs a little low on "2+ goals" and high on scoreless periods, so each stat gets adjusted by how often it really happened compared with the estimate over 2022-26: <span class="ex">× 1.0085 for "1st period: 2+ goals."</span></dd>
+        <dt>What it tells you</dt><dd>What the team's games deserved based on the shots alone. Ties don't get an xG number, because treating shots as separate chances misses on ties by about 7 points.</dd>
       </dl>
     </article>
 
@@ -321,39 +321,39 @@
       <h3>vs xG</h3>
       <dl class="parts">
         <dt>What it is</dt><dd>Hits minus Exp. (xG).</dd>
-        <dt>Where it comes from</dt><dd>Calculated in the page.</dd>
-        <dt>How it's calculated</dt><dd><span class="ex">7 hits against 5.2 expected is +1.8.</span></dd>
-        <dt>What it means</dt><dd>Positive: it happened more often than the shots deserved, through finishing, goaltending or luck. Negative: less often. It can't tell those three apart.</dd>
+        <dt>Where it's from</dt><dd>Figured right on the page.</dd>
+        <dt>How it's figured</dt><dd><span class="ex">7 hits against 5.2 expected is +1.8.</span></dd>
+        <dt>What it tells you</dt><dd>A plus means it happened more than the shots deserved, from finishing, goaltending or plain luck. A minus means less. It can't tell you which of those three it was.</dd>
       </dl>
     </article>
 
     <article class="entry" id="goals-xg">
       <h3>Goals and xG by period</h3>
       <dl class="parts">
-        <dt>What it is</dt><dd>Goals for and against in each period, with expected goals (xG) in small type underneath.</dd>
-        <dt>Where it comes from</dt><dd>The <code>gf</code>, <code>ga</code>, <code>xgf</code> and <code>xga</code> columns in <code>periods_&lt;season&gt;.json</code>.</dd>
-        <dt>How it's calculated</dt><dd>Goals are counted from the play-by-play. xG adds up the xG of every unblocked attempt in that period. Regulation is periods 1–3 together.</dd>
-        <dt>What it means</dt><dd>Goals above xG: finishing or goaltending beat the shots, or luck did. Over a few games, luck is the likeliest reason.</dd>
+        <dt>What it is</dt><dd>Goals for and against in each period, with what the shots were worth (xG) in small type underneath.</dd>
+        <dt>Where it's from</dt><dd>The <code>gf</code>, <code>ga</code>, <code>xgf</code> and <code>xga</code> columns in <code>periods_&lt;season&gt;.json</code>.</dd>
+        <dt>How it's figured</dt><dd>Goals come straight from the play-by-play. xG adds up the xG of every unblocked shot in that period. Regulation is periods 1 through 3 together.</dd>
+        <dt>What it tells you</dt><dd>More goals than xG means the finishing or the goaltending beat the shots, or the bounces did. Over a handful of games, it's usually the bounces.</dd>
       </dl>
     </article>
 
     <article class="entry" id="colors">
       <h3>Colors and arrows</h3>
       <dl class="parts">
-        <dt>What it is</dt><dd><span class="gl hot">▲</span> Orange: more often (or more goals) than expected. <span class="gl cold">▼</span> Blue: less often (or fewer). No color: within normal luck.</dd>
-        <dt>Where it comes from</dt><dd>Calculated in the page (<code>tone()</code> in <code>periods.html</code>).</dd>
-        <dt>How it's calculated</dt><dd>A cell is colored only when luck alone would do this less than about 1 time in 20. Rate: when the 95% range misses the league norm. vs xG: when (Hits − Exp.) ÷ √(sum of q × (1 − q)) is beyond ±1.96, where q is each game's chance. Goals: when (goals − xG) ÷ √xG is beyond ±1.96.</dd>
-        <dt>What it means</dt><dd>A colored cell is worth a look, not proof. With 32 teams and 15 measures, some cells get colored by chance alone.</dd>
+        <dt>What it is</dt><dd><span class="gl hot">▲</span> Orange: more often (or more goals) than you'd expect. <span class="gl cold">▼</span> Blue: less often (or fewer). No color: could just be luck.</dd>
+        <dt>Where it's from</dt><dd>Figured right on the page (<code>tone()</code> in <code>periods.html</code>).</dd>
+        <dt>How it's figured</dt><dd>A cell only gets colored when luck alone would do that less than about 1 time in 20. Rate: when the range doesn't cover the league norm. vs xG: when (Hits − Exp.) ÷ √(sum of q × (1 − q)) is past ±1.96, where q is each game's odds. Goals: when (goals − xG) ÷ √xG is past ±1.96.</dd>
+        <dt>What it tells you</dt><dd>A colored cell is worth a closer look, but it's not proof. With 32 teams and 15 stats, some cells are going to light up by chance.</dd>
       </dl>
     </article>
 
     <article class="entry" id="rules">
-      <h3>Rules for every measure</h3>
+      <h3>Ground rules for every stat</h3>
       <dl class="parts">
-        <dt>Regulation only</dt><dd>Periods 1–3. Overtime and shootout goals never count.</dd>
-        <dt>Empty-net goals</dt><dd>They count. One measure removes them from the 3rd period, where they are about 17% of goals (2022-26).</dd>
-        <dt>First 10 minutes</dt><dd>A goal by either team before 10:00 of the 1st period.</dd>
-        <dt>Last 10</dt><dd>Each team's ten most recent games.</dd>
+        <dt>Regulation only</dt><dd>Periods 1 through 3. OT and shootout goals don't count.</dd>
+        <dt>Empty-net goals</dt><dd>They count. One stat takes them out of the 3rd, where they're about 17% of goals (2022-26).</dd>
+        <dt>First 10 minutes</dt><dd>A goal by either team before 10:00 of the 1st.</dd>
+        <dt>Last 10</dt><dd>Each team's last ten games.</dd>
         <dt>Regular season</dt><dd>Playoff games aren't on the period page.</dd>
       </dl>
     </article>
@@ -362,20 +362,20 @@
   <!-- ============================== LIMITS ============================== -->
   <section id="limits">
     <h2>What this data can't tell you yet</h2>
-    <p class="intro">Projecting a game needs each team's true level. On these period measures, one season of games isn't enough to find it. The table shows k for each measure: the number of games at which a team's own record counts as much as the league norm.</p>
+    <p class="intro">To predict a game, you need to know how good each team really is. For these period stats, one season of games isn't enough to find out. The table shows k for each stat: how many games it takes before a team's own record counts as much as the league norm.</p>
     <div class="tablewrap">
       <table id="ktable">
-        <thead><tr><th>Measure</th><th>League norm</th><th>k (games)</th><th>Seasons of games</th></tr></thead>
+        <thead><tr><th>Stat</th><th>League norm</th><th>k (games)</th><th>Seasons' worth</th></tr></thead>
         <tbody><tr><td colspan="4" class="none">Loading…</td></tr></tbody>
       </table>
     </div>
-    <p class="cap">Seasons of games is k ÷ 82. "No team differences" means four seasons of records spread no wider than luck alone would, so every team is best estimated at the norm. Source: <code>site/data/periods_index.json</code>.</p>
+    <p class="cap">Seasons' worth is k ÷ 82. "No real difference" means four seasons of records didn't spread out any more than luck would, so every team's best guess is the norm. From <code>site/data/periods_index.json</code>.</p>
     <ul class="list">
-      <li><strong>The model doesn't know players yet.</strong> Shooter and goalie quality aren't in it, so a star and a fourth-liner get the same xG for the same shot.</li>
-      <li><strong>The way shots are recorded appears to have changed</strong> partway through this window, with more saves logged as misses, so older seasons don't line up perfectly with new ones.</li>
-      <li><strong>Tracking data is only public as summaries.</strong> The NHL publishes play-by-play events, but its player-tracking data (NHL EDGE) only in aggregated form.</li>
+      <li><strong>The model doesn't know players yet.</strong> Shooters and goalies aren't in it, so a top-line sniper and a fourth-line grinder get the same xG for the same shot.</li>
+      <li><strong>The way shots get recorded looks like it changed</strong> partway through, with more saves getting written down as misses, so older seasons don't line up perfectly with newer ones.</li>
+      <li><strong>The tracking data's only public as summaries.</strong> The NHL puts out the play-by-play, but its player-tracking data (NHL EDGE) only comes out as totals.</li>
     </ul>
-    <p class="intro">Before this site projects games, it needs shooter and goalie quality in the model, more seasons under the current way of recording shots, and a game simulator that is tested on a season it never saw.</p>
+    <p class="intro">Before this site predicts games, it needs shooters and goalies in the model, more seasons under the current way of tracking shots, and a game simulator that's been tested on a season it never saw.</p>
   </section>
 
   <footer>
@@ -397,7 +397,7 @@ fetch("data/periods_index.json").then((r) => (r.ok ? r.json() : Promise.reject(n
   body.replaceChildren(...rows.map((m) => {
     const tr = document.createElement("tr");
     const cells = [m.label, (m.baseline * 100).toFixed(1) + "%",
-                   m.k == null ? "No team differences" : Math.round(m.k).toLocaleString("en-US"),
+                   m.k == null ? "No real difference" : Math.round(m.k).toLocaleString("en-US"),
                    m.k == null ? "–" : (m.k / 82).toFixed(1)];
     cells.forEach((c, i) => {
       const td = document.createElement("td");
@@ -408,7 +408,7 @@ fetch("data/periods_index.json").then((r) => (r.ok ? r.json() : Promise.reject(n
     return tr;
   }));
 }).catch((e) => {
-  document.querySelector("#ktable tbody").innerHTML = `<tr><td colspan="4" class="none">Could not load the measures: ${e.message}</td></tr>`;
+  document.querySelector("#ktable tbody").innerHTML = `<tr><td colspan="4" class="none">Couldn't load the stats: ${e.message}</td></tr>`;
 });
 </script>
 </body>

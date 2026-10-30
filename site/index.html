@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hockey Hacks: NHL expected goals</title>
-<meta name="description" content="Groundwork for honest NHL projections: a tested shot-quality model, team period records with their luck ranges, and a plain explanation of every number.">
+<meta name="description" content="Building toward honest NHL projections: a tested shot-quality model, team period stats with the luck taken into account, and every number explained in plain English.">
 <meta name="author" content="Robert Gorman">
 <meta name="theme-color" content="#111111">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Hockey Hacks: NHL expected goals">
-<meta property="og:description" content="Groundwork for honest NHL projections: a tested shot-quality model, team period records with their luck ranges, and a plain explanation of every number.">
+<meta property="og:description" content="Building toward honest NHL projections: a tested shot-quality model, team period stats with the luck taken into account, and every number explained in plain English.">
 <meta name="twitter:card" content="summary">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23f74902'/><rect x='22' y='54' width='12' height='26' fill='black'/><rect x='44' y='38' width='12' height='42' fill='black'/><rect x='66' y='22' width='12' height='58' fill='black'/></svg>">
 <style>
@@ -162,7 +162,7 @@
     <div class="tabs">
       <a class="tab" href="./" aria-current="page">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
-        <span><b>xG model</b><small>What this is and how good it is</small></span>
+        <span><b>xG model</b><small>What this is, and is it any good</small></span>
       </a>
       <a class="tab" href="periods.html">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>
@@ -180,91 +180,92 @@
   <header class="masthead">
     <div>
       <h1>Hockey Hacks</h1>
-      <p class="lede">Groundwork for honest NHL projections. Before this site predicts any games, it builds the measuring tools, tests them on seasons they never saw, and explains what every number means.</p>
+      <p class="lede">I'm building toward real NHL game projections, but I'm not going to fake it. First come the tools: build them, test them on games they've never seen, and tell you straight what every number means.</p>
     </div>
     <div class="meta-row">
       <span>Updated October 29, 2026</span>
       <span>Model v1.2-fenwick</span>
       <span>Data: NHL public API</span>
-      <span><a href="methods.html">How every number is calculated</a></span>
+      <span><a href="methods.html">How every number gets figured</a></span>
     </div>
   </header>
 
   <section id="why">
     <div class="section-head">
-      <h2>Why there are no projections yet</h2>
+      <h2>Why there aren't any picks or projections yet</h2>
     </div>
     <div class="prose">
-      <p>Baseball projection sites have a lot to work with: MLB makes pitch-by-pitch tracking data public, and each team plays 162 games. Hockey has less. The NHL publishes play-by-play events, with a location for each shot, but its player-tracking data (NHL EDGE) only as summaries. And with 82 games a season, luck hides a team's true level for a long time.</p>
-      <p>So this site builds the foundation in order, and each piece is tested before the next one depends on it.</p>
+      <p>Baseball's got it easy. MLB puts pitch-by-pitch tracking data out there for anyone, and every team plays 162 games. Hockey doesn't give you nearly that much. The NHL puts out the play-by-play, including where every shot came from, but its player-tracking numbers (NHL EDGE) only come out as summaries.</p>
+      <p>And 82 games isn't a lot. If you've played, you know how it goes: some nights every bounce goes your way, some nights you can't buy a goal. Over a season, that puck luck hides how good a team really is.</p>
+      <p>So I'm building this one piece at a time, and nothing gets stacked on a piece that hasn't been tested.</p>
     </div>
-    <p class="note"><strong>How much luck?</strong> For "2+ goals in the 1st period", a team needs about 356 games, more than four seasons, before its own record tells you as much as the league average does. <a href="methods.html#limits">See every measure</a></p>
+    <p class="note"><strong>How much puck luck are we talking?</strong> Take "2+ goals in the 1st period." A team needs about 356 games, more than four full seasons, before its own record tells you as much as the league average does. <a href="methods.html#limits">See it for every stat</a></p>
   </section>
 
   <section id="foundation">
     <div class="section-head">
-      <h2>The foundation, in order</h2>
+      <h2>How it's getting built</h2>
     </div>
     <ol class="steps">
-      <li class="step"><span class="idx">1</span><div><div class="ttl">Collect the data</div><div class="nt">Every NHL game since 2022-23, from the NHL's public API: play-by-play, shifts and boxscores. 5,794 games and 499,443 unblocked shot attempts through October 28, 2026, updated during the season.</div></div><span class="status done">Done</span></li>
-      <li class="step"><span class="idx">2</span><div><div class="ttl">Measure shot quality</div><div class="nt">A model gives every unblocked shot attempt its chance of becoming a goal, called expected goals (xG). It works and is tested below. It doesn't yet know who took the shot or who was in goal.</div></div><span class="status active">In progress</span></li>
-      <li class="step"><span class="idx">3</span><div><div class="ttl">Describe teams fairly</div><div class="nt"><a href="periods.html">Period scoring</a>: how often each team's games hit common period outcomes, next to the range luck alone allows and what the shots deserved.</div></div><span class="status active">In progress</span></li>
-      <li class="step"><span class="idx">4</span><div><div class="ttl">Simulate games and project them</div><div class="nt">Waits on steps 2 and 3: shooter and goalie quality in the model, and more seasons under the NHL's current way of recording shots. A projection gets published only after it's tested on a season it never saw.</div></div><span class="status">Not started</span></li>
+      <li class="step"><span class="idx">1</span><div><div class="ttl">Get the data</div><div class="nt">Every NHL game since 2022-23, straight from the NHL's free public feed: play-by-play, shifts and box scores. That's 5,794 games and 499,443 shots that weren't blocked, through October 28, 2026, and it keeps updating during the season.</div></div><span class="status done">Done</span></li>
+      <li class="step"><span class="idx">2</span><div><div class="ttl">Figure out shot quality</div><div class="nt">A model looks at every shot that wasn't blocked and says how likely it was to go in. That's expected goals, or xG. It works, and you can see how well below. What it doesn't know yet is who took the shot or who was in net.</div></div><span class="status active">In progress</span></li>
+      <li class="step"><span class="idx">3</span><div><div class="ttl">Size up teams fairly</div><div class="nt"><a href="periods.html">Period scoring</a>: how often each team's games hit stuff like 2+ goals in the 1st, next to how much of that could just be luck and what the shots say should've happened.</div></div><span class="status active">In progress</span></li>
+      <li class="step"><span class="idx">4</span><div><div class="ttl">Simulate games</div><div class="nt">Not yet. First the model needs to know the shooters and the goalies, and it needs more seasons under the way the NHL tracks shots now. Nothing gets posted as a projection until it's been tested on a season it never saw.</div></div><span class="status">Not started</span></li>
     </ol>
   </section>
 
   <section id="model">
     <div class="section-head">
-      <h2>How good is the shot model?</h2>
-      <p class="hint">Tested on the 2025-26 season: 118,605 unblocked attempts the model never saw while it was being built. It learned from 2022-23 to 2024-25.</p>
+      <h2>So is the shot model any good?</h2>
+      <p class="hint">I tested it on the whole 2025-26 season: 118,605 unblocked shots it had never seen. It learned from 2022-23 through 2024-25.</p>
     </div>
     <div class="stats">
-      <div class="stat"><span class="k">Goals per attempt</span><span class="v">7.2%</span><span class="n">About 1 in 14 unblocked attempts went in. Every shot's xG is a chance measured against this.</span><a class="src" href="methods.html#xg">What xG is</a></div>
-      <div class="stat"><span class="k">Goals ÷ predicted</span><span class="v">0.98</span><span class="n">8,572 goals against 8,745 predicted: the model expected about 2% too many. 1.00 is exactly right.</span><a class="src" href="methods.html#oe">How it's calculated</a></div>
-      <div class="stat"><span class="k">Ranking (AUC)</span><span class="v">0.779</span><span class="n">Pick one goal and one non-goal: 78% of the time the goal had the higher xG. 0.5 is a coin flip.</span><a class="src" href="methods.html#auc">How it's calculated</a></div>
-      <div class="stat"><span class="k">Largest calibration gap</span><span class="v">0.4 pts</span><span class="n">In every tenth of the shots, the predicted and actual scoring rates were within 0.4 percentage points.</span><a class="src" href="methods.html#calibration">How it's calculated</a></div>
+      <div class="stat"><span class="k">How often shots go in</span><span class="v">7.2%</span><span class="n">About 1 in 14 unblocked shots went in. That's your average shot, and every xG number is measured against it.</span><a class="src" href="methods.html#xg">What xG is</a></div>
+      <div class="stat"><span class="k">Goals vs. what it predicted</span><span class="v">0.98</span><span class="n">It called for 8,745 goals and there were 8,572, so it ran about 2% high. 1.00 would be dead on.</span><a class="src" href="methods.html#oe">How it's figured</a></div>
+      <div class="stat"><span class="k">Good chance vs. bad (AUC)</span><span class="v">0.779</span><span class="n">Grab one goal and one shot that didn't go in. 78% of the time, the model rated the goal as the better chance. A coin flip gets you 50%.</span><a class="src" href="methods.html#auc">How it's figured</a></div>
+      <div class="stat"><span class="k">Biggest miss</span><span class="v">0.4 pts</span><span class="n">Split the shots into ten groups, worst chances to best. In every group, the prediction and what actually went in were within 0.4 percentage points.</span><a class="src" href="methods.html#calibration">How it's figured</a></div>
     </div>
 
     <div class="card">
       <div>
-        <h3>When the model says 10%, about 10% go in</h3>
-        <p class="cap">The 2025-26 attempts, sorted by predicted chance and cut into ten equal groups of about 11,860. Each dot is one group. On the dashed line, prediction and result match.</p>
+        <h3>When it says 10%, about 10% go in</h3>
+        <p class="cap">Every 2025-26 shot, sorted from worst chance to best and split into ten even groups of about 11,860. Each dot is one group. If a dot sits on the dashed line, the model nailed it.</p>
       </div>
       <figure id="fig-cal"></figure>
       <details>
         <summary>Show the numbers</summary>
         <div class="tablewrap"><table id="tbl-cal"></table></div>
       </details>
-      <p class="cap">Source: <b>results/v1_2-fenwick/reliability.csv</b></p>
+      <p class="cap">From <b>results/v1_2-fenwick/reliability.csv</b></p>
     </div>
   </section>
 
   <section id="learned">
     <div class="section-head">
-      <h2>What it found along the way</h2>
+      <h2>Something I found along the way</h2>
     </div>
     <div class="prose">
-      <p>The first models learned from shots on goal only, and all of them under-predicted the 2024-25 season by 7–8%. Scoring hadn't really risen: goals per shot on goal went up while goals per unblocked attempt barely moved. That fits some saves now being logged as missed shots, which David Johnson at Hockey Analysis suggested puck tracking allows. Learning from all unblocked attempts (goals, saves and misses) instead cut the miss to 3%. That's why every number on this site uses unblocked attempts.</p>
-      <p class="more"><a href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">Full write-up on GitHub</a></p>
+      <p>My first models only learned from shots on goal, and every one of them came in 7–8% short on goals in 2024-25. Turns out scoring hadn't really gone up. Goals per shot on goal went up, but goals per unblocked shot barely moved. That's what you'd see if some saves were getting written down as missed shots, and David Johnson at Hockey Analysis thinks puck tracking might be doing exactly that. Once I counted every unblocked shot (goals, saves and misses together), the miss dropped to 3%. That's why everything on this site uses unblocked shots.</p>
+      <p class="more"><a href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">The full write-up is on GitHub</a></p>
     </div>
   </section>
 
   <section id="weak">
     <div class="section-head">
-      <h2>Where it's still weak</h2>
-      <p class="hint">Goals scored for every 100 the model predicted, 2025-26. 100 is right.</p>
+      <h2>Where it still struggles</h2>
+      <p class="hint">Goals scored for every 100 the model expected in 2025-26. 100 means it's right on.</p>
     </div>
     <ul class="weak">
-      <li><strong>Tip-ins: 78.</strong> The model expects more tip-in goals than happen.</li>
-      <li><strong>Shots from 60+ feet: 88.</strong> Long shots go in less often than it predicts.</li>
-      <li><strong>Power play: 94.</strong> Shots with a man advantage are slightly over-predicted.</li>
-      <li><strong>Who shot, who saved.</strong> The model doesn't know the shooter or the goalie yet, so a star and a fourth-liner get the same xG for the same shot.</li>
+      <li><strong>Tip-ins: 78.</strong> It thinks tips go in more than they do.</li>
+      <li><strong>Shots from 60+ feet: 88.</strong> Long bombs go in less than it thinks.</li>
+      <li><strong>Power play: 94.</strong> It's a little too high on PP shots.</li>
+      <li><strong>Who's shooting, who's in net.</strong> It doesn't know yet, so a top-line sniper and a fourth-line grinder get the same xG for the same shot.</li>
     </ul>
-    <p class="more">Source: <code>results/v1_2-fenwick/segments.csv</code>. Each line is observed ÷ predicted goals × 100 for that group of shots.</p>
+    <p class="more">From <code>results/v1_2-fenwick/segments.csv</code>. Each number is goals ÷ expected goals × 100 for that kind of shot.</p>
   </section>
 
   <footer>
-    <div>Every number on this site is explained, with its source file, on <a href="methods.html">How it works</a>. All of them are computed by this project from the NHL's public data.</div>
+    <div>Every number here is explained, along with where it came from, on <a href="methods.html">How it works</a>. I figure all of it myself from the NHL's public data.</div>
     <div><a href="https://github.com/rbtgorman/hockey_hacks">Code on GitHub</a> · <a href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">Full findings</a></div>
     <ul>
       <li><a href="https://hockeyanalysis.com/2025/03/21/are-changes-in-nhl-shot-data-tracking-hiding-that-teams-are-getting-better-at-defending/">David Johnson, Hockey Analysis (2025): missed shots rising league-wide</a></li>
@@ -321,7 +322,7 @@ function drawCalibration() {
   const s = document.createElementNS(NS, "svg");
   s.setAttribute("viewBox", `0 0 ${W} ${H}`);
   s.setAttribute("role", "img");
-  s.setAttribute("aria-label", "Predicted against actual scoring rate for ten groups of 2025-26 shot attempts. All ten sit close to the line where they match.");
+  s.setAttribute("aria-label", "Predicted chance against how many actually went in, for ten groups of 2025-26 shots. All ten sit right about on the line.");
 
   [0, 0.05, 0.10, 0.15, 0.20, 0.25].forEach((t) => {
     el(s, "line", { x1: L, x2: W - R, y1: y(t), y2: y(t), stroke: "var(--rule-soft)", "stroke-width": 1 });
@@ -329,7 +330,7 @@ function drawCalibration() {
     label(s, x(t), H - B + 20, (t * 100).toFixed(0) + "%");
   });
   el(s, "line", { x1: x(0), y1: y(0), x2: x(max), y2: y(max), stroke: "var(--axis)", "stroke-width": 1.5, "stroke-dasharray": "4 4" });
-  label(s, x(0.215), y(0.245), "prediction = result", { anchor: "end", size: 12.5 });
+  label(s, x(0.215), y(0.245), "dead on", { anchor: "end", size: 12.5 });
 
   el(s, "path", { d: CAL.map((p, i) => `${i ? "L" : "M"}${x(p[0])},${y(p[1])}`).join(" "), fill: "none", stroke: "var(--s1)", "stroke-width": 2, "stroke-linejoin": "round" });
   CAL.forEach((p, i) => {
@@ -337,7 +338,7 @@ function drawCalibration() {
     // A wider invisible target than the dot, so it's easy to hover.
     const hit = el(s, "circle", { cx: x(p[0]), cy: y(p[1]), r: 13, fill: "transparent" });
     const show = (e) => {
-      tip.innerHTML = `<b>Group ${i + 1} of 10</b> · ${p[2].toLocaleString("en-US")} attempts<br>predicted ${pct(p[0], 2)} · actual ${pct(p[1], 2)}`;
+      tip.innerHTML = `<b>Group ${i + 1} of 10</b> · ${p[2].toLocaleString("en-US")} shots<br>predicted ${pct(p[0], 2)} · went in ${pct(p[1], 2)}`;
       const r = card.getBoundingClientRect();
       tip.style.opacity = 1;
       tip.style.left = Math.min(Math.max(8, e.clientX - r.left + 12), r.width - tip.offsetWidth - 8) + "px";
@@ -349,7 +350,7 @@ function drawCalibration() {
   });
   label(s, L + (W - L - R) / 2, H - 6, "Predicted chance of a goal (xG)", { size: 13 });
   const mid = T + (H - T - B) / 2;
-  el(s, "text", { x: 13, y: mid, fill: "var(--muted)", "font-size": 13, "text-anchor": "middle", transform: `rotate(-90 13 ${mid})`, "font-family": "system-ui, sans-serif" }, "Actual share that scored");
+  el(s, "text", { x: 13, y: mid, fill: "var(--muted)", "font-size": 13, "text-anchor": "middle", transform: `rotate(-90 13 ${mid})`, "font-family": "system-ui, sans-serif" }, "How many actually went in");
   $("fig-cal").replaceChildren(s);
 }
 drawCalibration();
@@ -357,7 +358,7 @@ addEventListener("resize", () => { clearTimeout(drawCalibration.t); drawCalibrat
 
 (function () {
   $("tbl-cal").innerHTML =
-    "<thead><tr><th>Group</th><th>Attempts</th><th>Predicted</th><th>Actual</th></tr></thead><tbody>" +
+    "<thead><tr><th>Group</th><th>Shots</th><th>Predicted</th><th>Went in</th></tr></thead><tbody>" +
     CAL.map((p, i) => `<tr><td>${i + 1}</td><td>${p[2].toLocaleString("en-US")}</td><td>${pct(p[0], 2)}</td><td>${pct(p[1], 2)}</td></tr>`).join("") +
     "</tbody>";
 })();

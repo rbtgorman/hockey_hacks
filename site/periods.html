@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Hockey Hacks: period scoring</title>
-<meta name="description" content="How often each NHL team's games hit common period lines, with the range luck alone allows, a regressed estimate, and what the shots deserved by expected goals.">
+<meta name="description" content="How often each NHL team's games hit common period stats, how much of it could be luck, and what the shots say should have happened.">
 <meta name="author" content="Robert Gorman">
 <meta name="theme-color" content="#111111">
 <meta property="og:type" content="website">
@@ -194,7 +194,7 @@
     <div class="tabs">
       <a class="tab" href="./">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
-        <span><b>xG model</b><small>What this is and how good it is</small></span>
+        <span><b>xG model</b><small>What this is, and is it any good</small></span>
       </a>
       <a class="tab" href="periods.html" aria-current="page">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>
@@ -212,7 +212,7 @@
   <header class="masthead">
     <div>
       <h1>Period scoring</h1>
-      <p class="lede">How often each team's games hit common period outcomes, like 2+ goals in the 1st period. A team plays 82 games a season, so luck moves these numbers a lot. Each one sits next to the range luck alone allows and what the team's shots deserved.</p>
+      <p class="lede">How often each team's games hit common period stuff, like 2+ goals in the 1st. Teams only play 82 games, so luck swings these numbers a ton. That's why every number sits next to how much luck alone could explain and what the shots say should've happened.</p>
     </div>
     <div class="meta-row">
       <span id="meta-data">Loading data…</span>
@@ -240,7 +240,7 @@
 
   <section aria-labelledby="league-title">
     <div class="section-head">
-      <h2 id="league-title">At a glance</h2>
+      <h2 id="league-title">Quick look</h2>
       <span class="hint" id="glance-hint"></span>
     </div>
     <p class="summary" id="summary" aria-live="polite"></p>
@@ -250,17 +250,17 @@
   <section>
     <div class="section-head">
       <h2 id="metric-title">Teams</h2>
-      <span class="hint">Select a column heading to sort</span>
+      <span class="hint">Click a column to sort</span>
     </div>
     <div class="card">
       <div class="key" aria-hidden="true">
-        <span><i class="sw hot2"></i><i class="gl hot">▲</i>More often than luck alone usually allows</span>
+        <span><i class="sw hot2"></i><i class="gl hot">▲</i>More often than luck usually explains</span>
         <span><i class="sw cold2"></i><i class="gl cold">▼</i>Less often</span>
-        <span>No color: within normal luck</span>
+        <span>No color: could just be luck</span>
       </div>
       <div class="key" aria-hidden="true">
         <span><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="var(--neutral)" stroke="var(--surface)" stroke-width="2"/></svg>Rate</span>
-        <span><svg viewBox="0 0 26 12"><rect x="1" y="3" width="24" height="6" rx="3" fill="color-mix(in srgb, var(--neutral) 35%, var(--surface))"/></svg>95% range from luck alone</span>
+        <span><svg viewBox="0 0 26 12"><rect x="1" y="3" width="24" height="6" rx="3" fill="color-mix(in srgb, var(--neutral) 35%, var(--surface))"/></svg>Where the real rate could be</span>
         <span><svg viewBox="0 0 6 12"><line x1="3" y1="0" x2="3" y2="12" stroke="var(--ink-2)" stroke-width="1"/></svg>League norm, 2022-26</span>
       </div>
       <div class="tablewrap">
@@ -273,13 +273,13 @@
       <p class="cap" id="teams-note"></p>
     </div>
     <dl class="cols" id="cols">
-      <dt>GP</dt><dd>Games played in the window you picked.</dd>
-      <dt>Hits</dt><dd>How many of those games the outcome happened in.</dd>
-      <dt data-xg>Exp. (xG)</dt><dd data-xg>How many it should have happened in, given the shots both teams took. <a href="methods.html#xg-expected">How</a></dd>
-      <dt data-xg>vs xG</dt><dd data-xg>Hits minus Exp. Positive: it happened more often than the shots deserved. <a href="methods.html#vs-xg">How</a></dd>
+      <dt>GP</dt><dd>Games played in whatever window you picked.</dd>
+      <dt>Hits</dt><dd>How many of those games it actually happened.</dd>
+      <dt data-xg>Exp. (xG)</dt><dd data-xg>How many it should've happened in, going by the shots both teams took. <a href="methods.html#xg-expected">How</a></dd>
+      <dt data-xg>vs xG</dt><dd data-xg>Hits minus Exp. A plus means it happened more than the shots deserved. <a href="methods.html#vs-xg">How</a></dd>
       <dt>Rate</dt><dd>Hits ÷ GP. <a href="methods.html#rate">How</a></dd>
-      <dt>Range</dt><dd>Where the team's true rate could be, given only these games. If the range covers the league norm (the thin line), the record could be luck. <a href="methods.html#range">How</a></dd>
-      <dt>Shrunk</dt><dd>The best single guess of the team's true rate: its record blended with the league norm, weighted by how much a team's record is worth on this measure. <a href="methods.html#shrunk">How</a></dd>
+      <dt>Range</dt><dd>Where the team's real rate could be, based on just these games. If it covers the league norm (the thin line), you can't rule out luck. <a href="methods.html#range">How</a></dd>
+      <dt>Shrunk</dt><dd>My best guess at the team's real rate: its record mixed with the league norm, depending on how much a team's record is worth for this stat. <a href="methods.html#shrunk">How</a></dd>
     </dl>
   </section>
 
@@ -290,9 +290,9 @@
     </div>
     <div class="card">
       <div class="key" aria-hidden="true">
-        <span><i class="sw hot2"></i>More goals than the shots deserved, beyond normal luck</span>
+        <span><i class="sw hot2"></i>More goals than the shots deserved, more than luck usually explains</span>
         <span><i class="sw cold2"></i>Fewer</span>
-        <span>Small number underneath: expected goals (xG) from the shots. <a href="methods.html#goals-xg">How</a></span>
+        <span>Small number underneath: what the shots were worth in goals (xG). <a href="methods.html#goals-xg">How</a></span>
       </div>
       <div class="tablewrap">
         <table id="goals">
@@ -306,22 +306,22 @@
   <section>
     <h2>How to read this</h2>
     <div class="prose">
-      <p class="callout">Even over a full 82-game season, luck explains most of the spread between teams on these measures. A team that is exactly league average can land anywhere from about 25% to 80% over 10 games. That's why the Shrunk column barely moves from the norm.</p>
+      <p class="callout">Even over a full 82-game season, luck explains most of the difference between teams on these stats. A team that's dead-on league average can land anywhere from about 25% to 80% over 10 games. That's why the Shrunk column barely budges from the norm.</p>
       <dl>
-        <dt>Regulation only</dt><dd>Periods 1–3. Overtime and shootout goals never count.</dd>
-        <dt>Empty-net goals</dt><dd>They count. One measure removes them from the 3rd period, where they are about 17% of goals (2022-26).</dd>
+        <dt>Regulation only</dt><dd>Periods 1 through 3. OT and shootout goals don't count.</dd>
+        <dt>Empty-net goals</dt><dd>They count. One stat takes them out of the 3rd, where they're about 17% of goals (2022-26).</dd>
         <dt>First 10 minutes</dt><dd>A goal by either team before 10:00 of the 1st period.</dd>
-        <dt>Last 10</dt><dd>Each team's ten most recent games.</dd>
-        <dt>League norm</dt><dd>The share of all regular-season games from 2022-23 to 2025-26 where the outcome happened.</dd>
+        <dt>Last 10</dt><dd>Each team's last ten games.</dd>
+        <dt>League norm</dt><dd>How often it happened across every regular-season game from 2022-23 through 2025-26.</dd>
       </dl>
-      <p>Every number on this page, with its formula, a worked example and its source file, is on <a href="methods.html#periods">How it works</a>. The list of measures follows the period charts at Otto's Hockey Portal (@PsuOtto). Every number here is computed from NHL play-by-play by this project.</p>
+      <p>Want the math? Every number on this page, with a worked example and where it comes from, is on <a href="methods.html#periods">How it works</a>. The list of stats follows the period charts at Otto's Hockey Portal (@PsuOtto). I figure every number here myself from NHL play-by-play.</p>
     </div>
   </section>
 
   <footer>
     <div>Data: NHL public play-by-play, regular season. Not affiliated with the NHL.</div>
     <div>For information only, not betting advice. If gambling is a problem, call 1-800-GAMBLER (US).</div>
-    <div><a href="./">The xG model and its test results</a> · <a href="methods.html">How every number is calculated</a> · <a href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">Full findings</a></div>
+    <div><a href="./">The xG model and its test results</a> · <a href="methods.html">How every number gets figured</a> · <a href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">Full findings</a></div>
   </footer>
 </div>
 <div class="tip" id="tip" aria-hidden="true"></div>
@@ -467,15 +467,16 @@ function renderLeague(file, by, m, rows) {
   const tNorm = tone(zNorm, Math.abs(zNorm) >= 1.96);
   const outside = rows.filter((r) => r.outside).length;
   const season = state.index.seasons.find((s) => s.season === state.season);
-  const when = state.win === "all" ? `In ${season.label}${season === state.index.seasons[0] ? " so far" : ""}` : "Over each team's last 10 games";
+  const when = state.win === "all" ? `In ${season.label}${season === state.index.seasons[0] ? " so far" : ""}` : "Over each team's last 10";
 
   const tiles = [
     { k: state.win === "all" ? `League, ${season.label}` : "League, each team's last 10", v: pct(rate),
-      d: { dir: tNorm.dir, text: `${pts(rate - p)} ${rate >= p ? "above" : "below"} the norm` },
+      d: { dir: tNorm.dir, text: `${pts(rate - p)} ${rate >= p ? "above" : "below"} usual` },
       n: `${num(Math.round(shownHits))} of ${num(shownN)} ${unit}` },
-    { k: "League norm, 2022-26", v: pct(p), n: `${state.index.history_seasons.length} regular seasons, ${num(historyGames())} games` },
+    { k: "Usual, 2022-26", v: pct(p), n: `${state.index.history_seasons.length} regular seasons, ${num(historyGames())} games` },
   ];
-  const parts = [`${when}, “${m.label}” happened in <strong>${pct(rate)}</strong> of ${unit}, against a 2022-26 norm of ${pct(p)}.`];
+  const verb = state.win === "all" && season !== state.index.seasons[0] ? "happened" : "has happened";
+  const parts = [`${when}, “${m.label}” ${verb} in <strong>${pct(rate)}</strong> of ${unit}. Over the last four seasons it's been ${pct(p)}.`];
   if (m.has_xg) {
     const ei = file.ci["e_" + m.key];
     const qs = all.map((r) => xgProb(r, ei, m));
@@ -483,14 +484,14 @@ function renderLeague(file, by, m, rows) {
     const sd = Math.sqrt(qs.reduce((s, q) => s + q * (1 - q), 0) / div) / nEff;
     const zx = (rate - exp) / sd;
     const tx = tone(zx, Math.abs(zx) >= 1.96);
-    tiles.push({ k: "What the shots deserved", v: pct(exp),
-                 d: { dir: tx.dir, text: `Actual is ${pts(rate - exp)} ${rate >= exp ? "above" : "below"}` },
-                 n: "xG expected, same games" });
-    parts.push(`The shots in those games deserved ${pct(exp)}.`);
+    tiles.push({ k: "What the shots say", v: pct(exp),
+                 d: { dir: tx.dir, text: `Actual is ${pts(rate - exp)} ${rate >= exp ? "higher" : "lower"}` },
+                 n: "Going by the shots in those games" });
+    parts.push(`Going by the shots, it should've been ${pct(exp)}.`);
   } else {
-    tiles.push({ k: "What the shots deserved", v: "–", n: "No xG estimate for ties" });
+    tiles.push({ k: "What the shots say", v: "–", n: "Shots can't predict ties well, so no xG here" });
   }
-  parts.push(`${outside} of ${rows.length} teams ${outside === 1 ? "is" : "are"} outside the range luck allows; about 2 would be by chance alone.`);
+  parts.push(`${outside} of ${rows.length} teams ${outside === 1 ? "is" : "are"} further off than luck can explain, and you'd expect about 2 just by chance.`);
   $("summary").innerHTML = parts.join(" ");
   $("league").replaceChildren(...tiles.map(tile));
   $("glance-hint").textContent = `${m.label} · ${state.win === "all" ? "whole season" : "last 10 games"}`;
@@ -540,7 +541,7 @@ function axisSvg() {
 
 function tipText(r, m) {
   const lines = [`${r.team}: ${pct(r.rate)}, ${r.hits} of ${r.n}`,
-                 `95% range ${pct(r.lo, 0)} to ${pct(r.hi, 0)}`,
+                 `Range ${pct(r.lo, 0)} to ${pct(r.hi, 0)}`,
                  `Shrunk ${pct(r.shrunk)}`, `League norm ${pct(m.baseline)}`];
   if (r.xg != null) lines.push(`xG expected ${fmt1(r.xg)} of ${r.n}`);
   return lines;
@@ -568,13 +569,13 @@ function hideTip() { tip.classList.remove("on"); }
 /* ---------- teams table ---------- */
 const COLS = [
   { key: "team", label: "Team", cls: "" },
-  { key: "n", label: "GP", title: "Games played in this window" },
-  { key: "hits", label: "Hits", title: "Games the outcome happened in" },
-  { key: "xg", label: "Exp. (xG)", xg: true, title: "Games it should have happened in, given the shots" },
+  { key: "n", label: "GP", title: "Games played" },
+  { key: "hits", label: "Hits", title: "Games it actually happened" },
+  { key: "xg", label: "Exp. (xG)", xg: true, title: "Games it should've happened, going by the shots" },
   { key: "luck", label: "vs xG", xg: true, title: "Hits minus Exp. (xG)" },
   { key: "rate", label: "Rate", title: "Hits ÷ GP" },
-  { key: "range", label: "Range", cls: "range", sortable: false, title: "95% range for the team's true rate; the thin line is the league norm" },
-  { key: "shrunk", label: "Shrunk", title: "Best guess of the true rate: the record blended with the league norm" },
+  { key: "range", label: "Range", cls: "range", sortable: false, title: "Where the team's real rate could be; the thin line is the league norm" },
+  { key: "shrunk", label: "Shrunk", title: "Best guess at the real rate: the record mixed with the league norm" },
 ];
 
 function sortRows(rows, sort) {
@@ -716,7 +717,7 @@ async function render() {
   try {
     file = await loadSeason(state.season);
   } catch (e) {
-    $("league").replaceChildren(el("p", { class: "error" }, "Could not load this season's data: " + e.message));
+    $("league").replaceChildren(el("p", { class: "error" }, "Couldn't load this season's data: " + e.message));
     return;
   }
   const by = windows(file);
@@ -726,9 +727,9 @@ async function render() {
   renderTeams(rows, m);
   renderGoals(goalRows(file, by));
   $("teams-note").textContent = m.k == null
-    ? "Four seasons of team records show no team differences beyond luck on this measure, so every shrunk rate is the norm."
-    : `Shrunk with k = ${Math.round(m.k)} games: a team needs ${Math.round(m.k)} games before its own record counts as much as the norm.`
-      + (m.has_xg ? ` xG expected is scaled ×${m.xg_factor.toFixed(3)}, the measure's 2022-26 league ratio of actual to expected.` : "");
+    ? "Over four seasons, teams don't differ on this one any more than luck would explain, so every team's Shrunk is just the league norm."
+    : `For this stat, a team needs ${Math.round(m.k)} games before its own record counts as much as the league norm.`
+      + (m.has_xg ? ` The xG numbers are adjusted ×${m.xg_factor.toFixed(3)} to match how often this actually happened league-wide in 2022-26.` : "");
 }
 
 async function init() {
@@ -738,7 +739,7 @@ async function init() {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     state.index = await r.json();
   } catch (e) {
-    $("meta-data").textContent = "Could not load the period data: " + e.message;
+    $("meta-data").textContent = "Couldn't load the period data: " + e.message;
     return;
   }
   const idx = state.index;
