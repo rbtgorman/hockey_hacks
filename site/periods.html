@@ -6,7 +6,7 @@
 <title>Hockey Hacks: period scoring</title>
 <meta name="description" content="How often each NHL team's games hit common period lines, with the range luck alone allows, a regressed estimate, and what the shots deserved by expected goals.">
 <meta name="author" content="Robert Gorman">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#111111">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Hockey Hacks: period scoring">
 <meta property="og:description" content="NHL period scoring by team, with luck ranges and expected goals.">
@@ -17,17 +17,17 @@
   :root { padding-bottom: env(safe-area-inset-bottom, 0px); }
   body { margin: 0; }
   [hidden] { display: none !important; }
-  /* Flyers-inspired: black surfaces, orange accent. One theme, dark in every color mode. */
+  /* Flyers-inspired: charcoal-black surfaces, orange accent, white trim. One theme, dark in every color mode. */
   :root {
     color-scheme: dark;
-    --plane:       #0a0a0a;
-    --surface:     #161616;
+    --plane:       #1a1a1a;
+    --surface:     #242424;
     --ink:         #f5f5f5;
     --ink-2:       #c4c4c4;
     --muted:       #8e8e8e;
-    --rule:        #2c2c2c;
-    --rule-soft:   #222222;
-    --axis:        #3d3d3d;
+    --rule:        #383838;
+    --rule-soft:   #2f2f2f;
+    --axis:        #4a4a4a;
     --s1:          #f74902;
     --accent-fill: #f74902;
     --on-accent:   #000000;
@@ -60,7 +60,7 @@
   a:focus-visible, button:focus-visible, select:focus-visible, svg:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; border-radius: 3px; }
 
   /* ---- site navigation: same block in index.html ---- */
-  .topnav { position: sticky; top: 0; z-index: 10; background: #000; border-bottom: 4px solid var(--accent-fill); box-shadow: 0 3px 0 var(--white); padding-top: env(safe-area-inset-top, 0px); }
+  .topnav { position: sticky; top: 0; z-index: 10; background: #111111; border-bottom: 4px solid var(--accent-fill); box-shadow: 0 3px 0 var(--white); padding-top: env(safe-area-inset-top, 0px); }
   .topnav-in { max-width: 1120px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
   .brand { display: inline-flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; }
   .brand svg { width: 26px; height: 26px; flex: none; }
@@ -194,13 +194,13 @@
   <div class="topnav-in">
     <a class="brand" href="./"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="18" fill="var(--s1)"/><rect x="22" y="54" width="12" height="26" fill="#000"/><rect x="44" y="38" width="12" height="42" fill="#000"/><rect x="66" y="22" width="12" height="58" fill="#000"/></svg>Hockey Hacks</a>
     <div class="tabs">
-      <a class="tab" href="periods.html" aria-current="page">
-        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>
-        <span><b>Period scoring <span class="new">New</span></b><small>Every team, period by period</small></span>
-      </a>
       <a class="tab" href="./">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
         <span><b>xG model</b><small>How it was built and tested</small></span>
+      </a>
+      <a class="tab" href="periods.html" aria-current="page">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>
+        <span><b>Period scoring <span class="new">New</span></b><small>Every team, period by period</small></span>
       </a>
       <a class="tab ext" href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">
         <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></svg>
