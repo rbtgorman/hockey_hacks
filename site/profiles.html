@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Teams and players: Hockey Hacks</title>
+<meta name="description" content="Profiles for every NHL team and player since 2022-23: goals, expected goals, ice time, and how much of it is luck.">
+<meta name="theme-color" content="#111111">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23f74902'/><rect x='22' y='54' width='12' height='26' fill='black'/><rect x='44' y='38' width='12' height='42' fill='black'/><rect x='66' y='22' width='12' height='58' fill='black'/></svg>">
+<link rel="stylesheet" href="profiles.css">
+</head>
+<body>
+<nav class="topnav" aria-label="Site">
+  <div class="topnav-in">
+    <a class="brand" href="./"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="18" fill="var(--s1)"/><rect x="22" y="54" width="12" height="26" fill="#000"/><rect x="44" y="38" width="12" height="42" fill="#000"/><rect x="66" y="22" width="12" height="58" fill="#000"/></svg>Hockey Hacks</a>
+    <div class="tabs">
+      <a class="tab" href="./">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+        <span><b>xG model</b><small>What this is, and is it any good</small></span>
+      </a>
+      <a class="tab" href="periods.html">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>
+        <span><b>Period scoring</b><small>Every team, period by period</small></span>
+      </a>
+      <a class="tab" href="profiles.html" aria-current="page">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 3.5 3 6.5l2 4 2.2-1V20.5h9.6V9.5l2.2 1 2-4-5.5-3c-.6 1.6-1.9 2.6-3.5 2.6s-2.9-1-3.5-2.6Z"/></svg>
+        <span><b>Teams &amp; players</b><small>Profiles, season by season</small></span>
+      </a>
+      <a class="tab" href="methods.html">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r="0.6" fill="currentColor"/></svg>
+        <span><b>How it works</b><small>Every number explained</small></span>
+      </a>
+    </div>
+  </div>
+</nav>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <h1>Teams and players</h1>
+      <p class="lede">Every team and every player since 2022-23. Goals, expected goals, ice time, where the shots come from, and next to each one, the league average and how much it's based on.</p>
+    </div>
+    <div class="meta-row"><span id="updated"></span><span id="mv"></span><span><a href="methods.html">How every number gets figured</a></span></div>
+  </header>
+
+  <section>
+    <div class="section-head"><h2>Find a player</h2><p class="hint">Type part of a name. Names come from the NHL's play-by-play, so first names are often just an initial.</p></div>
+    <input type="search" id="q" placeholder="e.g. McDavid" aria-label="Search players by name" autocomplete="off">
+    <div class="results" id="results"></div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>Teams</h2></div>
+    <div class="teamgrid" id="teams"></div>
+  </section>
+
+  <section>
+    <div class="section-head"><h2>What's coming</h2></div>
+    <p class="hint">The pages draw whatever stats the exporter sends, so new ones can drop in without a redesign. Next up: who's shooting and who's in net in the model, then NHL EDGE tracking numbers (skating and shot speed) once they're loaded.</p>
+  </section>
+  <footer>
+    <div>Data: NHL public play-by-play and shift charts, regular season. Not affiliated with the NHL.</div>
+    <div><a href="./">The xG model and its test results</a> · <a href="methods.html">How every number gets figured</a> · <a href="https://github.com/rbtgorman/hockey_hacks">Code on GitHub</a></div>
+  </footer>
+</div>
+<script src="profiles.js"></script>
+<script>
+(async function () {
+  let index;
+  try { index = await loadIndex(); } catch (e) { showError($("teams"), "Couldn't load the profile data. Try a refresh."); return; }
+  $("updated").textContent = updatedLine(index);
+  $("mv").textContent = "Model " + index.model_version;
+  const cur = index.seasons[0].season;
+  const teams = index.teams.filter((t) => t[3] === cur).sort((a, b) => a[1].localeCompare(b[1]));
+  const gone = index.teams.filter((t) => t[3] !== cur);
+  $("teams").replaceChildren(...teams.concat(gone).map((t) =>
+    h("a", { href: `team.html?team=${t[0]}` }, h("b", {}, t[0]), h("span", {}, t[1]),
+      t[3] !== cur ? h("small", {}, `through ${String(t[3]).slice(0, 4)}-${String(t[3]).slice(6)}`) : null)));
+
+  const norm = (s) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const people = index.players.map((p) => ({ p, key: norm(p[1]) }));
+  function search() {
+    const q = norm($("q").value.trim());
+    if (q.length < 2) { $("results").replaceChildren(); return; }
+    const hits = people.filter((x) => x.key.includes(q))
+      .sort((a, b) => b.p[5] - a.p[5] || a.p[1].localeCompare(b.p[1])).slice(0, 15);
+    $("results").replaceChildren(...(hits.length ? hits.map(({ p }) =>
+      h("a", { href: `player.html?id=${p[0]}` }, h("span", {}, p[1]),
+        h("small", {}, `${POS_NAMES[p[2]] || p[2]} · ${p[3]} · last played ${String(p[5]).slice(0, 4)}-${String(p[5]).slice(6)}`)))
+      : [h("p", { class: "hint" }, "Nobody by that name since 2022-23.")]));
+  }
+  $("q").addEventListener("input", search);
+  if ($("q").value) search();
+})();
+</script>
+</html>

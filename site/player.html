@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Player profile: Hockey Hacks</title>
+<meta name="description" content="One NHL player, season by season: ice time, goals, expected goals, and how the team does with them on the ice.">
+<meta name="theme-color" content="#111111">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23f74902'/><rect x='22' y='54' width='12' height='26' fill='black'/><rect x='44' y='38' width='12' height='42' fill='black'/><rect x='66' y='22' width='12' height='58' fill='black'/></svg>">
+<link rel="stylesheet" href="profiles.css">
+</head>
+<body>
+<nav class="topnav" aria-label="Site">
+  <div class="topnav-in">
+    <a class="brand" href="./"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="18" fill="var(--s1)"/><rect x="22" y="54" width="12" height="26" fill="#000"/><rect x="44" y="38" width="12" height="42" fill="#000"/><rect x="66" y="22" width="12" height="58" fill="#000"/></svg>Hockey Hacks</a>
+    <div class="tabs">
+      <a class="tab" href="./">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+        <span><b>xG model</b><small>What this is, and is it any good</small></span>
+      </a>
+      <a class="tab" href="periods.html">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>
+        <span><b>Period scoring</b><small>Every team, period by period</small></span>
+      </a>
+      <a class="tab" href="profiles.html">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 3.5 3 6.5l2 4 2.2-1V20.5h9.6V9.5l2.2 1 2-4-5.5-3c-.6 1.6-1.9 2.6-3.5 2.6s-2.9-1-3.5-2.6Z"/></svg>
+        <span><b>Teams &amp; players</b><small>Profiles, season by season</small></span>
+      </a>
+      <a class="tab" href="methods.html">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r="0.6" fill="currentColor"/></svg>
+        <span><b>How it works</b><small>Every number explained</small></span>
+      </a>
+    </div>
+  </div>
+</nav>
+<div class="wrap">
+  <header class="masthead">
+    <div>
+      <p class="crumb"><a href="profiles.html">Teams and players</a></p>
+      <h1 id="name">Player</h1>
+      <p class="lede" id="sub"></p>
+    </div>
+    <div class="controls">
+      <label class="ctl">Season <select id="season"></select></label>
+      <span class="meta-row"><span id="updated"></span></span>
+    </div>
+  </header>
+  <div id="body">
+    <section id="notes"></section>
+    <div id="tiles"></div>
+    <section>
+      <div class="section-head"><h2 id="zones-head">Where the shots come from</h2></div>
+      <div id="zones"></div>
+    </section>
+    <section>
+      <div class="section-head"><h2>Season by season</h2><p class="hint">Greyed numbers have too little behind them to mean much.</p></div>
+      <div id="seasons"></div>
+    </section>
+  </div>
+  <footer>
+    <div>Data: NHL public play-by-play and shift charts, regular season. Not affiliated with the NHL.</div>
+    <div><a href="./">The xG model and its test results</a> · <a href="methods.html">How every number gets figured</a> · <a href="https://github.com/rbtgorman/hockey_hacks">Code on GitHub</a></div>
+  </footer>
+</div>
+<script src="profiles.js"></script>
+<script>
+(async function () {
+  const id = new URLSearchParams(location.search).get("id") || "";
+  let index, p;
+  try {
+    index = await loadIndex();
+    if (!/^\d{5,10}$/.test(id)) throw new Error("bad id");
+    p = await getJSON(`data/players/${id}.json`);
+  } catch (e) {
+    showError($("body"), "Couldn't find that player. Try the search.");
+    $("body").append(h("p", {}, h("a", { href: "profiles.html" }, "Search players")));
+    return;
+  }
+  document.title = `${p.name}: Hockey Hacks`;
+  $("name").textContent = p.name;
+  $("updated").textContent = updatedLine(index);
+  const metrics = index.metrics[p.kind];
+  const want = Number(new URLSearchParams(location.search).get("season"));
+  const start = p.seasons.some((s) => s.season === want) ? want : p.seasons[0].season;
+  const posWord = POS_NAMES[p.pos] || p.pos;
+  const lgName = p.kind === "goalie" ? "goalies" : p.group === "D" ? "defensemen" : "forwards";
+
+  function draw(season) {
+    const row = p.seasons.find((s) => s.season === season);
+    const lg = (index.league[String(season)] || {})[p.group] || {};
+    const teams = row.teams.map(([t, n]) => h("a", { href: `team.html?team=${t}&season=${season}` }, t + (row.teams.length > 1 ? ` (${n})` : "")));
+    const sub = [posWord];
+    if (p.shoots) sub.push(p.kind === "goalie" ? `catches ${p.shoots}` : `shoots ${p.shoots}`);
+    $("sub").replaceChildren(sub.join(" · ") + " · " + row.label + ": ");
+    teams.forEach((a, i) => { if (i) $("sub").append(", "); $("sub").append(a); });
+    $("notes").innerHTML = XG_NOTE_HTML;
+    $("notes").querySelector(".mv").textContent = index.model_version;
+    $("notes").append(h("p", { class: "hint" }, `"League" is the figure for all ${lgName} that season, everyone's totals added up.`));
+    if (seasonInProgress(index, season))
+      $("notes").append(h("p", { class: "note warn" }, h("strong", {}, "This season is still going. "),
+        `${row.counts.gp} games in, so these will move a lot.`));
+    renderTiles($("tiles"), metrics, row, lg);
+    $("zones-head").textContent = p.kind === "goalie" ? "Where the shots against came from" : "Where the shots come from";
+    renderZones($("zones"), index.zones, row.zones, null, p.kind === "goalie"
+      ? "Unblocked shots faced with this goalie in net, empty nets left out. Goals are goals allowed."
+      : "This player's own unblocked shots, all situations.");
+    setParam("season", season);
+  }
+  const keys = p.kind === "goalie" ? ["gp", "sa", "ga", "xga", "gsax", "gsax100", "fsv"]
+    : ["gp", "toi_pg", "goals", "ixg", "g_minus_ixg", "ixg60", "on_xgf_pct_5v5"];
+  renderSeasons($("seasons"), metrics, keys, p.seasons);
+  seasonSelect($("season"), p.seasons, start, draw);
+  draw(start);
+})();
+</script>
+</html>

@@ -49,6 +49,11 @@ jobs:
       - name: Period table math
         run: python tests/test_period_math.py
 
+      # export/profile_metrics.py is stdlib-only too: the metric registry,
+      # strength buckets and shot zones behind the team and player profiles.
+      - name: Profile metrics
+        run: python tests/test_profile_metrics.py
+
   compile:
     name: import-level syntax check
     runs-on: ubuntu-latest
