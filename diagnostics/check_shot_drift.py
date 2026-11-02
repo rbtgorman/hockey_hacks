@@ -12,10 +12,12 @@ CHECKS
    reason 'short', which HockeyStats.com describes as closer to fanned
    attempts or flubs. None can be a goal, but each one carries xG, so the
    report shows goals / xG with and without them.
-2. Shot types. Each raw label's share of attempts, goal rate and goals / xG
-   by season. A label whose share or goal rate moves while the others hold
-   points at labelling, not shooting.
-3. Distance. Goals / xG by distance band and season, then each rink: the
+2. Shot types. Each raw label's share of attempts, goal rate, goals / xG
+   and average recorded distance by season. A label whose share or goal rate
+   moves while the others hold points at labelling, not shooting.
+3. Distance. Goals / xG by distance band and season, shots from 60+ ft
+   split by goalie in net vs empty net (most empty-net attempts are long),
+   then each rink: the
    average recorded distance in a team's home games minus its road games
    (both teams' attempts each time). Same team in both, different scorers,
    so a large gap points at the rink. z is that gap over its standard error.
@@ -58,7 +60,7 @@ BAND_LABELS = ["<20 ft", "20-40 ft", "40-60 ft", "60+ ft"]
 
 ROWS_SQL = """
 SELECT g.season, g.game_id, g.home_team_abbr, g.away_team_abbr,
-       sf.event_type, sf.is_goal, sf.distance_ft,
+       sf.event_type, sf.is_goal, sf.distance_ft, sf.empty_net,
        COALESCE(s.shot_type, '(none)') AS raw_shot_type,
        s.raw_details_json::jsonb ->> 'reason' AS reason,
        x.xg
@@ -134,13 +136,14 @@ def short_misses(df: pd.DataFrame) -> pd.DataFrame:
 def shot_types(df: pd.DataFrame) -> dict[str, pd.DataFrame]:
     g = df.groupby(["raw_shot_type", "season"]).agg(n=("is_goal", "size"),
                                                    goals=("is_goal", "sum"),
-                                                   xg=("xg", "sum"))
+                                                   xg=("xg", "sum"),
+                                                   avg_ft=("distance_ft", "mean"))
     g["share_%"] = 100 * g["n"] / g.groupby("season")["n"].transform("sum")
     g["goal_rate_%"] = 100 * g["goals"] / g["n"]
     g["goals_over_xg"] = g["goals"] / g["xg"]
     order = g.groupby("raw_shot_type")["n"].sum().sort_values(ascending=False).index
     return {col: g[col].unstack("season").reindex(order)
-            for col in ["n", "share_%", "goal_rate_%", "goals_over_xg"]}
+            for col in ["n", "share_%", "goal_rate_%", "goals_over_xg", "avg_ft"]}
 
 
 # --------------------------------------------------------------- 3. distance
@@ -149,6 +152,21 @@ def distance_bands(df: pd.DataFrame) -> pd.DataFrame:
     d["band"] = pd.cut(d["distance_ft"], BANDS, labels=BAND_LABELS, right=False)
     g = d.groupby(["band", "season"], observed=True).agg(goals=("is_goal", "sum"), xg=("xg", "sum"))
     return (g["goals"] / g["xg"]).unstack("season")
+
+
+def long_shots(df: pd.DataFrame) -> pd.DataFrame:
+    """Shots from 60+ ft by season, goalie in net vs empty net."""
+    d = df[df["distance_ft"] >= BANDS[-2]].copy()
+    d["net"] = d["empty_net"].fillna(False).astype(bool).map({False: "in_net", True: "empty"})
+    g = d.groupby(["season", "net"]).agg(n=("is_goal", "size"), goals=("is_goal", "sum"),
+                                         xg=("xg", "sum"))
+    g["goals_over_xg"] = g["goals"] / g["xg"]
+    out = g[["n", "goals_over_xg"]].unstack("net")
+    out.columns = [f"{net} {col}" for col, net in out.columns]
+    for c in [c for c in out.columns if c.endswith(" n")]:
+        out[c] = out[c].astype("Int64")
+    return out[[c for c in ["in_net n", "in_net goals_over_xg", "empty n", "empty goals_over_xg"]
+                if c in out.columns]]
 
 
 def rink_gaps(df: pd.DataFrame) -> pd.DataFrame:
@@ -200,9 +218,15 @@ def report(df: pd.DataFrame, model: str) -> str:
     section("2c. Shot types: goals / xG", "1.00 is right. 2022-23 to 2024-25 are in-sample.",
             t["goals_over_xg"])
     section("2d. Shot types: attempts", "How many rows each cell above stands on.", t["n"], "{:,.0f}")
-    section("3a. Goals / xG by distance band", "1.00 is right. 2022-23 to 2024-25 are in-sample.",
+    section("2e. Shot types: average recorded distance (ft)",
+            "A label drifting farther out while its goal rate falls points at labelling.",
+            t["avg_ft"], "{:.1f}")
+    section("3a. Goals / xG by distance band, every attempt", "1.00 is right. 2022-23 to 2024-25 are in-sample.",
             distance_bands(df))
-    section("3b. Recorded distance by rink",
+    section("3b. Shots from 60+ ft: goalie in net vs empty net",
+            "n is attempts; goals_over_xg is 1.00 when right. 2022-23 to 2024-25 are in-sample.",
+            long_shots(df), "{:,.3f}")
+    section("3c. Recorded distance by rink",
             "gap_ft: mean distance in the team's home games minus its road games, both\n"
             "teams' attempts. Negative means shots get recorded closer in that rink.\n"
             "|z| > 3 is worth a look; with 32 rinks, one or two past 2 is just chance.\n"

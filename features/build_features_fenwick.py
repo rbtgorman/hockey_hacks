@@ -24,13 +24,18 @@ DIFFERENCES FROM build_features.py
 1. Population: shot-on-goal, goal and missed-shot (was is_sog only).
 2. Shootout attempts are excluded (regular-season period >= 5).
    Playoff overtime periods are real play and are kept.
-3. Two event types exist in only part of the 2022-25 window:
+3. Three event types exist in only part of the window:
        teammate-blocked      logged from 2023-24
+       short                 logged from 2023-24 (missed-shot reason)
        failed-bank-attempt   logged from 2024-25
-   Both are removed from the population and from every previous-event
+   All three are removed from the population and from every previous-event
    lookup. Left in, a teammate block between a shot and its rebound turns
    is_rebound off, and one between a takeaway and a shot turns is_rush off,
-   in 2023-24 onward only.
+   in 2023-24 onward only. 'short' misses are fanned attempts and flubs
+   (HockeyStats.com): none is ever a goal, but in the table each one got
+   about the average xG, 95.9 goals' worth in 2025-26, which moved that
+   season's goals / xG from 0.991 to 0.980 (diagnostics/check_shot_drift.py).
+   Check 11 confirms none are left.
 4. last_event_type merges shot-on-goal and missed-shot into
    'unblocked-shot', because the on-goal share of unblocked attempts falls
    across seasons, so the split between those two labels is not stable.
@@ -89,15 +94,15 @@ DROP TABLE IF EXISTS shot_features_fenwick;
 
 CREATE TABLE shot_features_fenwick AS
 WITH
--- Events that exist in only part of the 2022-25 window. Removed from the
--- population and from every previous-event lookup, so all three seasons
--- share one event stream. shots and plays_context use the same event_idx
+-- Events that exist in only part of the window. Removed from the
+-- population and from every previous-event lookup, so every season
+-- shares one event stream. shots and plays_context use the same event_idx
 -- (verified: 7,738 of 7,738 teammate blocks matched).
 regime_only AS (
     SELECT game_id, event_idx
     FROM shots
     WHERE raw_details_json::jsonb ->> 'reason'
-          IN ('teammate-blocked', 'failed-bank-attempt')
+          IN ('teammate-blocked', 'short', 'failed-bank-attempt')
 ),
 
 shots_kept AS (
@@ -437,6 +442,18 @@ VERIFY_QUERIES = [
      WHERE f.last_event_type IN ('giveaway', 'takeaway')
      GROUP BY 1, 2, 3
      ORDER BY 2, 1, 3;
+     """),
+    ("11. Partial-window events left in the table, by season (expected: 0 rows)",
+     """
+     SELECT substr(f.game_id::text, 1, 4) AS season_start,
+            s.raw_details_json::jsonb ->> 'reason' AS reason,
+            COUNT(*) AS n
+     FROM shot_features_fenwick f
+     JOIN shots s ON s.game_id = f.game_id AND s.event_idx = f.event_idx
+     WHERE s.raw_details_json::jsonb ->> 'reason'
+           IN ('teammate-blocked', 'short', 'failed-bank-attempt')
+     GROUP BY 1, 2
+     ORDER BY 1, 2;
      """),
 ]
 
