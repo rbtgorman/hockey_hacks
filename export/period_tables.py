@@ -29,7 +29,9 @@ to the league rate. That is the finding, not a bug.
 
 xG
 --
-From shot_xg (model/score_fenwick.py), unblocked attempts, periods 1-3. An
+From shot_xg (model/score_fenwick.py), unblocked attempts, periods 1-3, joined
+through shot_features_fenwick: shot_xg can still hold rows for shots the feature
+table has since dropped (the 'short' misses), and those must not count. An
 expected outcome treats each game's actual shots as independent chances
 (Poisson-binomial). That runs low on "2+ goals" and "both teams score" and high
 on scoreless periods, so each expected metric is scaled by its observed /
@@ -103,10 +105,11 @@ WHERE g.game_type = 2 AND s.is_goal AND s.period BETWEEN 1 AND 3
 """
 XG_SQL = """
 SELECT s.game_id, s.period, s.period_seconds, s.shooter_team_id, s.empty_net, x.xg
-FROM shot_xg x
-JOIN shots s USING (shot_id)
+FROM shot_features_fenwick f
+JOIN shot_xg x ON x.shot_id = f.shot_id AND x.model_version = %(model)s
+JOIN shots s ON s.shot_id = f.shot_id
 JOIN games g ON g.game_id = s.game_id
-WHERE x.model_version = %(model)s AND g.game_type = 2 AND s.period BETWEEN 1 AND 3
+WHERE g.game_type = 2 AND s.period BETWEEN 1 AND 3
 """
 
 
