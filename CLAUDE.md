@@ -112,8 +112,9 @@ Updated 2026-11-03 (v1.3 live).
   when 10-12 teams were under the special-teams minimums early in 2026-27. Fewer than 10
   qualifiers means no rank. Ties at the shown precision share the better rank ("T-12th");
   `shown()` copies the page's rounding exactly. Thirds: k = round(n/3), top rank <= k,
-  bottom rank > n - k (11/10/11 at 32): green #4ade80, blue #6cb4ff, red #ff6b6b. Measured
-  badge contrast in Chrome: 6.59, 5.44 and 4.54:1, so red has almost no room to spare.
+  bottom rank > n - k (11/10/11 at 32): green #4ade80, blue #6cb4ff, red #ff8080
+  (lightened from #ff6b6b, which only reached 4.54:1). Measured badge contrast in Chrome:
+  6.59, 5.44 and 5.04:1.
 
 ## Waiting on the owner
 

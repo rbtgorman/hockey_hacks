@@ -5,6 +5,10 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-03
 
+- PC: the profile pages' "About the xG here" note now names v1.3-fenwick, says it was
+  retrained in November 2026 for the tip-in labelling change and still doesn't know who's
+  shooting or who's in net. Red badge lightened to #ff8080 (5.04:1 contrast, was 4.54). Rank
+  badges `e8ecf50`. Checked at 320, 375 and 1440px.
 - PC: profile badges are now real ranks ("28th out of 32", "45th out of 212 forwards"),
   colored by third (green, blue, red), worked out in `export/profiles.py` and stored in
   every season row. Only qualifiers are ranked, teams included (the owner's call, since
