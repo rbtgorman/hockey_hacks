@@ -162,8 +162,8 @@
       <h3>Games and shots</h3>
       <dl class="parts">
         <dt>What it is</dt><dd>The games and shots everything else is built on.</dd>
-        <dt>Where it's from</dt><dd>The NHL's public API (<code>api-web.nhle.com</code> and <code>api.nhle.com</code>): play-by-play, shift charts and box scores. It all goes into a PostgreSQL database (the code's in <code>ingest/</code>). The counts come from <code>results/v1_2_fenwick_train.log</code> and <code>site/data/periods_index.json</code>.</dd>
-        <dt>How it's figured</dt><dd>Only finished games get loaded, so a game that's still going never counts. <span class="ex">5,794 games (regular season and playoffs, October 7, 2022 to October 28, 2026) with 499,443 unblocked shots.</span> The period page only uses the regular season: 1,312 games in each full season and <span id="cur-games">202</span> so far in <span id="cur-label">2026-27</span>.</dd>
+        <dt>Where it's from</dt><dd>The NHL's public API (<code>api-web.nhle.com</code> and <code>api.nhle.com</code>): play-by-play, shift charts and box scores. It all goes into a PostgreSQL database (the code's in <code>ingest/</code>). The counts come from <code>results/v1_3_fenwick_train.log</code> and <code>site/data/periods_index.json</code>.</dd>
+        <dt>How it's figured</dt><dd>Only finished games get loaded, so a game that's still going never counts. <span class="ex">5,794 games (regular season and playoffs, October 7, 2022 to October 28, 2026) with 495,703 unblocked shots.</span> The period page only uses the regular season: 1,312 games in each full season and <span id="cur-games">202</span> so far in <span id="cur-label">2026-27</span>.</dd>
         <dt>What it tells you</dt><dd>Tons of shots, but not a lot of games per team, just 82 a season. That's the main reason this site sizes teams up instead of predicting them.</dd>
       </dl>
     </article>
@@ -174,7 +174,7 @@
         <dt>What it is</dt><dd>Every shot that didn't get blocked: goals, saves and missed shots. Analytics people call this Fenwick.</dd>
         <dt>Where it's from</dt><dd><code>features/build_features_fenwick.py</code>, which builds the <code>shot_features_fenwick</code> table.</dd>
         <dt>How it's figured</dt><dd>Blocked shots and shootout attempts are out. So are two things the NHL only started logging partway through: shots blocked by your own teammate (from 2023-24) and failed bank attempts (from 2024-25).</dd>
-        <dt>What it tells you</dt><dd>Saves and misses get counted together, so if the league changes how it splits them up, the total stays the same. And it did change: <span class="ex">missed shots went from 28.3% of attempts in 2022-23 to 34.5% in 2025-26, while goals stayed around 7%</span> (the event mix in the training log).</dd>
+        <dt>What it tells you</dt><dd>Saves and misses get counted together, so if the league changes how it splits them up, the total stays the same. And it did change: <span class="ex">missed shots went from 28.3% of attempts in 2022-23 to 33.8% in 2025-26, while goals stayed around 7%</span> (the event mix in the training log).</dd>
       </dl>
     </article>
   </section>
@@ -188,8 +188,8 @@
       <p class="shown">On the site: xG model, Period scoring</p>
       <dl class="parts">
         <dt>What it is</dt><dd>How likely a shot was to go in, from 0 to 1. An xG of 0.10 is a 1-in-10 chance.</dd>
-        <dt>Where it's from</dt><dd>Model v1.2-fenwick (<code>model/train_v1_2_fenwick.py</code>). Every shot's xG gets saved in the <code>shot_xg</code> table by <code>model/score_fenwick.py</code>.</dd>
-        <dt>How it's figured</dt><dd>A machine-learning model (LightGBM, 167 decision trees) went through <span class="ex">364,074 shots from 2022-23 to 2024-25</span> and learned which ones end up in the net. For each shot it looks at 17 things: how far out and what angle; where on the ice it came from; the type of shot; 5-on-5, power play and so on; whether the net was empty; the score; the period and how much time is left; what happened right before (what it was, which team did it, and how many seconds and feet ago); and whether it was a rebound, a rebound off the post, or off the rush. Distance, empty net and angle matter most (<code>results/v1_2-fenwick/feature_importance.csv</code>).</dd>
+        <dt>Where it's from</dt><dd>Model v1.3-fenwick (<code>model/train_v1_3_fenwick.py</code>). Every shot's xG gets saved in the <code>shot_xg</code> table by <code>model/score_fenwick.py</code>.</dd>
+        <dt>How it's figured</dt><dd>A machine-learning model (LightGBM, 291 decision trees) went through <span class="ex">479,131 shots from 2022-23 to 2025-26</span> and learned which ones end up in the net. Recent seasons count more: 2025-26 fully, 2024-25 half, 2023-24 a quarter and 2022-23 an eighth, because the NHL seems to have started calling a lot more shots tip-ins in 2025-26 (<a href="index.html#v13">the full story</a>). For each shot it looks at 17 things: how far out and what angle; where on the ice it came from; the type of shot; 5-on-5, power play and so on; whether the net was empty; the score; the period and how much time is left; what happened right before (what it was, which team did it, and how many seconds and feet ago); and whether it was a rebound, a rebound off the post, or off the rush. Distance, empty net and angle matter most (<code>results/v1_3-fenwick/feature_importance.csv</code>).</dd>
         <dt>What it tells you</dt><dd>Out of a bunch of shots just like this one, how many you'd expect to go in. It's about the chance, not the player: the model doesn't know who shot it or who was in net. Add up xG over a bunch of shots and you get expected goals for a team, a period or a season.</dd>
       </dl>
     </article>
@@ -199,8 +199,8 @@
       <p class="shown">On the site: xG model</p>
       <dl class="parts">
         <dt>What it is</dt><dd>How many unblocked shots turned into goals.</dd>
-        <dt>Where it's from</dt><dd><code>results/v1_2-fenwick/metrics.json</code>, test season.</dd>
-        <dt>How it's figured</dt><dd>Goals ÷ unblocked shots. <span class="ex">2025-26: 8,572 ÷ 118,605 = 7.2%</span>, about 1 in 14.</dd>
+        <dt>Where it's from</dt><dd><code>results/v1_3-fenwick/metrics.json</code>, test season.</dd>
+        <dt>How it's figured</dt><dd>Goals ÷ unblocked shots. <span class="ex">2026-27 so far: 1,251 ÷ 16,572 = 7.5%</span>, about 1 in 13. Over the four full seasons before it, it was about 7.2%, so this one will likely settle down.</dd>
         <dt>What it tells you</dt><dd>That's your average shot. Every xG number is measured against it.</dd>
       </dl>
     </article>
@@ -209,16 +209,16 @@
   <!-- ========================= CHECKING THE MODEL ========================= -->
   <section id="checks">
     <h2>Is the model any good?</h2>
-    <p class="intro">All three checks use the 2025-26 season: 118,605 shots the model never saw while I was building it. Testing on games it's never seen is the only honest way to know if it works.</p>
+    <p class="intro">All of these checks use 2026-27 so far: 16,572 shots from September 29 to October 28, 2026 that the model never saw while I was building it. Testing on games it's never seen is the only honest way to know if it works. That's only about a month of games, so the numbers will move as the season goes on.</p>
 
     <article class="entry" id="oe">
       <h3>Goals vs. what it predicted (O/E)</h3>
       <p class="shown">On the site: xG model</p>
       <dl class="parts">
         <dt>What it is</dt><dd>Real goals ÷ the goals the model called for. O/E is short for observed over expected.</dd>
-        <dt>Where it's from</dt><dd><code>results/v1_2-fenwick/metrics.json</code>, test season.</dd>
-        <dt>How it's figured</dt><dd>Add up the xG on every 2025-26 shot to get predicted goals, then divide the real goals by that. <span class="ex">8,572 goals ÷ 8,745 predicted = 0.98.</span></dd>
-        <dt>What it tells you</dt><dd>1.00 means it's right on average. 0.98 means it called for about 2% too many goals. My older models, which only learned from shots on goal, were at 1.07 to 1.08 on 2024-25 (<code>results/leaderboard.md</code>).</dd>
+        <dt>Where it's from</dt><dd><code>results/v1_3-fenwick/metrics.json</code>, test season.</dd>
+        <dt>How it's figured</dt><dd>Add up the xG on every 2026-27 shot so far to get predicted goals, then divide the real goals by that. <span class="ex">1,251 goals ÷ 1,247 predicted = 1.00</span> (1.003 before rounding).</dd>
+        <dt>What it tells you</dt><dd>1.00 means it's right on average, and it's within 4 goals so far. My older models, which only learned from shots on goal, were at 1.07 to 1.08 on 2024-25 (<code>results/leaderboard.md</code>).</dd>
       </dl>
     </article>
 
@@ -227,8 +227,8 @@
       <p class="shown">On the site: xG model</p>
       <dl class="parts">
         <dt>What it is</dt><dd>How well the model sorts shots. Does a goal get a higher xG than a shot that didn't go in?</dd>
-        <dt>Where it's from</dt><dd><code>results/v1_2-fenwick/metrics.json</code>, test season.</dd>
-        <dt>How it's figured</dt><dd>Take every pair of one goal and one non-goal from 2025-26. AUC is how often the goal had the higher xG (a tie counts as half). <span class="ex">0.779.</span></dd>
+        <dt>Where it's from</dt><dd><code>results/v1_3-fenwick/metrics.json</code>, test season.</dd>
+        <dt>How it's figured</dt><dd>Take every pair of one goal and one non-goal from 2026-27 so far. AUC is how often the goal had the higher xG (a tie counts as half). <span class="ex">0.783.</span> The last version (v1.2) gets 0.775 on the same shots.</dd>
         <dt>What it tells you</dt><dd>0.5 is a coin flip and 1.0 would be perfect. It doesn't tell you if the percentages themselves are right. That's what O/E and the next check are for.</dd>
       </dl>
     </article>
@@ -238,9 +238,20 @@
       <p class="shown">On the site: xG model, with the chart</p>
       <dl class="parts">
         <dt>What it is</dt><dd>Whether you can take the model's percentages at face value all the way up and down, not just on average.</dd>
-        <dt>Where it's from</dt><dd><code>results/v1_2-fenwick/reliability.csv</code>.</dd>
-        <dt>How it's figured</dt><dd>Sort the 2025-26 shots by xG and split them into ten even groups of about 11,860. In each group, compare the average xG with how many actually went in. <span class="ex">The biggest gap is in the fifth group: 4.30% predicted, 3.93% went in, 0.38 percentage points apart.</span></dd>
+        <dt>Where it's from</dt><dd><code>results/v1_3-fenwick/reliability.csv</code>.</dd>
+        <dt>How it's figured</dt><dd>Sort the 2026-27 shots by xG and split them into ten even groups of about 1,660. In each group, compare the average xG with how many actually went in. <span class="ex">The biggest gap is in the top group: 25.79% predicted, 26.54% went in, 0.75 percentage points apart.</span> With only about 1,660 shots in a group, a gap that size can just be luck.</dd>
         <dt>What it tells you</dt><dd>If every group is close, a 5% shot and a 25% shot are both priced right. A game simulator adds these chances up, so getting them right matters more than ranking shots perfectly.</dd>
+      </dl>
+    </article>
+
+    <article class="entry" id="logloss">
+      <h3>Log loss</h3>
+      <p class="shown">On the site: xG model, in the v1.3 vs. v1.2 table</p>
+      <dl class="parts">
+        <dt>What it is</dt><dd>One score for how close every shot's xG was to what actually happened. Lower is better.</dd>
+        <dt>Where it's from</dt><dd><code>results/v1_3_fenwick_train.log</code> (both models on 2026-27) and <code>results/v1_3-fenwick/selection.csv</code> (picking v1.3).</dd>
+        <dt>How it's figured</dt><dd>Each shot gets a penalty: minus the log of the chance the model gave to what really happened. A goal it called 50% costs 0.69; a goal it called 5% costs 3.0. Then average them. <span class="ex">2026-27 so far: v1.3 0.2259, v1.2 0.2282.</span> To pick v1.3, I scored the two fixes on the second half of 2025-26: <span class="ex">counting recent seasons more 0.2210, the era flag 0.2213, no fix at all 0.2217.</span></dd>
+        <dt>What it tells you</dt><dd>It punishes confident misses hard, so it checks the ranking and the percentages at the same time. That's why it picked the winner. The number on its own doesn't mean much; it's only for comparing models on the same shots, and the gaps here are small.</dd>
       </dl>
     </article>
 
@@ -249,8 +260,8 @@
       <p class="shown">On the site: xG model, under "Where it still struggles"</p>
       <dl class="parts">
         <dt>What it is</dt><dd>O/E for one kind of shot, times 100.</dd>
-        <dt>Where it's from</dt><dd><code>results/v1_2-fenwick/segments.csv</code>, the <code>oe_v1.2</code> column.</dd>
-        <dt>How it's figured</dt><dd>Goals ÷ total xG for that kind of shot in 2025-26, × 100. <span class="ex">Tip-ins 78, shots from 60+ feet 88, power play 94.</span></dd>
+        <dt>Where it's from</dt><dd><code>results/v1_3-fenwick/segments.csv</code>, the <code>oe_v1.3</code> column.</dd>
+        <dt>How it's figured</dt><dd>Goals ÷ total xG for that kind of shot in 2026-27 so far, × 100. <span class="ex">Tip-ins 88 (1,660 shots), shots from 60+ feet 85 (1,858 shots).</span> The last version had tip-ins at 78 on the same shots.</dd>
         <dt>What it tells you</dt><dd>100 means it's right. Under 100, the model's too high on that kind of shot. That's where the next version needs to get better.</dd>
       </dl>
     </article>

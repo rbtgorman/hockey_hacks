@@ -2,8 +2,8 @@
   "version": "v1.3-fenwick",
   "description": "v1.2-fenwick features, trained on 2022-23 to 2025-26 with recency weights, half-life 1 seasons; chosen over the other tip-in fix on late 2025-26; tested on 2026-27.",
   "generated_at_utc": "2026-11-03T16:20:12+00:00",
-  "git_commit": "220f712",
-  "git_dirty": true,
+  "git_commit": "1acc9eb",
+  "git_dirty": false,
   "data": {
     "population": "fenwick",
     "table": "shot_features_fenwick",
@@ -100,5 +100,6 @@
     "strength_state",
     "last_event_type"
   ],
-  "notes": "Test is 2026-27 to date, not 2025-26, so test numbers are not comparable with earlier rows. 'val' is late 2025-26 with the selection fit."
+  "notes": "Test is 2026-27 to date, not 2025-26, so test numbers are not comparable with earlier rows. 'val' is late 2025-26 with the selection fit.",
+  "git_note": "Trained from a working tree on 220f712 with model/train_v1_3_fenwick.py uncommitted; that file was committed unchanged in 1acc9eb."
 }

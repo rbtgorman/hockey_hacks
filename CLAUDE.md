@@ -84,9 +84,13 @@ Updated 2026-11-03 (v1.3 live).
   plain retrain 0.22168; `results/v1_3-fenwick/selection.csv`). Only the winner was
   tested on 2026-27 to date: AUC 0.7832, O/E 1.003, tip-in O/E 0.88 (v1.2 on the same
   shots: 0.7752, 0.997, 0.78). The exports (period page, profiles) use v1.3.
-- **The site's model tab and `site/methods.html` still describe v1.2** (2025-26 test,
-  167 trees, 364,074 shots, the hardcoded calibration dots, "Where it still struggles").
-  They need rewriting for v1.3.
+- **Site copy is on v1.3** (model tab in `site/index.html`, `site/methods.html`): the
+  2026-27 test with a "this is only a month" warning, the tip-in story, a v1.3 vs v1.2
+  table with log loss, and "Where it still struggles" (tip-ins 88, 60+ ft 85). When
+  2026-27 fills in, refresh those numbers from `results/v1_3-fenwick/` and a rerun of the
+  v1.2 comparison.
+- **Leaderboard** has a Test season column; runs whose test season was in progress are
+  marked "to date" (`model/reporting.py`).
 - **'Short' misses** were dropped from `shot_features_fenwick` (`71a1a15`). v1.3 never saw
   them, but `shot_xg` still holds old v1.2 rows for them, so always join `shot_xg` through
   `shot_features_fenwick`. `export/profiles.py` and `export/period_tables.py` do.
@@ -105,9 +109,8 @@ Updated 2026-11-03 (v1.3 live).
 
 ## Next up
 
-1. Rewrite the site's model tab (`site/index.html`) and `site/methods.html` for v1.3, then
-   do the browser check.
-2. After that, the rest of "What's next" in the README.
+1. The rest of "What's next" in the README: tune the model properly (settings search on
+   log loss, xG never rising with distance, a calibration step), then shooters and goalies.
 
 Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by
 hand on the PC). Each refresh commits a few hundred small files under `site/data/`, and player
