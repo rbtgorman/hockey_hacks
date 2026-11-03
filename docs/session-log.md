@@ -1,0 +1,54 @@
+# Session log
+
+What got done each working day, newest first. Claude adds to today's entry every time it
+pushes. Commit hashes point to the details.
+
+## 2026-11-03
+
+- PC: period page xG now joins through `shot_features_fenwick`, so the dropped 'short'
+  misses stay out (`50de0a7`). A cloud session made the same fix on a side branch, which
+  was merged as PR #1 (`3a02d82`). Merging both copies joined the same tables twice in
+  that query, which would have crashed the next refresh. Fixed back to the `50de0a7`
+  version (`c1fc476`).
+- PC: tip-in check (`06ad2ae`, `results/checks/tipins.txt`). Tip-in goals / xG fell from
+  1.03 (2022-23) to 0.79 (2025-26), and 30 of 32 rinks logged more close tip-ins in
+  2025-26. That looks like a league-wide labelling change.
+- PC: proposed v1.3 (recent seasons weighted more, train on 2022-23 through 2025-26, test
+  on 2026-27). Waiting on the owner.
+- Cloud: added `CLAUDE.md` and this log, so any new session can pick up without resuming.
+
+## 2026-11-02
+
+- Dropped the 'short' misses from the shot table, plus two more drift checks (`71a1a15`),
+  with before and after output (`b86b7ef`). Model not retrained.
+- Team and player profile pages (`c5ee1ae`): `export/profiles.py`,
+  `export/profile_metrics.py`, `tests/test_profile_metrics.py` in CI, added to
+  `export/refresh.sh`, cache headers in `netlify.toml`.
+
+## 2026-10-30
+
+- Simplified the site and explained every number (`9ed19d2`), casual everyday voice
+  (`cca737e`), xG model tab first (`1f3872b`).
+- Rewrote the README for where the project is now (`de32f19`).
+- Read-only shot drift checks for the model tune-up (`9368e54`).
+
+## 2026-10-29
+
+- Period scoring page, v1.2-fenwick, in-season ingest (`a4a824b`).
+- Site redesign: big tab navigation, color-coded results, orange and black theme
+  (`0756f5d`, `0c026fa`).
+
+## 2026-10-28
+
+- Backfilled shifts, recovered 57 games from the HTML reports, added v1.1-fenwick
+  (`ee4d088`).
+
+## 2026-10-27
+
+- Ingested the 2025-26 season, added the play-context actor keys migration with its checks,
+  and parser updates and tests.
+
+## Before 2026-10-27
+
+- September to October 21: Fenwick feature builds, v1-fenwick, a calibration test in CI,
+  the v2.3 rescore, the project dashboard and README work. See `git log`.
