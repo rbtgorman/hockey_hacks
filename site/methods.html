@@ -150,7 +150,7 @@
       <p class="lede">Every number on this site, broken down the same way: what it is, where it's from, how it's figured, and what it actually tells you. I calculate all of it myself from the NHL's public data, and the code's on <a href="https://github.com/rbtgorman/hockey_hacks">GitHub</a>.</p>
     </div>
     <nav class="toc" aria-label="On this page">
-      <a href="#data">The data</a><a href="#shot-quality">Shot quality (xG)</a><a href="#checks">Is the model any good?</a><a href="#periods">Period scoring</a><a href="#limits">What it can't tell you yet</a>
+      <a href="#data">The data</a><a href="#shot-quality">Shot quality (xG)</a><a href="#checks">Is the model any good?</a><a href="#periods">Period scoring</a><a href="#profiles">Teams and players</a><a href="#limits">What it can't tell you yet</a>
     </nav>
   </header>
 
@@ -370,6 +370,22 @@
         <dt>First 10 minutes</dt><dd>A goal by either team before 10:00 of the 1st.</dd>
         <dt>Last 10</dt><dd>Each team's last ten games.</dd>
         <dt>Regular season</dt><dd>Playoff games aren't on the period page.</dd>
+      </dl>
+    </article>
+  </section>
+
+  <!-- ========================= TEAMS AND PLAYERS ========================= -->
+  <section id="profiles">
+    <h2>Teams and players</h2>
+
+    <article class="entry" id="ranks">
+      <h3>Ranks</h3>
+      <p class="shown">On the site: every number on the team and player pages that has a better direction</p>
+      <dl class="parts">
+        <dt>What it is</dt><dd>Where a team or player stands that season, like "28th out of 32" or "45th out of 212 forwards". 1st is best. Green is the top third, blue the middle third, red the bottom third. Where lower is better (goals against and so on), the lowest is 1st.</dd>
+        <dt>Where it's from</dt><dd><code>export/profiles.py</code> works them out with <code>rank_rows</code> in <code>export/profile_metrics.py</code> and saves them in each season of <code>site/data/teams/</code> and <code>site/data/players/</code>.</dd>
+        <dt>How it's figured</dt><dd>Teams are ranked against the other teams that season. Players are ranked on their whole season (a traded player's teams added together) against the same group: forwards, defensemen or goalies. Only teams and players who've hit that number's minimum (the one that greys a number out) are in the pool, so early in a season some ranks are out of fewer than 32. If fewer than 10 qualify, nobody gets a rank. Thirds: with <span class="ex">32 teams, 1st to 11th is green, 12th to 21st blue, 22nd to 32nd red</span> (a third of the pool, rounded, at each end). Numbers that look the same on the page share the better rank, shown as "T-12th".</dd>
+        <dt>What it tells you</dt><dd>How a number stacks up, not how big the gap is: 10th and 20th can be close. Games and minutes don't get a rank, since more isn't better or worse. The season-in-progress warning goes for ranks too.</dd>
       </dl>
     </article>
   </section>

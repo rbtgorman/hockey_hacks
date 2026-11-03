@@ -100,7 +100,8 @@
     if (seasonInProgress(index, season))
       $("notes").append(h("p", { class: "note warn" }, h("strong", {}, "This season is still going. "),
         `${row.counts.gp} games in, so most of these will move a lot. Early on, a team's own numbers tell you less than the league average does.`));
-    renderTiles($("tiles"), metrics, row, lg.team);
+    $("notes").append(rankLegend("teams"));
+    renderTiles($("tiles"), metrics, row, lg.team, "teams");
     renderZones($("zones-for"), index.zones, row.zones_for, lg.zones,
       "Unblocked shots, all situations. Share is how much of the team's shooting came from each spot; the grey bar is the league.");
     renderZones($("zones-against"), index.zones, row.zones_against, lg.zones,

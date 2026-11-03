@@ -50,8 +50,27 @@ function seasonInProgress(index, season) {
   return !!index.seasons.find((s) => s.season === season)?.in_progress;
 }
 
-/* One tile per metric, grouped under the registry's headings. */
-function renderTiles(root, metrics, row, league) {
+const ordinal = (n) => {
+  const t = n % 100, u = n % 10;
+  return n + (t >= 11 && t <= 13 ? "th" : u === 1 ? "st" : u === 2 ? "nd" : u === 3 ? "rd" : "th");
+};
+
+/* The one-line explanation of the rank badges. noun is "teams", "forwards" and so on. */
+function rankLegend(noun) {
+  return h("p", { class: "hint legend" },
+    "Ranks: 1st is best. ",
+    h("span", { class: "key top" }, "Green"), " is the top third, ",
+    h("span", { class: "key mid" }, "blue"), " the middle third, ",
+    h("span", { class: "key bot" }, "red"), " the bottom third. ",
+    "Where lower is better (like goals against), the lowest is 1st. ",
+    noun === "teams"
+      ? "Early in a season some ranks are out of fewer than 32, because a team without enough minutes yet is left out."
+      : `Early in a season some ranks are out of fewer ${noun}, because anyone without enough minutes yet is left out.`);
+}
+
+/* One tile per metric, grouped under the registry's headings.
+   row.ranks[key] = [rank, pool size, tied, tier], worked out by export/profiles.py. */
+function renderTiles(root, metrics, row, league, noun) {
   root.replaceChildren();
   const groups = [];
   for (const m of metrics) {
@@ -67,19 +86,12 @@ function renderTiles(root, metrics, row, league) {
       const thin = m.min > 0 && n < m.min;
       const lgv = league ? league[m.key] : null;
       let lg = null, vs = null;
-      if (lgv != null && v != null) {
-        lg = h("span", { class: "lg" }, "League average: " + fmt(lgv, m.fmt));
-        // Better or worse than the league average, by any amount (not a rank).
-        // Only when the sample is big enough and the two differ at the
-        // precision shown.
-        if (m.better && !thin) {
-          if (fmt(v, m.fmt) === fmt(lgv, m.fmt)) vs = h("span", { class: "vs eq" }, "Same as league average");
-          else {
-            const good = m.better === "high" ? v > lgv : v < lgv;
-            vs = h("span", { class: "vs " + (good ? "up" : "dn") },
-              good ? "Better than league average" : "Worse than league average");
-          }
-        }
+      if (lgv != null && v != null) lg = h("span", { class: "lg" }, "League average: " + fmt(lgv, m.fmt));
+      const rk = m.better && !thin && row.ranks ? row.ranks[m.key] : null;
+      if (rk) {
+        const [rank, n, tied, tier] = rk;
+        vs = h("span", { class: "vs " + tier },
+          `${tied ? "T-" : ""}${ordinal(rank)} out of ${n}${noun === "teams" ? "" : " " + noun}`);
       }
       const smp = thin
         ? `Only ${sampleText(m.sample, n)}. Needs ${m.min.toLocaleString("en-US")} before this means much.`

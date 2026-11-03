@@ -25,6 +25,7 @@ body { margin: 0; }
   --shamrock:    #4cae6b;
   --better:      #4ade80;
   --worse:       #ff6b6b;
+  --middle:      #6cb4ff;
 }
 body {
   background: var(--plane);
@@ -93,9 +94,15 @@ input[type="search"] { width: min(420px, 100%); box-sizing: border-box; }
 .stat .lg { font-size: 13.5px; color: var(--ink-2); }
 /* Better or worse than the league average: a badge, so it reads at a glance. */
 .stat .vs { align-self: flex-start; font-size: 13px; font-weight: 650; line-height: 1.3; padding: 3px 10px; border-radius: 999px; border: 1px solid; }
-.stat .vs.up { color: var(--better); background: color-mix(in srgb, var(--better) 14%, var(--surface)); border-color: color-mix(in srgb, var(--better) 45%, var(--surface)); }
-.stat .vs.dn { color: var(--worse); background: color-mix(in srgb, var(--worse) 14%, var(--surface)); border-color: color-mix(in srgb, var(--worse) 45%, var(--surface)); }
-.stat .vs.eq { color: var(--ink-2); background: var(--chip); border-color: var(--ring); }
+/* Rank badges by third. Text on its tinted fill: green 6.6:1, blue 5.5:1, red 4.5:1. */
+.stat .vs { font-variant-numeric: tabular-nums; }
+.stat .vs.top { color: var(--better); background: color-mix(in srgb, var(--better) 14%, var(--surface)); border-color: color-mix(in srgb, var(--better) 45%, var(--surface)); }
+.stat .vs.mid { color: var(--middle); background: color-mix(in srgb, var(--middle) 14%, var(--surface)); border-color: color-mix(in srgb, var(--middle) 45%, var(--surface)); }
+.stat .vs.bot { color: var(--worse); background: color-mix(in srgb, var(--worse) 14%, var(--surface)); border-color: color-mix(in srgb, var(--worse) 45%, var(--surface)); }
+.legend .key { font-weight: 650; }
+.legend .key.top { color: var(--better); }
+.legend .key.mid { color: var(--middle); }
+.legend .key.bot { color: var(--worse); }
 .stat .d { font-size: 13px; color: var(--muted); }
 .stat .smp { margin-top: auto; padding-top: 4px; font-size: 12.5px; color: var(--muted); }
 .stat.thin .v { color: var(--muted); }

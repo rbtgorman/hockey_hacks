@@ -102,6 +102,18 @@ Updated 2026-11-03 (v1.3 live).
 - **Team and player profile pages** are live (`c5ee1ae`): the "Teams & players" tab,
   `team.html` and `player.html`, built by `export/profiles.py` from the stat list in
   `export/profile_metrics.py`.
+- **Profile ranks** (owner's rules, 2026-11-03): each stat with a better direction shows a
+  badge like "28th out of 32" or "45th out of 212 forwards" under "League average: X".
+  `profile_metrics.rank_rows` works them out at export time and stores
+  `ranks: {key: [rank, pool, tied, tier]}` in every season row (schema 2); the browser only
+  reads them. 1st is best (lowest is 1st for 'low' stats). Teams rank against that season's
+  teams, players against their group (F, D, G) on their season row. Only entries meeting
+  the stat's minimum are in the pool, for teams too: owner chose this on 2026-11-03,
+  when 10-12 teams were under the special-teams minimums early in 2026-27. Fewer than 10
+  qualifiers means no rank. Ties at the shown precision share the better rank ("T-12th");
+  `shown()` copies the page's rounding exactly. Thirds: k = round(n/3), top rank <= k,
+  bottom rank > n - k (11/10/11 at 32): green #4ade80, blue #6cb4ff, red #ff6b6b. Measured
+  badge contrast in Chrome: 6.59, 5.44 and 4.54:1, so red has almost no room to spare.
 
 ## Waiting on the owner
 

@@ -19,7 +19,8 @@ A METRICS entry:
     league    'pooled' = the metric computed on everyone's counts added up,
               'mean' = average of every team's (or player's) value, None = no
               league figure (plain counts like games played)
-    better    'high' | 'low' | None, for colouring against the league figure
+    better    'high' | 'low' | None: which way is good. Only metrics with a
+              direction get a rank (see rank_rows below).
     calc      counts -> value, or None when it can't be computed
 
 Like export/period_math.py, this file imports nothing outside the standard
@@ -28,8 +29,9 @@ library so tests/test_profile_metrics.py runs in CI with no dependencies.
 from __future__ import annotations
 
 import math
+from decimal import ROUND_HALF_UP, Decimal
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # 2: season rows carry 'ranks'
 
 # ------------------------------------------------------------- strength
 def parse_strength(state: str | None) -> tuple[int, int] | None:
@@ -284,6 +286,83 @@ def league_values(entity: str, count_rows: list[dict]) -> dict:
             vals = [m["calc"](r) for r in count_rows]
             vals = [v for v in vals if v is not None]
             out[m["key"]] = sum(vals) / len(vals) if vals else None
+    return out
+
+
+# ----------------------------------------------------------------- ranks
+# Each entity-season is ranked against its pool: the same season and, for
+# players, the same group (F, D or G). Only entities whose sample meets the
+# metric's min are in the pool or get a rank, and with fewer than MIN_POOL in
+# the pool nobody gets one. 1st is best; for 'low' metrics the lowest is 1st.
+# Values that look the same on the page share the better rank ("T-12th").
+MIN_POOL = 10
+
+
+def shown(v: float, fmt: str):
+    """The value exactly as the page shows it, so ties match what people see.
+
+    Mirrors fmt() in site/profiles.js on the value as stored in the JSON (4
+    decimals): Math.round for int, min and signed (signed to 0.1), toFixed for
+    dec1, dec2 and pct (pct on v * 100). toFixed rounds the exact binary value
+    and goes away from zero on a true tie, which is Decimal's ROUND_HALF_UP.
+    """
+    v = round(float(v), 4)
+    if fmt in ("int", "min"):
+        return math.floor(v + 0.5)
+    if fmt == "signed":
+        return math.floor(v * 10 + 0.5) / 10
+    places = {"dec1": "0.1", "dec2": "0.01", "pct": "0.1"}.get(fmt, "0.0001")
+    x = v * 100 if fmt == "pct" else v
+    return Decimal(x).quantize(Decimal(places), rounding=ROUND_HALF_UP)
+
+
+def tier(rank: int, n: int) -> str:
+    """'top', 'mid' or 'bot' third. With k = round(n / 3): top is rank <= k,
+    bottom is rank > n - k. For 32 that's 11 / 10 / 11."""
+    k = round(n / 3)
+    if rank <= k:
+        return "top"
+    if rank > n - k:
+        return "bot"
+    return "mid"
+
+
+def rank_values(values: dict, better: str) -> dict:
+    """{id: value} -> {id: [rank, pool size, tied (0/1), tier]}. Values should
+    already be at shown() precision. Ties share the better rank."""
+    n = len(values)
+    if n < MIN_POOL:
+        return {}
+    sign = -1 if better == "high" else 1
+    order = sorted(values, key=lambda i: sign * values[i])
+    out, counts = {}, {}
+    for v in values.values():
+        counts[v] = counts.get(v, 0) + 1
+    rank = 0
+    prev = object()
+    for pos, i in enumerate(order, start=1):
+        if values[i] != prev:
+            rank, prev = pos, values[i]
+        out[i] = [rank, n, int(counts[values[i]] > 1), tier(rank, n)]
+    return out
+
+
+def rank_rows(entity: str, rows: dict) -> dict:
+    """{id: counts} for one pool -> {id: {metric key: [rank, n, tied, tier]}}."""
+    out = {i: {} for i in rows}
+    for m in metrics_for(entity):
+        if not m["better"]:
+            continue
+        vals = {}
+        for i, c in rows.items():
+            if m["min"] > 0 and c[m["sample"]] < m["min"]:
+                continue
+            v = m["calc"](c)
+            if v is None:
+                continue
+            vals[i] = shown(v, m["fmt"])
+        for i, r in rank_values(vals, m["better"]).items():
+            out[i][m["key"]] = r
     return out
 
 

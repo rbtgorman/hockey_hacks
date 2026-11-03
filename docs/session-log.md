@@ -5,6 +5,13 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-03
 
+- PC: profile badges are now real ranks ("28th out of 32", "45th out of 212 forwards"),
+  colored by third (green, blue, red), worked out in `export/profiles.py` and stored in
+  every season row. Only qualifiers are ranked, teams included (the owner's call, since
+  10-12 teams are under the special-teams minimums so far in 2026-27). One-line
+  explanation on the team, player and methods pages. New rank tests in
+  `tests/test_profile_metrics.py`; a Node cross-check of all 31,439 ranks against the page's
+  own formatting found 0 mismatches. Checked at 320, 375 and 1440px.
 - Cloud: profile stat cards now say "Better than league average" or "Worse than league
   average" in a green or red badge, instead of a small orange or blue "better"/"worse".
   It compares with the league average by any amount; it isn't a rank.

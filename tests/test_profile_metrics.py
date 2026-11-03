@@ -83,6 +83,78 @@ def main():
     if not check("registry has no calc", any("calc" in m for ms in reg.values() for m in ms), False):
         failures += 1
 
+    # ------------------------------------------------------------ ranks
+    def team_with(**kw):
+        c = {k: 0.0 for k in pm.TEAM_COUNTS}
+        c.update(gp=20, toi_5v5=900.0, toi_pp=100.0, toi_pk=100.0)
+        c.update(kw)
+        return c
+
+    # Direction: most goals is 1st for goals per game, fewest is 1st against
+    teams = {i: team_with(gf=20 + i, ga=60 - i) for i in range(32)}
+    r = pm.rank_rows("team", teams)
+    if not check("high is better: most goals 1st", r[31]["gf_pg"][0], 1): failures += 1
+    if not check("high is better: fewest goals 32nd", r[0]["gf_pg"][0], 32): failures += 1
+    if not check("low is better: fewest against 1st", r[31]["ga_pg"][0], 1): failures += 1
+    if not check("low is better: most against 32nd", r[0]["ga_pg"][0], 32): failures += 1
+    if not check("pool size", r[0]["gf_pg"][1], 32): failures += 1
+    if not check("no rank for games", "gp" in r[0], False): failures += 1
+    if not check("no rank for PP minutes", "toi_pp" in r[0], False): failures += 1
+
+    # 11 / 10 / 11 at 32
+    tiers = [pm.tier(k, 32) for k in range(1, 33)]
+    if not check("32: top third is 11", tiers.count("top"), 11): failures += 1
+    if not check("32: middle third is 10", tiers.count("mid"), 10): failures += 1
+    if not check("32: bottom third is 11", tiers.count("bot"), 11): failures += 1
+    if not check("32: 11th top, 12th mid", (pm.tier(11, 32), pm.tier(12, 32)), ("top", "mid")):
+        failures += 1
+    if not check("32: 21st mid, 22nd bot", (pm.tier(21, 32), pm.tier(22, 32)), ("mid", "bot")):
+        failures += 1
+    if not check("tier stored with rank", r[31]["gf_pg"][3], "top"): failures += 1
+
+    # Ties at the precision shown share the better rank. 2.004 and 2.001 both
+    # show as 2.00; two teams sit above them.
+    tied = {i: team_with(gf=20 * (1 + i / 1000)) for i in range(10)}
+    tied.update({"a": team_with(gf=50.0), "b": team_with(gf=48.0),
+                 "x": team_with(gf=40.08), "y": team_with(gf=40.02)})
+    r = pm.rank_rows("team", tied)
+    if not check("tie shares the better rank", (r["x"]["gf_pg"][0], r["y"]["gf_pg"][0]), (3, 3)):
+        failures += 1
+    if not check("tie is flagged", (r["x"]["gf_pg"][2], r["y"]["gf_pg"][2]), (1, 1)): failures += 1
+    if not check("next rank skips past the tie", r[9]["gf_pg"][0], 5): failures += 1
+    if not check("untied not flagged", r["a"]["gf_pg"][2], 0): failures += 1
+    if not check("pct ties at 0.1%", pm.shown(0.5003, "pct") == pm.shown(0.5001, "pct"), True):
+        failures += 1
+    if not check("pct differs at 0.1%", pm.shown(0.5008, "pct") == pm.shown(0.5001, "pct"), False):
+        failures += 1
+    if not check("dec2 like toFixed: 2.675 is 2.67 in binary", str(pm.shown(2.675, "dec2")), "2.67"):
+        failures += 1
+    if not check("signed shows half up", pm.shown(1.25, "signed"), 1.3): failures += 1
+
+    # Players below a metric's minimum aren't in the pool and get no rank
+    def skater(toi, att, goals):
+        c = {k: 0.0 for k in pm.SKATER_COUNTS}
+        c.update(gp=20, toi=toi, toi_5v5=toi * 0.8, att=att, goals=goals, ixg=att * 0.07)
+        return c
+    pool = {i: skater(300.0, 60, i) for i in range(12)}
+    pool["short"] = skater(50.0, 60, 30)      # under 100 minutes: out of the per-60 pools
+    r = pm.rank_rows("skater", pool)
+    if not check("below minimum gets no rank", "goals60" in r["short"], False): failures += 1
+    if not check("below minimum not in the pool", r[0]["goals60"][1], 12): failures += 1
+    if not check("best qualifier is 1st, not beaten by the short sample",
+                 r[11]["goals60"][0], 1): failures += 1
+    # Same player still ranked where it qualifies (goals minus xG needs 50 shots)
+    if not check("ranked where it qualifies", "g_minus_ixg" in r["short"], True): failures += 1
+
+    # Fewer than 10 qualifiers: nobody gets a rank for that metric
+    small = {i: skater(300.0, 60, i) for i in range(9)}
+    small.update({f"s{i}": skater(50.0, 60, i) for i in range(5)})
+    r = pm.rank_rows("skater", small)
+    if not check("9 qualifiers: no ranks", any("goals60" in v for v in r.values()), False):
+        failures += 1
+    if not check("14 qualify for another metric: ranked", r[0]["g_minus_ixg"][1], 14):
+        failures += 1
+
     print(f"\n{failures} failure(s)")
     sys.exit(1 if failures else 0)
 

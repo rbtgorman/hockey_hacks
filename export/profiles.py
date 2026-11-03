@@ -10,6 +10,10 @@ WHAT IT WRITES (site/data/)
                             only the games each one played for this team
     players/<id>.json       one player, every season: counts, metrics, shot zones
 
+Every season row also carries "ranks": {metric: [rank, pool size, tied, tier]}
+from profile_metrics.rank_rows, for metrics with a better direction. The pages
+only display them.
+
 A file is only rewritten when its contents change, so an in-season update
 touches the teams and players who played since the last run. Only the index
 carries a timestamp. Arizona and Utah are separate teams with separate files.
@@ -370,6 +374,15 @@ def main() -> None:
                                 for z in pm.ZONE_KEYS}),
         }
 
+        # Ranks: teams among the season's teams, skaters among their group
+        # (F or D), goalies among goalies, each only against qualifiers.
+        ranks = {"team": pm.rank_rows("team", d["team"]), "skater": {}, "goalie": {}}
+        for grp in ("F", "D"):
+            ranks["skater"].update(pm.rank_rows(
+                "skater", {p: c for p, c in d["skater"].items()
+                           if pos_group(positions.get(p)) == grp}))
+        ranks["goalie"] = pm.rank_rows("goalie", d["goalie"])
+
         for kind in ("skater", "goalie"):
             for p, c in d[kind].items():
                 vals = pm.compute(kind, c)
@@ -379,6 +392,7 @@ def main() -> None:
                     "teams": [[t, n] for t, n in teams],
                     "counts": counts_out(c),
                     "values": {k: r4(v) for k, v in vals.items()},
+                    "ranks": ranks[kind].get(p, {}),
                     "zones": zones_out(d["zones"].get(p, zero_zones())),
                 })
 
@@ -402,6 +416,7 @@ def main() -> None:
                 "season": season, "label": label,
                 "counts": counts_out(c),
                 "values": {k: r4(v) for k, v in pm.compute("team", c).items()},
+                "ranks": ranks["team"].get(t, {}),
                 "zones_for": zones_out(d["team_zf"].get(t, zero_zones())),
                 "zones_against": zones_out(d["team_za"].get(t, zero_zones())),
                 "skater_columns": SKATER_ROSTER,

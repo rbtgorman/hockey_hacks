@@ -99,7 +99,8 @@
     if (seasonInProgress(index, season))
       $("notes").append(h("p", { class: "note warn" }, h("strong", {}, "This season is still going. "),
         `${row.counts.gp} games in, so these will move a lot.`));
-    renderTiles($("tiles"), metrics, row, lg);
+    $("notes").append(rankLegend(lgName));
+    renderTiles($("tiles"), metrics, row, lg, lgName);
     $("zones-head").textContent = p.kind === "goalie" ? "Where the shots against came from" : "Where the shots come from";
     renderZones($("zones"), index.zones, row.zones, null, p.kind === "goalie"
       ? "Unblocked shots faced with this goalie in net, empty nets left out. Goals are goals allowed."
