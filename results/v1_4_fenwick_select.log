@@ -1,0 +1,122 @@
+/home/bobert/my-projects/hockey-hacks/model/train_v1_fenwick.py:116: UserWarning: pandas only supports SQLAlchemy connectable (engine/connection) or database string URI or sqlite3 DBAPI2 connection. Other DBAPI2 objects are not tested. Please consider using SQLAlchemy.
+  df = pd.read_sql(query, conn)
+============================================================
+v1.4-fenwick, stage select
+============================================================
+Loaded 495,703 unblocked attempts from shot_features_fenwick, 2022-10-07 to 2026-10-28
+Seasons present: [20222023, 20232024, 20242025, 20252026, 20262027]
+
+Event mix by season (share of rows):
+event_type   goal  missed-shot  shot-on-goal
+season                                      
+20222023    0.072        0.283         0.645
+20232024    0.071        0.306         0.624
+20242025    0.071        0.331         0.597
+20252026    0.073        0.338         0.589
+20262027    0.075        0.333         0.592
+Leakage check: 5,770/5,794 games (99.6%) have varying score_diff across shots — expect >80% for non-leaky in-game state.
+select_train:  2022-10-07 00:00:00 to 2026-01-09 00:00:00, 420,334 attempts, 7.16% goals
+select_val:    2026-01-10 00:00:00 to 2026-06-14 00:00:00, 58,797 attempts, 7.35% goals
+refit_train:   2022-10-07 00:00:00 to 2026-06-14 00:00:00, 479,131 attempts, 7.18% goals
+test:          (not loaded into anything at this stage)
+
+--- v1.3 as it was chosen (no constraint, trees by AUC) on select val ---
+  v1.3 recipe (291 trees)                  log loss 0.22100  AUC 0.7864  O/E 0.989  slope 1.013  tip-in O/E 0.840
+
+--- Settings search: 50 tries, distance constraint on ---
+  try  1: log loss 0.22129  AUC 0.7854   296 trees    5.6 s
+  try  2: log loss 0.22122  AUC 0.7857   428 trees    6.5 s
+  try  3: log loss 0.22124  AUC 0.7858   215 trees    5.8 s
+  try  4: log loss 0.22095  AUC 0.7866   831 trees   11.3 s
+  try  5: log loss 0.22099  AUC 0.7865  1517 trees   15.7 s
+  try  6: log loss 0.22119  AUC 0.7859   831 trees    8.8 s
+  try  7: log loss 0.22182  AUC 0.7837   139 trees    3.7 s
+  try  8: log loss 0.22140  AUC 0.7853   489 trees    8.1 s
+  try  9: log loss 0.22133  AUC 0.7857   341 trees    8.7 s
+  try 10: log loss 0.22086  AUC 0.7870  1209 trees   22.3 s
+  try 11: log loss 0.22116  AUC 0.7859   362 trees    8.0 s
+  try 12: log loss 0.22180  AUC 0.7842   260 trees    8.0 s
+  try 13: log loss 0.22155  AUC 0.7848   287 trees   10.0 s
+  try 14: log loss 0.22110  AUC 0.7860   604 trees   13.1 s
+  try 15: log loss 0.22101  AUC 0.7865  1658 trees   19.3 s
+  try 16: log loss 0.22130  AUC 0.7858   184 trees    4.5 s
+  try 17: log loss 0.22094  AUC 0.7863  1322 trees   16.7 s
+  try 18: log loss 0.22134  AUC 0.7855   226 trees    3.8 s
+  try 19: log loss 0.22113  AUC 0.7859   516 trees    6.6 s
+  try 20: log loss 0.22096  AUC 0.7866   985 trees   16.9 s
+  try 21: log loss 0.22124  AUC 0.7861  1224 trees   23.7 s
+  try 22: log loss 0.22133  AUC 0.7853   230 trees    5.6 s
+  try 23: log loss 0.22101  AUC 0.7863  1471 trees   21.2 s
+  try 24: log loss 0.22087  AUC 0.7868   930 trees   13.4 s
+  try 25: log loss 0.22090  AUC 0.7867  1212 trees   14.7 s
+  try 26: log loss 0.22084  AUC 0.7868   722 trees   12.1 s
+  try 27: log loss 0.22158  AUC 0.7844   139 trees    4.2 s
+  try 28: log loss 0.22095  AUC 0.7865   539 trees   10.2 s
+  try 29: log loss 0.22098  AUC 0.7862   466 trees    6.3 s
+  try 30: log loss 0.22121  AUC 0.7856   426 trees   12.4 s
+  try 31: log loss 0.22071  AUC 0.7871  1734 trees   16.2 s
+  try 32: log loss 0.22088  AUC 0.7871  1581 trees   14.4 s
+  try 33: log loss 0.22119  AUC 0.7861   268 trees    4.9 s
+  try 34: log loss 0.22095  AUC 0.7864   836 trees   13.0 s
+  try 35: log loss 0.22108  AUC 0.7864   797 trees    9.0 s
+  try 36: log loss 0.22132  AUC 0.7855   185 trees    4.8 s
+  try 37: log loss 0.22092  AUC 0.7869   314 trees    5.7 s
+  try 38: log loss 0.22102  AUC 0.7864   584 trees    8.3 s
+  try 39: log loss 0.22097  AUC 0.7865   834 trees   12.2 s
+  try 40: log loss 0.22123  AUC 0.7855   132 trees    5.0 s
+  try 41: log loss 0.22128  AUC 0.7862   555 trees   10.4 s
+  try 42: log loss 0.22094  AUC 0.7863   561 trees    8.6 s
+  try 43: log loss 0.22071  AUC 0.7874   692 trees    8.8 s
+  try 44: log loss 0.22116  AUC 0.7860   874 trees    8.5 s
+  try 45: log loss 0.22099  AUC 0.7867  1037 trees   10.3 s
+  try 46: log loss 0.22144  AUC 0.7850   230 trees    4.5 s
+  try 47: log loss 0.22083  AUC 0.7869  4016 trees   31.1 s
+  try 48: log loss 0.22136  AUC 0.7851   514 trees   11.9 s
+  try 49: log loss 0.22168  AUC 0.7844   161 trees    4.1 s
+  try 50: log loss 0.22117  AUC 0.7862  1306 trees   17.1 s
+
+Best: try 31, log loss 0.22071, 1734 trees
+{
+  "learning_rate": 0.0313799986210969,
+  "num_leaves": 11,
+  "max_depth": -1,
+  "min_child_samples": 153,
+  "reg_alpha": 2.265506976212656,
+  "reg_lambda": 0.0159687861464858,
+  "subsample": 0.9378552667752992,
+  "subsample_freq": 1,
+  "colsample_bytree": 0.5519592720795523,
+  "max_bin": 511,
+  "monotone_constraints_method": "intermediate"
+}
+
+Top 10 tries:
+ try  log_loss     auc  n_trees  learning_rate  num_leaves  min_child_samples  max_depth monotone_constraints_method
+  31   0.22071 0.78710     1734        0.03138          11                153         -1                intermediate
+  43   0.22071 0.78745      692        0.05446          21                 67          6                intermediate
+  47   0.22083 0.78689     4016        0.01055           9                339         -1                       basic
+  26   0.22084 0.78677      722        0.01846          65                174          8                       basic
+  10   0.22086 0.78703     1209        0.01097         218                211          8                    advanced
+  24   0.22087 0.78679      930        0.02898         130                 41          6                    advanced
+  32   0.22088 0.78705     1581        0.02558          12                 18         10                    advanced
+  25   0.22090 0.78671     1212        0.02263          35                 25          8                intermediate
+  37   0.22092 0.78693      314        0.04956         167                 35          6                    advanced
+  42   0.22094 0.78635      561        0.02734          50                104          8                intermediate
+
+--- What the distance constraint costs (same split, log loss) ---
+         settings  free_log_loss  constrained_log_loss  free_trees  constrained_trees    cost  free_shots_with_a_rise  free_largest_rise
+    v1.3 settings        0.22100               0.22129         281                296 0.00029                    2000            0.09316
+winner's settings        0.22065               0.22071        1771               1734 0.00006                    2000            0.05489
+
+--- Distance check on the winner (2,000 select-val shots, 0-200 ft) ---
+  {'shots': 2000, 'steps': 400000, 'rises': 0, 'shots_with_a_rise': 0, 'largest_rise': 0.0}
+
+--- Calibration, 5-fold cross-fit on select val (folds by game) ---
+  method     auc  log_loss     o_e  cal_slope
+    none 0.78710   0.22071 0.98346    0.99459
+   platt 0.78697   0.22074 1.00001    0.99854
+isotonic 0.78502   0.22133 0.99999    0.97341
+
+Calibration kept: none (raw xG had the lowest log loss)
+
+Frozen in /home/bobert/my-projects/hockey-hacks/results/v1_4-fenwick/selection.json. 2026-27 not touched.

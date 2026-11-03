@@ -1,0 +1,116 @@
+{
+  "version": "v1.4-fenwick",
+  "description": "v1.3-fenwick's features and recency weights (half-life 1 season), settings from a 50-try search on late 2025-26 log loss, xG never rises with distance; calibration: none. Tested on 2026-27.",
+  "generated_at_utc": "2026-11-03T21:07:02+00:00",
+  "git_commit": "a4a537f",
+  "git_dirty": true,
+  "data": {
+    "population": "fenwick",
+    "table": "shot_features_fenwick",
+    "n_shots": 495703,
+    "seasons": [
+      20222023,
+      20232024,
+      20242025,
+      20252026,
+      20262027
+    ],
+    "split": {
+      "select_train": "2022-23 to 2024-25 + 2025-26 before 2026-01-10 00:00:00",
+      "select_val": "2025-26 from 2026-01-10 00:00:00",
+      "refit_train": [
+        20222023,
+        20232024,
+        20242025,
+        20252026
+      ],
+      "test": 20262027
+    }
+  },
+  "splits": {
+    "train": {
+      "auc": 0.7930291228004205,
+      "pr_auc": 0.2863250798454614,
+      "log_loss": 0.2153294969844077,
+      "brier": 0.05886803315458391,
+      "n": 479131,
+      "goal_rate": 0.07179247429199948,
+      "mean_pred": 0.07204162979920639,
+      "observed_rate": 0.07179247429199948,
+      "o_e": 0.9965415065164217,
+      "citl": 0.00024915550720691626,
+      "cal_intercept": 0.09925540605606754,
+      "cal_slope": 1.0488009074637834
+    },
+    "val": {
+      "auc": 0.7870970834390653,
+      "pr_auc": 0.2800536706357428,
+      "log_loss": 0.2207070437159256,
+      "brier": 0.06044473239766631,
+      "n": 58797,
+      "goal_rate": 0.07349014405496879,
+      "mean_pred": 0.07472631663336476,
+      "observed_rate": 0.07349014405496879,
+      "o_e": 0.9834573329171153,
+      "citl": 0.0012361725783959776,
+      "cal_intercept": -0.031712915149088826,
+      "cal_slope": 0.9945944054922539
+    },
+    "test": {
+      "auc": 0.7833672491547914,
+      "pr_auc": 0.2848391812903489,
+      "log_loss": 0.225645995302009,
+      "brier": 0.06195271540387966,
+      "n": 16572,
+      "goal_rate": 0.07548877624909486,
+      "mean_pred": 0.0755753174897657,
+      "observed_rate": 0.07548877624909486,
+      "o_e": 0.9988549007328674,
+      "citl": 8.65412406708399e-05,
+      "cal_intercept": 0.01596226048348477,
+      "cal_slope": 1.0082973662439825
+    }
+  },
+  "calibration": {
+    "n_bins": 10,
+    "max_abs_gap": 0.0071893534203388565,
+    "binning": "equal-count (qcut) on predicted probability"
+  },
+  "hyperparameters": {
+    "learning_rate": 0.0313799986210969,
+    "num_leaves": 11,
+    "max_depth": -1,
+    "min_child_samples": 153,
+    "reg_alpha": 2.265506976212656,
+    "reg_lambda": 0.0159687861464858,
+    "subsample": 0.9378552667752992,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.5519592720795523,
+    "max_bin": 511,
+    "monotone_constraints_method": "intermediate",
+    "n_trees": 1734,
+    "half_life": 1.0,
+    "monotone": "distance_ft -1",
+    "calibration": null
+  },
+  "features": [
+    "distance_ft",
+    "angle_deg",
+    "x_norm",
+    "y_norm",
+    "score_diff",
+    "seconds_since_last_event",
+    "distance_from_last_event_ft",
+    "period_num",
+    "seconds_remaining_in_period",
+    "is_rebound",
+    "is_rush",
+    "empty_net",
+    "is_post_rebound",
+    "last_event_by_shooting_team",
+    "shot_type",
+    "strength_state",
+    "last_event_type"
+  ],
+  "notes": "Test is 2026-27 to date. 'val' is late 2025-26 with the selection fit, which also early-stopped and chose settings there, so it's optimistic."
+}

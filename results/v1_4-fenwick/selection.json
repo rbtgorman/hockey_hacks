@@ -1,0 +1,88 @@
+{
+  "version": "v1.4-fenwick",
+  "settings": {
+    "learning_rate": 0.0313799986210969,
+    "num_leaves": 11,
+    "max_depth": -1,
+    "min_child_samples": 153,
+    "reg_alpha": 2.265506976212656,
+    "reg_lambda": 0.0159687861464858,
+    "subsample": 0.9378552667752992,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.5519592720795523,
+    "max_bin": 511,
+    "monotone_constraints_method": "intermediate"
+  },
+  "n_trees": 1734,
+  "best_try": 31,
+  "select_val_log_loss": 0.2207070437159249,
+  "v1_3_recipe_select_val": {
+    "auc": 0.7863581293127536,
+    "pr_auc": 0.2782937722783191,
+    "log_loss": 0.22099775726128604,
+    "brier": 0.06050963025082448,
+    "n": 58797,
+    "goal_rate": 0.07349014405496879,
+    "mean_pred": 0.07433279815886631,
+    "observed_rate": 0.07349014405496879,
+    "o_e": 0.9886637645189061,
+    "citl": 0.0008426541038975277,
+    "cal_intercept": 0.01288892450459201,
+    "cal_slope": 1.0126974240102957,
+    "tipin_o_e": 0.8404596118060573,
+    "n_trees": 291
+  },
+  "calibration": null,
+  "calibration_table": [
+    {
+      "method": "none",
+      "auc": 0.7870970834390653,
+      "log_loss": 0.2207070437159256,
+      "o_e": 0.9834573329171153,
+      "cal_slope": 0.9945944054922539
+    },
+    {
+      "method": "platt",
+      "auc": 0.7869706511379485,
+      "log_loss": 0.22073581126397876,
+      "o_e": 1.0000147334878164,
+      "cal_slope": 0.9985364785992799
+    },
+    {
+      "method": "isotonic",
+      "auc": 0.7850210485714999,
+      "log_loss": 0.22132849756889708,
+      "o_e": 0.9999904843961517,
+      "cal_slope": 0.9734135648761763
+    }
+  ],
+  "constraint_cost": [
+    {
+      "settings": "v1.3 settings",
+      "free_log_loss": 0.22099720054942149,
+      "constrained_log_loss": 0.22129030858439433,
+      "free_trees": 281,
+      "constrained_trees": 296,
+      "cost": 0.0002931080349728443,
+      "free_shots_with_a_rise": 2000,
+      "free_largest_rise": 0.09316202298300691
+    },
+    {
+      "settings": "winner's settings",
+      "free_log_loss": 0.220650716549523,
+      "constrained_log_loss": 0.2207070437159256,
+      "free_trees": 1771,
+      "constrained_trees": 1734,
+      "cost": 5.6327166402581064e-05,
+      "free_shots_with_a_rise": 2000,
+      "free_largest_rise": 0.05488799688364354
+    }
+  ],
+  "distance_check": {
+    "shots": 2000,
+    "steps": 400000,
+    "rises": 0,
+    "shots_with_a_rise": 0,
+    "largest_rise": 0.0
+  }
+}

@@ -116,14 +116,26 @@ Updated 2026-11-03 (v1.3 live).
   (lightened from #ff6b6b, which only reached 4.54:1). Measured badge contrast in Chrome:
   6.59, 5.44 and 5.04:1.
 
+- **v1.4-fenwick is trained but NOT live** (`model/train_v1_4_fenwick.py`, logs
+  `results/v1_4_fenwick_select.log` and `_final.log`, results in `results/v1_4-fenwick/`).
+  v1.3's features and recency weights, plus a 50-try settings search (best: try 31, 11
+  leaves, 1734 trees, `search.csv`), and xG can never go up with distance (monotone
+  constraint, checked: 0 rises over 400,000 steps). The constraint costs 0.00006 log loss
+  with the winning settings, 0.00029 with v1.3's (`constraint_cost.csv`). Platt and isotonic
+  calibration both lost on late 2025-26 cross-fit, so there's none
+  (`calibration_check.csv`). Late 2025-26 log loss 0.22071 vs v1.3's 0.22100. One test on
+  2026-27: log loss 0.22565 vs 0.22587, AUC 0.7834 vs 0.7832, O/E 0.999 vs 1.003, tip-in
+  O/E 0.899 vs 0.884 (`test_vs_v1_3.csv`). `shot_xg`, exports and site copy still v1.3.
+
 ## Waiting on the owner
 
-- Nothing right now.
+- Make v1.4 live or not? If yes: add it to `model/score_fenwick.py` MODELS and default,
+  rescore, re-export, point the exports and site copy at v1.4.
 
 ## Next up
 
-1. The rest of "What's next" in the README: tune the model properly (settings search on
-   log loss, xG never rising with distance, a calibration step), then shooters and goalies.
+1. The owner's call on v1.4 (above), then the rest of "What's next" in the README:
+   shooters and goalies.
 
 Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by
 hand on the PC). Each refresh commits a few hundred small files under `site/data/`, and player
