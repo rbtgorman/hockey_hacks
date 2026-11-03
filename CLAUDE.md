@@ -75,7 +75,7 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-03, end of day (v1.3 live; v1.4 trained and tested, not live).
+Updated 2026-11-03, end of day (v1.3 live; v1.4 trained, tested and approved, not live yet).
 
 - **Live model:** v1.3-fenwick (`model/train_v1_3_fenwick.py`, log in
   `results/v1_3_fenwick_train.log`). It's trained on 2022-23 to 2025-26 with recency
@@ -134,15 +134,16 @@ Updated 2026-11-03, end of day (v1.3 live; v1.4 trained and tested, not live).
 
 ## Waiting on the owner
 
-- Make v1.4 live or not? It's trained and tested once on 2026-27 and beat v1.3 on every
-  number, by small margins. If yes: add it to `model/score_fenwick.py` MODELS and default,
-  rescore every shot, re-export (period page, profiles), and rewrite the model tab and
-  `site/methods.html` for v1.4. Don't do any of that until the owner says so.
+- Nothing right now.
 
 ## Next up
 
-1. The owner's call on v1.4 (above), then the rest of "What's next" in the README:
-   shooters and goalies.
+1. v1.4 is approved (owner, 2026-11-03). Make it live, rescore every shot, re-export, and
+   update the model tab and methods page. That means: add it to `model/score_fenwick.py`
+   MODELS and make it the default, rescore into `shot_xg`, re-export (period page,
+   profiles), and rewrite the model tab in `site/index.html` and `site/methods.html` for
+   v1.4 from `results/v1_4-fenwick/`.
+2. Then the rest of "What's next" in the README: shooters and goalies.
 
 Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by
 hand on the PC). Each refresh commits a few hundred small files under `site/data/`, and player

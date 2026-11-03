@@ -5,6 +5,8 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-03
 
+- PC: the owner approved v1.4. Making it live is now first under "Next up" in CLAUDE.md;
+  not done yet.
 - PC: end of day. CLAUDE.md and this log checked; v1.4 trained and tested, not live,
   waiting on the owner.
 - PC: trained v1.4-fenwick, not live. 50-try settings search on late 2025-26 log loss,
