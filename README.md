@@ -19,7 +19,7 @@ So I'm building it in order, and testing each piece before anything gets stacked
 
 - **Shots:** every unblocked attempt (goals, saves and misses; analytics people call this Fenwick). Blocked shots and shootouts are out.
 - **Model:** LightGBM (gradient-boosted trees) on 17 inputs: distance, angle, where on the ice, shot type, strength (5-on-5, PP and so on), empty net, score, period and time left, what happened right before (the play, which team made it, how long ago and how far away), rebounds, rebounds off the post, and rushes.
-- **Split:** always by season, never random. v1.2 trains on 2022-24 and uses 2024-25 to pick how many trees to use, then refits on 2022-25 and gets tested on all of 2025-26. Games from 2026-27 are a forward check.
+- **Split:** always by season, never random. v1.3 learns from 2022-23 through 2025-26 and gets tested on 2026-27, which it never saw. Recent seasons count more: each season back counts half as much (2025-26 full, 2024-25 half, and so on), because the NHL started calling a lot more shots tip-ins in 2025-26. That beat the other fix, flagging which era a shot is from. The pick was made on the second half of 2025-26, so 2026-27 stayed untouched until the final test.
 - **Leak check:** every run confirms the score changes within games. If final scores had leaked into the inputs, it wouldn't.
 
 ## Results
@@ -30,14 +30,15 @@ The latest versions, from [results/leaderboard.md](results/leaderboard.md):
 |---|---|---|---|---|---|
 | v1-fenwick | First model on unblocked shots | 2024-25 | 0.7661 | 0.0130 | 1.031 |
 | v1.1-fenwick | + rebounds off the post | 2025-26 | 0.7722 | 0.0084 | 0.985 |
-| **v1.2-fenwick** | **+ which team made the play before the shot** | **2025-26** | **0.7788** | **0.0038** | **0.980** |
+| v1.2-fenwick | + which team made the play before the shot | 2025-26 | 0.7788 | 0.0038 | 0.980 |
+| **v1.3-fenwick** | **+ 2025-26, recent seasons count more** | **2026-27 so far** | **0.7832** | **0.0075** | **1.003** |
 
 Quick guide to the columns:
 - **AUC** is how often a goal gets a higher xG than a shot that didn't go in. 0.5 is a coin flip.
 - **Biggest calibration gap:** sort the shots into ten groups by xG. This is the largest difference between predicted and actual scoring in any group.
-- **Goals ÷ predicted:** 1.00 is dead on. v1.2 called for about 2% too many goals.
+- **Goals ÷ predicted:** 1.00 is dead on. v1.3 is within 1% on 2026-27 so far.
 
-AUC only compares within the same test season. My older models that only used shots on goal (v1 through v2.3) are kept in the leaderboard so they still reproduce.
+AUC only compares within the same test season. v1.3's test is only about a month of games (16,572 shots), so its numbers will move. On those same shots v1.2 gets 0.7752 and tip-ins go in 78 times per 100 expected, against 88 for v1.3. My older models that only used shots on goal (v1 through v2.3) are kept in the leaderboard so they still reproduce.
 
 ## Stuff I learned the hard way
 

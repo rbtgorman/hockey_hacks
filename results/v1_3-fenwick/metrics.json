@@ -1,0 +1,104 @@
+{
+  "version": "v1.3-fenwick",
+  "description": "v1.2-fenwick features, trained on 2022-23 to 2025-26 with recency weights, half-life 1 seasons; chosen over the other tip-in fix on late 2025-26; tested on 2026-27.",
+  "generated_at_utc": "2026-11-03T16:20:12+00:00",
+  "git_commit": "220f712",
+  "git_dirty": true,
+  "data": {
+    "population": "fenwick",
+    "table": "shot_features_fenwick",
+    "n_shots": 495703,
+    "seasons": [
+      20222023,
+      20232024,
+      20242025,
+      20252026,
+      20262027
+    ],
+    "split": {
+      "select_train": "2022-23 to 2024-25 + 2025-26 before 2026-01-10 00:00:00",
+      "select_val": "2025-26 from 2026-01-10 00:00:00",
+      "refit_train": [
+        20222023,
+        20232024,
+        20242025,
+        20252026
+      ],
+      "test": 20262027
+    }
+  },
+  "splits": {
+    "train": {
+      "auc": 0.8015331820279314,
+      "pr_auc": 0.2969891665670816,
+      "log_loss": 0.21292398054730313,
+      "brier": 0.0584334168100977,
+      "n": 479131,
+      "goal_rate": 0.07179247429199948,
+      "mean_pred": 0.07203939101900128,
+      "observed_rate": 0.07179247429199948,
+      "o_e": 0.9965724762035165,
+      "citl": 0.0002469167270018058,
+      "cal_intercept": 0.24435895562107438,
+      "cal_slope": 1.1175864846897783
+    },
+    "val": {
+      "auc": 0.7863581293127536,
+      "pr_auc": 0.2782937722783191,
+      "log_loss": 0.22099775726128604,
+      "brier": 0.06050963025082448,
+      "n": 58797,
+      "goal_rate": 0.07349014405496879,
+      "mean_pred": 0.07433279815886631,
+      "observed_rate": 0.07349014405496879,
+      "o_e": 0.9886637645189061,
+      "citl": 0.0008426541038975277,
+      "cal_intercept": 0.01288892450459201,
+      "cal_slope": 1.0126974240102957
+    },
+    "test": {
+      "auc": 0.7832081440128231,
+      "pr_auc": 0.28244891643480463,
+      "log_loss": 0.225869426887455,
+      "brier": 0.06201268313506428,
+      "n": 16572,
+      "goal_rate": 0.07548877624909486,
+      "mean_pred": 0.07526693458770375,
+      "observed_rate": 0.07548877624909486,
+      "o_e": 1.002947398649969,
+      "citl": -0.00022184166139110895,
+      "cal_intercept": 0.06554215571241645,
+      "cal_slope": 1.0294960692355881
+    }
+  },
+  "calibration": {
+    "n_bins": 10,
+    "max_abs_gap": 0.007518434388032569,
+    "binning": "equal-count (qcut) on predicted probability"
+  },
+  "hyperparameters": {
+    "n_trees": 291,
+    "half_life": 1.0,
+    "settings": "v1's; trees by early stopping on late 2025-26, then refit"
+  },
+  "features": [
+    "distance_ft",
+    "angle_deg",
+    "x_norm",
+    "y_norm",
+    "score_diff",
+    "seconds_since_last_event",
+    "distance_from_last_event_ft",
+    "period_num",
+    "seconds_remaining_in_period",
+    "is_rebound",
+    "is_rush",
+    "empty_net",
+    "is_post_rebound",
+    "last_event_by_shooting_team",
+    "shot_type",
+    "strength_state",
+    "last_event_type"
+  ],
+  "notes": "Test is 2026-27 to date, not 2025-26, so test numbers are not comparable with earlier rows. 'val' is late 2025-26 with the selection fit."
+}

@@ -1,0 +1,146 @@
+============================================================
+v1.3-fenwick: recency weighting vs an era flag, chosen without 2026-27
+============================================================
+Loaded 495,703 unblocked attempts from shot_features_fenwick, 2022-10-07 to 2026-10-28
+Seasons present: [20222023, 20232024, 20242025, 20252026, 20262027]
+
+Event mix by season (share of rows):
+event_type   goal  missed-shot  shot-on-goal
+season                                      
+20222023    0.072        0.283         0.645
+20232024    0.071        0.306         0.624
+20242025    0.071        0.331         0.597
+20252026    0.073        0.338         0.589
+20262027    0.075        0.333         0.592
+Leakage check: 5,770/5,794 games (99.6%) have varying score_diff across shots — expect >80% for non-leaky in-game state.
+2025-26 split at 2026-01-10 00:00:00
+select_train:  2022-10-07 00:00:00 to 2026-01-09 00:00:00, 420,334 attempts, 7.16% goals
+select_val:    2026-01-10 00:00:00 to 2026-06-14 00:00:00, 58,797 attempts, 7.35% goals
+refit_train:   2022-10-07 00:00:00 to 2026-06-14 00:00:00, 479,131 attempts, 7.18% goals
+test:          2026-09-29 00:00:00 to 2026-10-28 00:00:00, 16,572 attempts, 7.55% goals
+
+--- Step 1: every candidate on select val (late 2025-26). 2026-27 untouched. ---
+    candidate    family  n_trees  log_loss    auc  brier    o_e  cal_slope  tipin_o_e
+plain retrain reference      324    0.2217 0.7834 0.0606 0.9900     1.0148     0.7953
+  recency h=1   recency      291    0.2210 0.7864 0.0605 0.9887     1.0127     0.8405
+  recency h=2   recency      279    0.2211 0.7858 0.0605 0.9885     1.0213     0.8159
+     era flag       era      367    0.2213 0.7850 0.0605 1.0046     1.0158     0.8146
+
+Winner: recency h=1 (log loss 0.22100; plain retrain 0.22168; runner-up recency h=2 0.22113)
+
+--- Step 2: refit recency h=1 on 2022-26 with 291 trees, test on 2026-27 ---
+  v1.3-fenwick test          AUC 0.7832  log loss 0.2259  Brier 0.0620  O/E 1.003  slope 1.029
+  v1.2-fenwick (saved) test  AUC 0.7752  log loss 0.2282  Brier 0.0624  O/E 0.997  slope 1.028
+  tip-in O/E on 2026-27: v1.3-fenwick 0.884, v1.2 0.775
+
+--- Reliability on 2026-27 ---
+ bin    n  mean_pred  actual_rate  pred_vs_actual_gap
+   0 1658     0.0044       0.0030              0.0014
+   1 1657     0.0116       0.0109              0.0007
+   2 1657     0.0199       0.0223             -0.0025
+   3 1657     0.0298       0.0284              0.0014
+   4 1657     0.0430       0.0404              0.0025
+   5 1657     0.0596       0.0604             -0.0007
+   6 1657     0.0804       0.0742              0.0062
+   7 1657     0.1057       0.1032              0.0025
+   8 1657     0.1404       0.1467             -0.0063
+   9 1658     0.2579       0.2654             -0.0075
+
+--- O/E by segment on 2026-27 ---
+
+  by net
+                   n  oe_v1.3  oe_v1.2
+segment                               
+goalie in net  16424    1.010    1.006
+empty net        148    0.895    0.864
+
+  by strength
+             n  oe_v1.3  oe_v1.2
+segment                         
+5v5      13130    0.993    1.000
+PP        2478    1.040    1.008
+other      541    0.978    0.944
+PK         423    1.045    1.015
+
+  by shot_type
+                  n  oe_v1.3  oe_v1.2
+segment                              
+wrist-snap    11436    1.039    1.054
+slap           1761    0.924    0.933
+tip-in         1660    0.884    0.775
+backhand       1233    0.950    0.945
+deflected       253    1.113    1.112
+wrap-around      97    0.438    0.403
+bat              69    0.806    0.684
+poke             54    0.948    0.971
+between-legs      9    1.020    1.024
+
+  by distance
+             n  oe_v1.3  oe_v1.2
+segment                         
+20-40 ft  5646    0.989    1.028
+<20 ft    5247    1.013    0.980
+40-60 ft  3821    1.083    1.114
+60+ ft    1858    0.852    0.803
+
+  by angle
+              n  oe_v1.3  oe_v1.2
+segment                          
+15-30 deg  4092    0.997    1.006
+0-15 deg   3955    1.040    1.027
+30-45 deg  3933    0.829    0.829
+45-60 deg  2677    1.087    1.069
+60+ deg    1915    1.150    1.124
+
+  by last_event
+                   n  oe_v1.3  oe_v1.2
+segment                               
+unblocked-shot  4766    1.061    1.054
+faceoff         4198    0.951    0.962
+hit             2729    0.942    0.959
+giveaway        2293    0.931    0.887
+blocked-shot    1937    1.019    1.012
+takeaway         637    1.121    1.128
+penalty            7    1.511    0.881
+stoppage           5    1.593    1.605
+
+  by post_rebound
+                  n  oe_v1.3  oe_v1.2
+segment                              
+other         16549    1.004    0.999
+post rebound     23    0.749    0.672
+
+  by turnover
+                               n  oe_v1.3  oe_v1.2
+segment                                           
+other                      13642    1.009    1.010
+giveaway by opponent        1683    0.972    0.909
+giveaway by shooting team    610    0.824    0.826
+takeaway by shooting team    464    1.125    1.123
+takeaway by opponent         173    1.106    1.148
+
+--- LightGBM gain importance ---
+                    feature          gain
+                distance_ft 141977.779927
+                  empty_net  58341.589900
+                  angle_deg  38115.561159
+   seconds_since_last_event  36258.028756
+distance_from_last_event_ft  20720.847167
+                  shot_type  19230.065682
+             strength_state  19197.956612
+                     y_norm  11987.888077
+seconds_remaining_in_period  11919.019544
+                     x_norm   8209.255802
+                 is_rebound   7239.443553
+            last_event_type   4591.735228
+                 score_diff   2317.265023
+                 period_num   1545.981142
+last_event_by_shooting_team   1127.189289
+            is_post_rebound    749.079732
+                    is_rush    254.954688
+
+Results written to /home/bobert/my-projects/hockey-hacks/results/v1_3-fenwick/
+  metrics.json  reliability.csv  calibration.png  feature_importance.csv
+Leaderboard written to /home/bobert/my-projects/hockey-hacks/results/leaderboard.md
+
+Saved model to /home/bobert/my-projects/hockey-hacks/model/artifacts/xg_v1_3_fenwick* and results to /home/bobert/my-projects/hockey-hacks/results/v1_3-fenwick/

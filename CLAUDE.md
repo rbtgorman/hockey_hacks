@@ -75,13 +75,21 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-03.
+Updated 2026-11-03 (v1.3 live).
 
-- **Live model:** v1.2-fenwick (see the README and `results/leaderboard.md`).
-- **'Short' misses** were dropped from `shot_features_fenwick` (`71a1a15`), but the model
-  hasn't been retrained without them, and `shot_xg` still holds about 3,740 rows for them.
-  Always join `shot_xg` through `shot_features_fenwick`. `export/profiles.py` does, and
-  `export/period_tables.py` does as of `50de0a7`.
+- **Live model:** v1.3-fenwick (`model/train_v1_3_fenwick.py`, log in
+  `results/v1_3_fenwick_train.log`). It's trained on 2022-23 to 2025-26 with recency
+  weights (half-life 1 season), and every shot in `shot_xg` is rescored. The choice was
+  made on late 2025-26 (log loss: recency h=1 0.22100, h=2 0.22113, era flag 0.22129,
+  plain retrain 0.22168; `results/v1_3-fenwick/selection.csv`). Only the winner was
+  tested on 2026-27 to date: AUC 0.7832, O/E 1.003, tip-in O/E 0.88 (v1.2 on the same
+  shots: 0.7752, 0.997, 0.78). The exports (period page, profiles) use v1.3.
+- **The site's model tab and `site/methods.html` still describe v1.2** (2025-26 test,
+  167 trees, 364,074 shots, the hardcoded calibration dots, "Where it still struggles").
+  They need rewriting for v1.3.
+- **'Short' misses** were dropped from `shot_features_fenwick` (`71a1a15`). v1.3 never saw
+  them, but `shot_xg` still holds old v1.2 rows for them, so always join `shot_xg` through
+  `shot_features_fenwick`. `export/profiles.py` and `export/period_tables.py` do.
 - **Tip-in check done** (`06ad2ae`, `results/checks/tipins.txt`). Tip-ins used to score
   about as the model expects (goals / xG 1.03 in 2022-23). They fell to 0.79 in 2025-26 and
   0.78 so far in 2026-27. It's league-wide, not a few rinks: 30 of 32 rinks logged more
@@ -93,15 +101,12 @@ Updated 2026-11-03.
 
 ## Waiting on the owner
 
-- **v1.3, yes or no?** On 2026-11-03 the PC session proposed retraining with recent seasons
-  weighted more heavily, training on 2022-23 through 2025-26 and keeping 2026-27 as the test.
-  The other option for the tip-in change is an era flag (before/after 2025-26) instead of
-  recency weighting.
+- Nothing right now.
 
 ## Next up
 
-1. Once the owner decides: train v1.3, rescore every shot (`model.score_fenwick`), then rerun
-   the export steps from `export/refresh.sh`. The period page and profiles update from that.
+1. Rewrite the site's model tab (`site/index.html`) and `site/methods.html` for v1.3, then
+   do the browser check.
 2. After that, the rest of "What's next" in the README.
 
 Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by
