@@ -5,6 +5,9 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-03
 
+- Cloud: profile stat cards now say "Better than league average" or "Worse than league
+  average" in a green or red badge, instead of a small orange or blue "better"/"worse".
+  It compares with the league average by any amount; it isn't a rank.
 - PC: v1.3-fenwick. Recency weighting (half-life 1 season) beat the era flag on late
   2025-26, then only the winner was tested on 2026-27 (AUC 0.7832 vs v1.2's 0.7752, O/E 1.003,
   tip-ins 88 per 100 expected vs 78). Rescored every shot, re-exported the period page and

@@ -23,8 +23,8 @@ body { margin: 0; }
   --good:        #0ca30c;
   --idle:        #8e8e8e;
   --shamrock:    #4cae6b;
-  --above:       #f74902;
-  --below:       #5aa9e6;
+  --better:      #4ade80;
+  --worse:       #ff6b6b;
 }
 body {
   background: var(--plane);
@@ -91,8 +91,11 @@ input[type="search"] { width: min(420px, 100%); box-sizing: border-box; }
 .stat .k { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 600; }
 .stat .v { font-size: 28px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .stat .lg { font-size: 13.5px; color: var(--ink-2); }
-.stat .lg .up { color: var(--above); font-weight: 600; }
-.stat .lg .dn { color: var(--below); font-weight: 600; }
+/* Better or worse than the league average: a badge, so it reads at a glance. */
+.stat .vs { align-self: flex-start; font-size: 13px; font-weight: 650; line-height: 1.3; padding: 3px 10px; border-radius: 999px; border: 1px solid; }
+.stat .vs.up { color: var(--better); background: color-mix(in srgb, var(--better) 14%, var(--surface)); border-color: color-mix(in srgb, var(--better) 45%, var(--surface)); }
+.stat .vs.dn { color: var(--worse); background: color-mix(in srgb, var(--worse) 14%, var(--surface)); border-color: color-mix(in srgb, var(--worse) 45%, var(--surface)); }
+.stat .vs.eq { color: var(--ink-2); background: var(--chip); border-color: var(--ring); }
 .stat .d { font-size: 13px; color: var(--muted); }
 .stat .smp { margin-top: auto; padding-top: 4px; font-size: 12.5px; color: var(--muted); }
 .stat.thin .v { color: var(--muted); }

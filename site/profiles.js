@@ -66,16 +66,18 @@ function renderTiles(root, metrics, row, league) {
       const n = row.counts[m.sample] ?? 0;
       const thin = m.min > 0 && n < m.min;
       const lgv = league ? league[m.key] : null;
-      let lg = null;
+      let lg = null, vs = null;
       if (lgv != null && v != null) {
-        lg = h("span", { class: "lg" }, "League: " + fmt(lgv, m.fmt));
-        // Better or worse, said in words. Only when the sample is big enough
-        // and the two differ at the precision shown.
+        lg = h("span", { class: "lg" }, "League average: " + fmt(lgv, m.fmt));
+        // Better or worse than the league average, by any amount (not a rank).
+        // Only when the sample is big enough and the two differ at the
+        // precision shown.
         if (m.better && !thin) {
-          if (fmt(v, m.fmt) === fmt(lgv, m.fmt)) lg.append(" · same");
+          if (fmt(v, m.fmt) === fmt(lgv, m.fmt)) vs = h("span", { class: "vs eq" }, "Same as league average");
           else {
             const good = m.better === "high" ? v > lgv : v < lgv;
-            lg.append(" · ", h("span", { class: good ? "up" : "dn" }, good ? "better" : "worse"));
+            vs = h("span", { class: "vs " + (good ? "up" : "dn") },
+              good ? "Better than league average" : "Worse than league average");
           }
         }
       }
@@ -86,6 +88,7 @@ function renderTiles(root, metrics, row, league) {
         h("span", { class: "k" }, m.label),
         h("span", { class: "v" }, fmt(v, m.fmt)),
         lg,
+        vs,
         h("span", { class: "d" }, m.define),
         smp ? h("span", { class: "smp" }, smp) : null));
     }
