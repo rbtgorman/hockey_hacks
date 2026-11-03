@@ -5,10 +5,12 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-03
 
+- PC: end of day. CLAUDE.md and this log checked; v1.4 trained and tested, not live,
+  waiting on the owner.
 - PC: trained v1.4-fenwick, not live. 50-try settings search on late 2025-26 log loss,
   xG never rises with distance (checked), calibration tried and dropped. Late 2025-26 log
-  loss 0.22071 vs v1.3's 0.22100; one 2026-27 test 0.22565 vs 0.22587. Waiting on the
-  owner to make it live.
+  loss 0.22071 vs v1.3's 0.22100; one 2026-27 test 0.22565 vs 0.22587 (`f11bd9e`).
+  Nothing rescored or exported; making it live waits on the owner's call.
 - PC: the profile pages' "About the xG here" note now names v1.3-fenwick, says it was
   retrained in November 2026 for the tip-in labelling change and still doesn't know who's
   shooting or who's in net. Red badge lightened to #ff8080 (5.04:1 contrast, was 4.54). Rank

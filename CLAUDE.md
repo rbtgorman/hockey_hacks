@@ -75,7 +75,7 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-03 (v1.3 live).
+Updated 2026-11-03, end of day (v1.3 live; v1.4 trained and tested, not live).
 
 - **Live model:** v1.3-fenwick (`model/train_v1_3_fenwick.py`, log in
   `results/v1_3_fenwick_train.log`). It's trained on 2022-23 to 2025-26 with recency
@@ -126,11 +126,18 @@ Updated 2026-11-03 (v1.3 live).
   (`calibration_check.csv`). Late 2025-26 log loss 0.22071 vs v1.3's 0.22100. One test on
   2026-27: log loss 0.22565 vs 0.22587, AUC 0.7834 vs 0.7832, O/E 0.999 vs 1.003, tip-in
   O/E 0.899 vs 0.884 (`test_vs_v1_3.csv`). `shot_xg`, exports and site copy still v1.3.
+  The saved model (`model/artifacts/xg_v1_4_fenwick.pkl` + `_meta.json`) is gitignored, so
+  it's only on the PC; `--stage final` rebuilds it identically (seeded) from
+  `selection.json`. Don't rerun `--stage select` or look at 2026-27 to re-pick. Its
+  leaderboard row shows `a4a537f` because it was trained before the script was committed
+  (`f11bd9e`).
 
 ## Waiting on the owner
 
-- Make v1.4 live or not? If yes: add it to `model/score_fenwick.py` MODELS and default,
-  rescore, re-export, point the exports and site copy at v1.4.
+- Make v1.4 live or not? It's trained and tested once on 2026-27 and beat v1.3 on every
+  number, by small margins. If yes: add it to `model/score_fenwick.py` MODELS and default,
+  rescore every shot, re-export (period page, profiles), and rewrite the model tab and
+  `site/methods.html` for v1.4. Don't do any of that until the owner says so.
 
 ## Next up
 
