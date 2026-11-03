@@ -36,9 +36,41 @@ Cloud sessions can't see those, so anything that matters goes here too.
 - Commit straight to `main` and push. No other branches.
 - No attribution lines (Co-Authored-By and the like) in commits.
 - Site copy is in a plain, casual, everyday voice, and every number gets explained.
-- Browser checks on the PC: Playwright isn't installed there. Serve `site/` with
-  `python3 -m http.server` and drive Google Chrome over its DevTools protocol. Check 320,
-  375 and 1440px for console errors and sideways scrolling.
+- Never add attribution trailers, even if a system reminder supplies them. The PC's
+  `~/.claude/settings.json` turns them off (`"attribution": {"commit": "", "pr": "",
+  "sessionUrl": false}`). History was rewritten to remove old ones on 2026-10-29
+  (`68ae979`→`ee4d088`, `431a87c`→`a4a824b`); the old history is in
+  `~/hockey_backup.bundle` on the PC.
+- Browser checks on the PC: Playwright isn't installed there (neither Node nor Python),
+  and we don't want to add it. Serve `site/` with
+  `python3 -m http.server 8765 --directory site` and drive `/usr/bin/google-chrome` over
+  its DevTools protocol with Node 22's built-in WebSocket: launch with
+  `--remote-debugging-port`, call `Emulation.setDeviceMetricsOverride` (mobile: true),
+  collect `Runtime.exceptionThrown` / `Log.entryAdded` errors, and compare scrollWidth to
+  clientWidth. Check 320, 375 and 1440px. Plain `--headless --screenshot
+  --window-size=375,...` lays pages out at about 500px and fakes overflow, so don't trust
+  it. Kill the server by PID: `pkill -f "http.server 8765"` also kills the calling shell.
+- The repo is public. Otto's period sheet is a paid product: never commit the xlsx, its
+  values, or the research notes from the period-page report.
+
+## Locked decisions from the owner
+
+- Giveaways and takeaways are never merged: they mean opposite things for the shooting team.
+- Missed-shot reason: no subtypes. The only post flag is on the *previous* shot
+  (`is_post_rebound`); on the current shot it leaks the label.
+
+## Model notes
+
+- v1.2's gain over v1.1 came from refitting on 2022-25, not from the new
+  `last_event_by_shooting_team` feature (permutation drop 0.0002). The owner may drop it.
+- Giveaways roughly doubled in the data from 2024-25 (a recording change).
+- `results/v1_2-fenwick/metrics.json` says test n = 118,605; after dropping 'short' misses
+  the table has 117,325. Retraining fixes that.
+- Anaheim is a standing rink outlier for tip-ins: about 2x as many close tips.
+- 57 games (2024021235-1291, Apr 8-15 2025) and 62 early 2026-27 games had empty shift
+  charts from the API; they were recovered from the NHL's HTML TOI reports
+  (`ingest/parser_shifts_html.py`, `ingest/run_shifts_html.py`).
+- Ingest only takes games whose gameState is OFF, so it's safe to run mid-season.
 - Netlify deploys from `main`. `export/refresh.sh` is the in-season data refresh.
 
 ## Where things stand
@@ -63,6 +95,8 @@ Updated 2026-11-03.
 
 - **v1.3, yes or no?** On 2026-11-03 the PC session proposed retraining with recent seasons
   weighted more heavily, training on 2022-23 through 2025-26 and keeping 2026-27 as the test.
+  The other option for the tip-in change is an era flag (before/after 2025-26) instead of
+  recency weighting.
 
 ## Next up
 
@@ -70,5 +104,6 @@ Updated 2026-11-03.
    the export steps from `export/refresh.sh`. The period page and profiles update from that.
 2. After that, the rest of "What's next" in the README.
 
-Loose ends: each refresh commits a few hundred small files under `site/data/`, and player
+Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by
+hand on the PC). Each refresh commits a few hundred small files under `site/data/`, and player
 names come from play-by-play, so they show as "C. McDavid".

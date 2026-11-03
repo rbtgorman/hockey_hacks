@@ -5,6 +5,8 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-03
 
+- PC: copied everything from Claude's private PC notes into `CLAUDE.md` (house rules,
+  locked decisions, model notes), so cloud sessions see it too.
 - PC: period page xG now joins through `shot_features_fenwick`, so the dropped 'short'
   misses stay out (`50de0a7`). A cloud session made the same fix on a side branch, which
   was merged as PR #1 (`3a02d82`). Merging both copies joined the same tables twice in
