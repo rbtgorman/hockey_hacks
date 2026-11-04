@@ -1,0 +1,97 @@
+{
+  "settings_from": "/home/bobert/my-projects/hockey-hacks/results/v1_4-fenwick/selection.json",
+  "settings": {
+    "learning_rate": 0.0313799986210969,
+    "num_leaves": 11,
+    "max_depth": -1,
+    "min_child_samples": 153,
+    "reg_alpha": 2.265506976212656,
+    "reg_lambda": 0.0159687861464858,
+    "subsample": 0.9378552667752992,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.5519592720795523,
+    "max_bin": 511,
+    "monotone_constraints_method": "intermediate"
+  },
+  "half_life": 1.0,
+  "candidates": [
+    {
+      "candidate": "baseline",
+      "n_trees": 1692,
+      "log_loss": 0.2210745407804782,
+      "auc": 0.7864973573563172,
+      "brier": 0.06056623304562767,
+      "o_e": 0.9829735352288085,
+      "cal_slope": 0.9925542620846957,
+      "tipin_o_e": 0.8562838769484733,
+      "distance_rises": 0
+    },
+    {
+      "candidate": "v1.5-fenwick",
+      "n_trees": 1666,
+      "log_loss": 0.2211036773234107,
+      "auc": 0.7863593485617849,
+      "brier": 0.06057019166139163,
+      "o_e": 0.9746735265350431,
+      "cal_slope": 0.9917525637749413,
+      "tipin_o_e": 0.8539214813547613,
+      "distance_rises": 0
+    },
+    {
+      "candidate": "v1.6-fenwick",
+      "n_trees": 1789,
+      "log_loss": 0.2212291070337358,
+      "auc": 0.7856998070561774,
+      "brier": 0.06058512555505759,
+      "o_e": 0.9749501037524503,
+      "cal_slope": 0.9909186481034166,
+      "tipin_o_e": 0.8522055846979563,
+      "distance_rises": 0
+    }
+  ],
+  "gains": [
+    {
+      "step": "shooter prior (v1.5 - baseline)",
+      "diff": 2.9136542932519286e-05,
+      "lo": -0.00024200926900028947,
+      "hi": 0.00029611215812935993,
+      "share_better": 0.385
+    },
+    {
+      "step": "goalie prior (v1.6 - v1.5)",
+      "diff": 0.00012542971032508535,
+      "lo": -7.707791268258467e-05,
+      "hi": 0.00032016064639162523,
+      "share_better": 0.103
+    },
+    {
+      "step": "both (v1.6 - baseline)",
+      "diff": 0.00015456625325760466,
+      "lo": -0.00012022248779377323,
+      "hi": 0.0004363167548661612,
+      "share_better": 0.13
+    }
+  ],
+  "importance": [
+    {
+      "model": "v1.5-fenwick",
+      "feature": "shooter_prior",
+      "gain_share": 0.020995486670892807,
+      "gain_rank": 11
+    },
+    {
+      "model": "v1.6-fenwick",
+      "feature": "shooter_prior",
+      "gain_share": 0.024194278895980536,
+      "gain_rank": 10
+    },
+    {
+      "model": "v1.6-fenwick",
+      "feature": "goalie_prior",
+      "gain_share": 0.02113815425202804,
+      "gain_rank": 12
+    }
+  ],
+  "pick": "baseline",
+  "n_trees": 1692
+}

@@ -100,6 +100,16 @@ Updated 2026-11-04 (v1.4 live).
   stoppages; check 12 in the build guards it. v1.4 is not retrained; the next
   `refresh.sh` rescores it on the fixed table (2026-27 O/E 0.999 -> 1.001). Penalty shots
   are separate ('penalty' event, typeCode PS) and fine.
+- **Shooter (v1.5) and goalie (v1.6) priors tried, neither won** (2026-11-04, details in
+  `docs/FINDINGS.md`). Priors in `shot_priors_fenwick` (`features/build_priors_fenwick.py`,
+  rerun after every table build if they're used; leak test `tests/test_priors_fenwick.py`).
+  Late 2025-26 log loss: baseline (v1.4 recipe on the fixed table) 0.22107, v1.5 0.22110,
+  v1.6 0.22123; differences inside the noise. The priors do flatten goals / xG across
+  shooter and goalie fifths. 2026-27 not touched; nothing saved, scored or exported.
+  Owner's rules for this work: shooter first, goalie second; baseline = v1.4's settings
+  on the same table; priors from games before the shot's date only, never season-pooled;
+  K on raw counts; no history = league average; keep v1.4's settings, weights and
+  constraint, no search; pick on late 2025-26 log loss, test only the pick on 2026-27 once.
 - **'Short' misses** were dropped from `shot_features_fenwick` (`71a1a15`). v1.3 never saw
   them, but `shot_xg` still holds old v1.2 rows for them, so always join `shot_xg` through
   `shot_features_fenwick`. `export/profiles.py` and `export/period_tables.py` do.
@@ -147,12 +157,14 @@ Updated 2026-11-04 (v1.4 live).
 
 ## Waiting on the owner
 
-- Nothing right now.
+- What to do after v1.5/v1.6 lost: leave v1.4 live; try a finishing prior (goals / xG
+  instead of goals per attempt); or something else. Also whether the stoppage-fixed
+  baseline should replace v1.4 (it can't be judged against v1.4 on late 2025-26, since
+  v1.4's score there includes the leak).
 
 ## Next up
 
-1. Shooters (v1.5) then goalies (v1.6), each measured against v1.4's settings retrained on
-   the fixed table. Owner's rules are in the 2026-11-04 session log entry.
+1. Waiting on the owner (above). The EDGE goalie comparison from FINDINGS is still open.
 2. When 2026-27 has more games, refresh the model tab's test numbers (see above).
 
 Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by

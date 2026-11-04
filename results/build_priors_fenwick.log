@@ -1,0 +1,34 @@
+Loaded 495,703 attempts from shot_features_fenwick
+Shooter priors done (31 s)
+Goalie priors done (64 s)
+Wrote 495,703 rows to shot_priors_fenwick (75 s)
+
+--- shooter_prior by season (1.0 = league average) ---
+           shots  no_history    p10    p50    p90     sd
+season                                                  
+20222023  122066       0.029  0.758  0.976  1.230  0.188
+20232024  121589       0.005  0.704  0.971  1.275  0.219
+20242025  118151       0.004  0.677  0.985  1.322  0.240
+20252026  117325       0.004  0.683  0.996  1.348  0.247
+20262027   16572       0.006  0.708  1.000  1.346  0.245
+K and league mean on the latest date, by bucket:
+             k    mean
+cell                  
+5v5   120.1712  0.0631
+PK    100.0000  0.0740
+PP    153.7468  0.1076
+
+--- goalie_prior by season (1.0 = league average) ---
+           shots  no_history    p10    p50    p90     sd
+season                                                  
+20222023  122066       0.042  0.907  0.999  1.056  0.106
+20232024  121589       0.011  0.923  0.996  1.059  0.065
+20242025  118151       0.013  0.887  0.996  1.082  0.087
+20252026  117325       0.012  0.919  0.996  1.073  0.066
+20262027   16572       0.014  0.932  0.995  1.079  0.060
+K and league mean on the latest date, by zone:
+              k    mean
+cell                   
+high  1708.7467  0.1227
+low   1557.1264  0.0189
+mid    736.0728  0.0719

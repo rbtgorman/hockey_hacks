@@ -1,0 +1,54 @@
+============================================================
+v1.5 / v1.6-fenwick, stage select
+============================================================
+Loaded 495,703 unblocked attempts from shot_features_fenwick, 2022-10-07 to 2026-10-28
+Seasons present: [20222023, 20232024, 20242025, 20252026, 20262027]
+
+Event mix by season (share of rows):
+event_type   goal  missed-shot  shot-on-goal
+season                                      
+20222023    0.072        0.283         0.645
+20232024    0.071        0.306         0.624
+20242025    0.071        0.331         0.597
+20252026    0.073        0.338         0.589
+20262027    0.075        0.333         0.592
+Leakage check: 5,770/5,794 games (99.6%) have varying score_diff across shots — expect >80% for non-leaky in-game state.
+select_train:  2022-10-07 00:00:00 to 2026-01-09 00:00:00, 420,334 attempts, 7.16% goals
+select_val:    2026-01-10 00:00:00 to 2026-06-14 00:00:00, 58,797 attempts, 7.35% goals
+refit_train:   2022-10-07 00:00:00 to 2026-06-14 00:00:00, 479,131 attempts, 7.18% goals
+test:          (not used at this stage)
+
+v1.4's settings (try 31): {'learning_rate': 0.0313799986210969, 'num_leaves': 11, 'max_depth': -1, 'min_child_samples': 153, 'reg_alpha': 2.265506976212656, 'reg_lambda': 0.0159687861464858, 'subsample': 0.9378552667752992, 'subsample_freq': 1, 'colsample_bytree': 0.5519592720795523, 'max_bin': 511, 'monotone_constraints_method': 'intermediate'}
+  baseline (1692 trees)                    log loss 0.22107  AUC 0.7865  O/E 0.983  slope 0.993  tip-in O/E 0.856
+  v1.5-fenwick (1666 trees)                log loss 0.22110  AUC 0.7864  O/E 0.975  slope 0.992  tip-in O/E 0.854
+  v1.6-fenwick (1789 trees)                log loss 0.22123  AUC 0.7857  O/E 0.975  slope 0.991  tip-in O/E 0.852
+
+--- Log loss change on late 2025-26, 95% interval from 1000 game resamples ---
+  shooter prior (v1.5 - baseline)    +0.00003  (-0.00024 to +0.00030), better in 38% of resamples
+  goalie prior (v1.6 - v1.5)         +0.00013  (-0.00008 to +0.00032), better in 10% of resamples
+  both (v1.6 - baseline)             +0.00015  (-0.00012 to +0.00044), better in 13% of resamples
+
+--- Goals / xG by shooter_prior fifth, late 2025-26 ---
+shooter_prior fifth  shots prior range  goals  O/E baseline  O/E v1.5-fenwick  O/E v1.6-fenwick
+                  1  11760   0.36-0.80    471         1.010             0.960             0.959
+                  2  11759   0.80-0.94    771         0.927             0.968             0.967
+                  3  11759   0.94-1.06    923         0.932             0.984             0.987
+                  4  11759   1.06-1.23   1014         0.968             0.957             0.957
+                  5  11760   1.23-1.92   1142         1.077             0.994             0.994
+
+--- Goals / xG by goalie_prior fifth, late 2025-26 ---
+goalie_prior fifth  shots prior range  goals  O/E baseline  O/E v1.5-fenwick  O/E v1.6-fenwick
+                 1  11760   0.77-0.95    594         1.016             1.005             1.044
+                 2  11759   0.95-0.98    824         0.956             0.948             0.976
+                 3  11759   0.98-1.00   1266         0.933             0.924             0.928
+                 4  11759   1.00-1.04   1005         1.003             0.998             0.980
+                 5  11760   1.04-1.27    632         1.072             1.061             1.004
+
+--- Gain importance of the priors ---
+       model       feature  gain_share  gain_rank
+v1.5-fenwick shooter_prior      0.0210         11
+v1.6-fenwick shooter_prior      0.0242         10
+v1.6-fenwick  goalie_prior      0.0211         12
+
+Pick: baseline (log loss 0.22107, 1692 trees)
+Frozen in /home/bobert/my-projects/hockey-hacks/results/v1_5-fenwick/selection.json. 2026-27 not touched.
