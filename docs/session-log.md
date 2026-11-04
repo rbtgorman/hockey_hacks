@@ -6,12 +6,12 @@ pushes. Commit hashes point to the details.
 ## 2026-11-04
 
 - PC: tried the shooter prior (v1.5) and goalie prior (v1.6) against v1.4's recipe
-  retrained on the fixed table (this commit). Neither won on late 2025-26 log loss
+  retrained on the fixed table (`0ad8a28`). Neither won on late 2025-26 log loss
   (0.22107 baseline, 0.22110, 0.22123), so no model was saved and 2026-27 wasn't touched.
   New `features/build_priors_fenwick.py` (K and league mean from earlier games only),
   `tests/test_priors_fenwick.py`, `model/train_v1_5_fenwick.py`. Written up in FINDINGS;
   next step is the owner's call.
-- PC: fixed the stoppage leak in `shot_features_fenwick` (this commit). 170 shots had a
+- PC: fixed the stoppage leak in `shot_features_fenwick` (`59b5e2d`). 170 shots had a
   stoppage caused by the shot as their previous event, all at 0 s, 97 goals; v1.4 gave them
   97.8 xG. `shot_prev_any` skips stoppages now; only those 170 rows changed (checked against
   the old rule built side by side). New build check 12; check 1 leaves them out of legacy
