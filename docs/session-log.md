@@ -5,7 +5,7 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-04
 
-- PC: v1.4-fenwick is live. Added to `model/score_fenwick.py` as the default, rescored every
+- PC: v1.4-fenwick is live (`26ae177`). Added to `model/score_fenwick.py` as the default, rescored every
   shot into `shot_xg` (v1.3 and v1.2 rows kept), re-exported the period page and profiles,
   and rewrote the model tab and methods page for v1.4. Checks before pushing: 2026-27 came
   out at 1,251 goals vs 1,252.4 xG (O/E 0.999) and tip-ins 0.899, the same as the test file;
