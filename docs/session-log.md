@@ -5,6 +5,9 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-04
 
+- PC: end of day. The owner's answers are under "Next up" in CLAUDE.md: skill stays out
+  of xG (model tab to explain the ~8% finishing story), v1.4.1 = leak-free refit replaces
+  v1.4 (2026-27 reported only), then the rink-by-rink location check. None started.
 - PC: tried the shooter prior (v1.5) and goalie prior (v1.6) against v1.4's recipe
   retrained on the fixed table (`0ad8a28`). Neither won on late 2025-26 log loss
   (0.22107 baseline, 0.22110, 0.22123), so no model was saved and 2026-27 wasn't touched.

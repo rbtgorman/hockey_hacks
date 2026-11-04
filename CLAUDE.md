@@ -157,15 +157,31 @@ Updated 2026-11-04 (v1.4 live).
 
 ## Waiting on the owner
 
-- What to do after v1.5/v1.6 lost: leave v1.4 live; try a finishing prior (goals / xG
-  instead of goals per attempt); or something else. Also whether the stoppage-fixed
-  baseline should replace v1.4 (it can't be judged against v1.4 on late 2025-26, since
-  v1.4's score there includes the leak).
+- Nothing right now.
 
 ## Next up
 
-1. Waiting on the owner (above). The EDGE goalie comparison from FINDINGS is still open.
-2. When 2026-27 has more games, refresh the model tab's test numbers (see above).
+Owner's answers, 2026-11-04 (decided; not started):
+
+1. **Shooter and goalie skill stay out of the live xG, for good.** "Goals minus xG" and
+   "goals saved above expected" only mean something if xG doesn't know who's shooting or
+   who's in net. So no finishing prior in xG either. Shooter and goalie skill become a
+   separate layer later, for the game simulator. On the model tab, explain that shooters
+   who finished well in earlier games kept beating xG by about 8%: real finishing skill,
+   and exactly what "goals minus xG" is for. (Source: top fifth by shooter prior, goals /
+   xG 1.077 under the baseline on late 2025-26, `results/v1_5-fenwick/oe_by_prior_fifth.csv`.)
+2. **Replace v1.4 with the leak-free version as v1.4.1.** Decided on principle, so its
+   2026-27 numbers are only reported, never used to choose. It's the "baseline" in
+   `model/train_v1_5_fenwick.py`: v1.4's features, settings, recency weights and distance
+   constraint on the stoppage-fixed table, 1692 trees from selection, refit on 2022-23 to
+   2025-26. Then rescore `shot_xg` (keep older versions' rows, as before), re-export, and
+   add the stoppage story to the model tab and methods page (170 shots, 57% goals, v1.4
+   gave them 97.8 xG; see `docs/FINDINGS.md`).
+3. **After that:** the rink-by-rink shot location check from the README ("check whether
+   shot locations get recorded differently from rink to rink").
+
+Still open, lower priority: the EDGE goalie comparison from FINDINGS; refresh the model
+tab's 2026-27 test numbers when the season has more games.
 
 Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by
 hand on the PC). Each refresh commits a few hundred small files under `site/data/`, and player
