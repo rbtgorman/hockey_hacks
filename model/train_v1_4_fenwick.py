@@ -68,6 +68,13 @@ BOOLEAN = list(v13.BASE_BOOLEAN)
 CATEGORICAL = list(v13.CATEGORICAL_FEATURES)
 ALL_FEATURES = NUMERIC + BOOLEAN + CATEGORICAL
 HALF_LIFE = 1.0
+
+
+def load_features() -> pd.DataFrame:
+    """Same rows and columns v1.3 used; model.score_fenwick imports this."""
+    return v13.load_features()
+
+
 MONOTONE = [-1 if f == "distance_ft" else 0 for f in ALL_FEATURES]
 
 BUDGET = 50
@@ -349,7 +356,10 @@ def stage_final(df, parts, cutoff) -> None:
     booster = fit(parts["refit_train"], settings, monotone=True, n_trees=n_trees)
     calibrator = (joblib.load(v1.ARTIFACT_DIR / f"{ARTIFACT_STEM}_calibrator.pkl")
                   if keep else None)
-    model = Calibrated(booster, keep, calibrator)
+    # Build the wrapper from the imported module, not __main__, so the pickle
+    # points at model.train_v1_4_fenwick.Calibrated and model.score_fenwick can load it.
+    from model import train_v1_4_fenwick as this
+    model = this.Calibrated(booster, keep, calibrator)
     chk = monotone_check(lambda X: model.predict_proba(X)[:, 1],
                          parts["select_val"].sample(2000, random_state=SEED))
     print(f"  distance check on the refit model: {chk}")
@@ -436,7 +446,7 @@ def main() -> None:
     print("=" * 60)
     print(f"{VERSION}, stage {args.stage}")
     print("=" * 60)
-    df = v13.load_features()
+    df = load_features()
     v1.assert_no_leakage(df)
     if "game_id" not in df.columns:
         raise RuntimeError("load_features() has no game_id; calibration folds need it.")

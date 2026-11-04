@@ -3,6 +3,19 @@
 What got done each working day, newest first. Claude adds to today's entry every time it
 pushes. Commit hashes point to the details.
 
+## 2026-11-04
+
+- PC: v1.4-fenwick is live. Added to `model/score_fenwick.py` as the default, rescored every
+  shot into `shot_xg` (v1.3 and v1.2 rows kept), re-exported the period page and profiles,
+  and rewrote the model tab and methods page for v1.4. Checks before pushing: 2026-27 came
+  out at 1,251 goals vs 1,252.4 xG (O/E 0.999) and tip-ins 0.899, the same as the test file;
+  older seasons within 0.002 O/E of v1.3; the biggest team xGF% move was 0.7 points (VAN).
+  The few shots that moved a lot are mostly empty-net shots and a quirk where a shot is
+  logged in the same second as a stoppage (170 shots, 57% goals). The saved model had been
+  pickled as `__main__.Calibrated`, so it was re-saved under its module (same predictions)
+  and the trainer fixed. Pages checked at 320, 375 and 1440px: no errors, no sideways
+  scrolling.
+
 ## 2026-11-03
 
 - PC: the owner approved v1.4. Making it live is now first under "Next up" in CLAUDE.md;

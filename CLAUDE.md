@@ -75,20 +75,23 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-03, end of day (v1.3 live; v1.4 trained, tested and approved, not live yet).
+Updated 2026-11-04 (v1.4 live).
 
-- **Live model:** v1.3-fenwick (`model/train_v1_3_fenwick.py`, log in
-  `results/v1_3_fenwick_train.log`). It's trained on 2022-23 to 2025-26 with recency
-  weights (half-life 1 season), and every shot in `shot_xg` is rescored. The choice was
-  made on late 2025-26 (log loss: recency h=1 0.22100, h=2 0.22113, era flag 0.22129,
-  plain retrain 0.22168; `results/v1_3-fenwick/selection.csv`). Only the winner was
-  tested on 2026-27 to date: AUC 0.7832, O/E 1.003, tip-in O/E 0.88 (v1.2 on the same
-  shots: 0.7752, 0.997, 0.78). The exports (period page, profiles) use v1.3.
-- **Site copy is on v1.3** (model tab in `site/index.html`, `site/methods.html`): the
-  2026-27 test with a "this is only a month" warning, the tip-in story, a v1.3 vs v1.2
-  table with log loss, and "Where it still struggles" (tip-ins 88, 60+ ft 85). When
-  2026-27 fills in, refresh those numbers from `results/v1_3-fenwick/` and a rerun of the
-  v1.2 comparison.
+- **Live model:** v1.4-fenwick (details in the v1.4 bullet below). `model/score_fenwick.py`
+  defaults to it and every shot in `shot_xg` is scored with it. **v1.3 rows are kept in
+  `shot_xg`** (owner's call) so v1.3 vs v1.4 can be rerun; the scorer only replaces its own
+  version's rows. v1.2 rows are there too. Exports (period page, profiles) use v1.4.
+- **v1.3-fenwick** (`model/train_v1_3_fenwick.py`, log in `results/v1_3_fenwick_train.log`):
+  trained on 2022-23 to 2025-26 with recency weights (half-life 1 season). Chosen on late
+  2025-26 (log loss: recency h=1 0.22100, h=2 0.22113, era flag 0.22129, plain retrain
+  0.22168; `results/v1_3-fenwick/selection.csv`). 2026-27 to date: AUC 0.7832, O/E 1.003,
+  tip-in O/E 0.88 (v1.2 on the same shots: 0.7752, 0.997, 0.78).
+- **Site copy is on v1.4** (model tab in `site/index.html`, `site/methods.html`): headline
+  stats and calibration chart from `results/v1_4-fenwick/`, a new "What changed in this
+  version: fine-tuning" section (`#v14`) with a v1.4 vs v1.3 table, the tip-in story kept as
+  "The version before" (`#v13`, which the profile pages' xG note links to), and "Where it
+  still struggles" (tip-ins 90, 60+ ft 86). When 2026-27 fills in, refresh those numbers
+  from `results/v1_4-fenwick/` and a rerun of the v1.3 comparison.
 - **Leaderboard** has a Test season column; runs whose test season was in progress are
   marked "to date" (`model/reporting.py`).
 - **'Short' misses** were dropped from `shot_features_fenwick` (`71a1a15`). v1.3 never saw
@@ -116,7 +119,7 @@ Updated 2026-11-03, end of day (v1.3 live; v1.4 trained, tested and approved, no
   (lightened from #ff6b6b, which only reached 4.54:1). Measured badge contrast in Chrome:
   6.59, 5.44 and 5.04:1.
 
-- **v1.4-fenwick is trained but NOT live** (`model/train_v1_4_fenwick.py`, logs
+- **v1.4-fenwick, live since 2026-11-04** (`model/train_v1_4_fenwick.py`, logs
   `results/v1_4_fenwick_select.log` and `_final.log`, results in `results/v1_4-fenwick/`).
   v1.3's features and recency weights, plus a 50-try settings search (best: try 31, 11
   leaves, 1734 trees, `search.csv`), and xG can never go up with distance (monotone
@@ -125,10 +128,14 @@ Updated 2026-11-03, end of day (v1.3 live; v1.4 trained, tested and approved, no
   calibration both lost on late 2025-26 cross-fit, so there's none
   (`calibration_check.csv`). Late 2025-26 log loss 0.22071 vs v1.3's 0.22100. One test on
   2026-27: log loss 0.22565 vs 0.22587, AUC 0.7834 vs 0.7832, O/E 0.999 vs 1.003, tip-in
-  O/E 0.899 vs 0.884 (`test_vs_v1_3.csv`). `shot_xg`, exports and site copy still v1.3.
+  O/E 0.899 vs 0.884 (`test_vs_v1_3.csv`). Rescoring reproduced those exactly (2026-27:
+  1,251 goals vs 1,252.4 xG).
   The saved model (`model/artifacts/xg_v1_4_fenwick.pkl` + `_meta.json`) is gitignored, so
   it's only on the PC; `--stage final` rebuilds it identically (seeded) from
-  `selection.json`. Don't rerun `--stage select` or look at 2026-27 to re-pick. Its
+  `selection.json`. The first saved file pickled its wrapper class as `__main__.Calibrated`,
+  which the scorer couldn't load; on 2026-11-04 it was re-saved under
+  `model.train_v1_4_fenwick` (identical predictions) and the trainer now saves it that way.
+  Don't rerun `--stage select` or look at 2026-27 to re-pick. Its
   leaderboard row shows `a4a537f` because it was trained before the script was committed
   (`f11bd9e`).
 
@@ -138,12 +145,8 @@ Updated 2026-11-03, end of day (v1.3 live; v1.4 trained, tested and approved, no
 
 ## Next up
 
-1. v1.4 is approved (owner, 2026-11-03). Make it live, rescore every shot, re-export, and
-   update the model tab and methods page. That means: add it to `model/score_fenwick.py`
-   MODELS and make it the default, rescore into `shot_xg`, re-export (period page,
-   profiles), and rewrite the model tab in `site/index.html` and `site/methods.html` for
-   v1.4 from `results/v1_4-fenwick/`.
-2. Then the rest of "What's next" in the README: shooters and goalies.
+1. "What's next" in the README: shooters and goalies.
+2. When 2026-27 has more games, refresh the model tab's test numbers (see above).
 
 Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by
 hand on the PC). Each refresh commits a few hundred small files under `site/data/`, and player

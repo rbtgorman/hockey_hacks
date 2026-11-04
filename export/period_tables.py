@@ -60,7 +60,7 @@ from .period_math import at_least, convolve, count_distribution, regression_k
 
 OUT_DIR = Path(__file__).resolve().parent.parent / "site" / "data"
 HISTORY_SEASONS = [20222023, 20232024, 20242025, 20252026]
-DEFAULT_MODEL = "v1.3-fenwick"
+DEFAULT_MODEL = "v1.4-fenwick"
 FIRST_TEN = 600  # seconds elapsed in the 1st period
 
 # key, label, group, game_level (same outcome for both teams), has_xg

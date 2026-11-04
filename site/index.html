@@ -190,8 +190,8 @@
       <p class="lede">I'm building toward real NHL game projections, but I'm not going to fake it. First come the tools: build them, test them on games they've never seen, and tell you straight what every number means.</p>
     </div>
     <div class="meta-row">
-      <span>Updated November 3, 2026</span>
-      <span>Model v1.3-fenwick</span>
+      <span>Updated November 4, 2026</span>
+      <span>Model v1.4-fenwick</span>
       <span>Data: NHL public API</span>
       <span><a href="methods.html">How every number gets figured</a></span>
     </div>
@@ -229,9 +229,9 @@
     <p class="note"><strong>Heads up: this test is small.</strong> 2026-27 is only about a month old (September 29 to October 28), so these numbers will move as the season goes on. A full season is about seven times as many shots.</p>
     <div class="stats">
       <div class="stat"><span class="k">How often shots go in</span><span class="v">7.5%</span><span class="n">About 1 in 13 unblocked shots went in so far this season. That's your average shot, and every xG number is measured against it.</span><a class="src" href="methods.html#xg">What xG is</a></div>
-      <div class="stat"><span class="k">Goals vs. what it predicted</span><span class="v">1.00</span><span class="n">It called for 1,247 goals and there were 1,251, so it was off by 4 goals. 1.00 would be dead on.</span><a class="src" href="methods.html#oe">How it's figured</a></div>
+      <div class="stat"><span class="k">Goals vs. what it predicted</span><span class="v">1.00</span><span class="n">It called for 1,252 goals and there were 1,251, so it was off by 1 goal. 1.00 would be dead on.</span><a class="src" href="methods.html#oe">How it's figured</a></div>
       <div class="stat"><span class="k">Good chance vs. bad (AUC)</span><span class="v">0.783</span><span class="n">Grab one goal and one shot that didn't go in. 78% of the time, the model rated the goal as the better chance. A coin flip gets you 50%.</span><a class="src" href="methods.html#auc">How it's figured</a></div>
-      <div class="stat"><span class="k">Biggest miss</span><span class="v">0.8 pts</span><span class="n">Split the shots into ten groups, worst chances to best. In every group, the prediction and what actually went in were within 0.8 percentage points.</span><a class="src" href="methods.html#calibration">How it's figured</a></div>
+      <div class="stat"><span class="k">Biggest miss</span><span class="v">0.7 pts</span><span class="n">Split the shots into ten groups, worst chances to best. In every group, the prediction and what actually went in were within 0.7 percentage points.</span><a class="src" href="methods.html#calibration">How it's figured</a></div>
     </div>
 
     <div class="card">
@@ -244,13 +244,44 @@
         <summary>Show the numbers</summary>
         <div class="tablewrap"><table id="tbl-cal"></table></div>
       </details>
-      <p class="cap">From <b>results/v1_3-fenwick/reliability.csv</b></p>
+      <p class="cap">From <b>results/v1_4-fenwick/reliability.csv</b></p>
+    </div>
+  </section>
+
+  <section id="v14">
+    <div class="section-head">
+      <h2>What changed in this version: fine-tuning</h2>
+    </div>
+    <div class="prose">
+      <p>v1.4 learns from the same shots and looks at the same 17 things as v1.3. Two things changed:</p>
+      <ul>
+        <li><strong>Better settings.</strong> A model like this has a bunch of dials, like how many decision trees it builds and how big each one gets. I tried 50 different combos. The winner builds a lot more trees (1,734 instead of 291), but each one is a lot smaller.</li>
+        <li><strong>Farther out never means a better chance.</strong> Before, the model could say a shot from 35 feet was a little better than the same shot from 30 feet, just from noise in the data. Now it can't: if everything else is the same, xG only goes down as you move away from the net. That rule cost almost nothing in accuracy.</li>
+      </ul>
+      <p>Same as last time, I picked the winner without touching 2026-27: everything learned from games through early January 2026 and got scored on the rest of 2025-26. I also tried nudging the model's percentages afterward to line them up better, and that made things a little worse, so it doesn't do that. Only the final pick got tested on 2026-27.</p>
+      <p>Honestly, the gain is small. It's a little sharper and a little better on tip-ins, and that's about it.</p>
+    </div>
+    <div class="card">
+      <div>
+        <h3>v1.4 vs. v1.3, on the same 2026-27 shots</h3>
+        <p class="cap">All 16,572 unblocked shots so far this season. Neither model learned from any of them.</p>
+      </div>
+      <div class="tablewrap"><table class="cmp">
+        <thead><tr><th>Check</th><th>v1.4</th><th>v1.3</th></tr></thead>
+        <tbody>
+          <tr><td>Log loss (lower is better)</td><td>0.2256</td><td>0.2259</td></tr>
+          <tr><td>Good chance vs. bad (AUC)</td><td>0.783</td><td>0.783</td></tr>
+          <tr><td>Goals vs. what it predicted</td><td>1.00</td><td>1.00</td></tr>
+          <tr><td>Tip-ins: goals per 100 expected</td><td>90</td><td>88</td></tr>
+        </tbody>
+      </table></div>
+      <p class="cap"><b>Log loss</b> is the score that picked the winner (<a href="methods.html#logloss">how it works</a>). Lower is better, and it only means something next to another model on the same shots. The AUCs only differ in the 4th decimal (0.7834 vs. 0.7832). From <b>results/v1_4-fenwick/test_vs_v1_3.csv</b> and <b>results/v1_4-fenwick/selection.json</b>.</p>
     </div>
   </section>
 
   <section id="v13">
     <div class="section-head">
-      <h2>What changed in this version: tip-ins</h2>
+      <h2>The version before: tip-ins</h2>
     </div>
     <div class="prose">
       <p>The last version kept expecting more tip-in goals than there were. In 2022-23, tip-ins went in about as often as it expected. In 2025-26, only 79 went in for every 100 it expected. It wasn't a few rinks either: 30 of the 32 rinks logged more tip-ins close to the net per game in 2025-26. Best guess, the league started calling a lot more shots tip-ins, including ones that are less dangerous.</p>
@@ -263,7 +294,7 @@
     </div>
     <div class="card">
       <div>
-        <h3>v1.3 vs. the last version, on the same 2026-27 shots</h3>
+        <h3>v1.3 vs. v1.2, on the same 2026-27 shots</h3>
         <p class="cap">All 16,572 unblocked shots so far this season. Neither model learned from any of them.</p>
       </div>
       <div class="tablewrap"><table class="cmp">
@@ -295,11 +326,11 @@
       <p class="hint">Goals scored for every 100 the model expected in 2026-27 so far. 100 means it's right on. Just a month of games, so take these loosely.</p>
     </div>
     <ul class="weak">
-      <li><strong>Tip-ins: 88.</strong> Better than 78, but tips still go in about 12% less than it expects.</li>
-      <li><strong>Shots from 60+ feet: 85.</strong> Long bombs go in about 15% less than it thinks.</li>
+      <li><strong>Tip-ins: 90.</strong> Way better than 78 two versions ago, but tips still go in about 10% less than it expects.</li>
+      <li><strong>Shots from 60+ feet: 86.</strong> Long bombs go in about 14% less than it thinks.</li>
       <li><strong>Who's shooting, who's in net.</strong> It doesn't know yet, so a top-line sniper and a fourth-line grinder get the same xG for the same shot.</li>
     </ul>
-    <p class="more">From <code>results/v1_3-fenwick/segments.csv</code>. Each number is goals ÷ expected goals × 100 for that kind of shot.</p>
+    <p class="more">From <code>results/v1_4-fenwick/segments.csv</code>. Each number is goals ÷ expected goals × 100 for that kind of shot.</p>
   </section>
 
   <footer>
@@ -314,13 +345,13 @@
 </div>
 
 <script>
-/* Calibration of v1.3-fenwick on 2026-27 to date, ten equal-count groups.
-   [mean predicted, actual rate, attempts], from results/v1_3-fenwick/reliability.csv. */
+/* Calibration of v1.4-fenwick on 2026-27 to date, ten equal-count groups.
+   [mean predicted, actual rate, attempts], from results/v1_4-fenwick/reliability.csv. */
 const CAL = [
-  [0.0044, 0.0030, 1658], [0.0116, 0.0109, 1657], [0.0199, 0.0223, 1657],
-  [0.0298, 0.0284, 1657], [0.0430, 0.0404, 1657], [0.0596, 0.0604, 1657],
-  [0.0804, 0.0742, 1657], [0.1057, 0.1032, 1657], [0.1404, 0.1467, 1657],
-  [0.2579, 0.2654, 1658]
+  [0.0039, 0.0030, 1658], [0.0108, 0.0115, 1657], [0.0191, 0.0223, 1657],
+  [0.0298, 0.0290, 1657], [0.0428, 0.0386, 1657], [0.0591, 0.0610, 1657],
+  [0.0796, 0.0736, 1657], [0.1056, 0.1056, 1657], [0.1419, 0.1491, 1657],
+  [0.2630, 0.2612, 1658]
 ];
 
 const $ = (id) => document.getElementById(id);
