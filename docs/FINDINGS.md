@@ -73,6 +73,12 @@ Merging wrist and snap into one type cost ranking on both splits and moved test 
 
   Checks 5 and 6 raise open issues (below).
 - **Closing a label leak.** The legacy table codes a missing shot type as 'unknown', and 'unknown' appears only on goals, a 100% goal rate every season (`features/build_features_fenwick.py` docstring; 17 / 10 / 20 rows [not in repo]). v1–v2.3 trained with it. The Fenwick table keeps those rows and folds 'unknown' into 'wrist-snap', the most common type. Left NULL it would still leak, because LightGBM learns a direction for missing values.
+- **Closing a stoppage leak (2026-11-04).** Through v1.4 the previous-event lookup could pick a stoppage logged in the same second as the shot, just before it. Play only restarts with a faceoff, so a stoppage with no faceoff between it and the shot was caused by the shot.
+  - 170 shots, 2022-23 to 2026-27 to date: every one at a 0-second gap (none at any longer gap), 97 goals (57%, against about 7% for all attempts). Stoppage reasons: video review 41 (all goals), goalie stopped it 34, referee or linesman 27 (all goals), icing 16 (a missed shot that ices it), goal-interference challenges 14 (all goals), puck frozen 9, puck in netting 8, timeouts 8, other 13.
+  - v1.4 learned it: on those 170 shots it predicted 97.8 xG. Scored on the fixed table, the same model gives them 26.8.
+  - Penalty shots are a different case and need no flag: they follow a 'penalty' event with typeCode 'PS', never a stoppage, and keep last_event_type 'penalty' (171 of the 172 'penalty' rows; 49 goals, 29%).
+  - Fix: `shot_prev_any` skips stoppages. A stoppage followed by a faceoff is never the latest event anyway, so this skips exactly the ones with no faceoff before the shot. Built side by side, the old and new tables differ on those 170 rows only. They now take the play before the stoppage (89 a previous shot, 30 a faceoff, 19 a block). Check 12 confirms none is left; check 1 leaves them out of the legacy parity, since the frozen legacy table keeps the old rule.
+  - v1.4 isn't retrained for it; the fix goes into v1.5's baseline. The next `export/refresh.sh` rescores with v1.4 on the fixed table: 2026-27 O/E 0.999 → 1.001, other seasons up 0.001-0.003.
 - **Merging a drifting label.** Snap's share of wrist + snap went 22.6% → 20.4% → 29.9%, with snap attempts up 44% in 2024-25. Wrist + snap held at 68.3 / 68.6 / 69.1% of attempts. The merged 'wrist-snap' converts 6.75 / 6.56 / 6.58% (docstring; build log checks 6–7).
 - **Fixing prior shrinkage.** Priors are Beta-Binomial empirical Bayes: w × own rate + (1 − w) × league mean, with w = n / (n + K).
   - The bug: recency weights of 5/4/3 made weighted shots about 4.49× raw shots, while K was fit on raw counts. The posterior claimed about 4.5× the evidence that existed, so shrinkage barely fired.
@@ -120,8 +126,8 @@ Merging wrist and snap into one type cost ranking on both splits and moved test 
    - Check tip-in + deflected O/E before any merge.
 3. **Roll forward.** Ingest 2025-26 and check SOG per team-game against Hockey-Reference's final figure. Then train 2023-24, validate 2024-25 and test 2025-26, all after the recording change. 2022-23 is used only to warm the priors.
 4. **Priors cleanup:** PP μ check, PK eligibility threshold, position-specific μ and K.
-5. **v2.3-fenwick:** the shooter prior on unblocked attempts.
-6. **Goalie priors.** Zone-only, on unblocked attempts, standardized for strength mix, with a real synthetic test. Compare them with NHL EDGE goalie numbers by location, after checking which shots EDGE counts.
+5. **v1.5-fenwick:** the shooter prior on unblocked attempts, measured against v1.4's settings retrained on the same table.
+6. **v1.6-fenwick: goalie priors**, added to v1.5 and measured against it. Zone-only, on unblocked attempts, standardized for strength mix, with a real synthetic test. Compare them with NHL EDGE goalie numbers by location, after checking which shots EDGE counts.
 7. **Location diagnostics, run alongside 3–6.**
    - EDGE team shot counts by location vs play-by-play, by season.
    - A rink-level check of recorded shot distance.

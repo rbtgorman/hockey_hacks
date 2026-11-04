@@ -1,12 +1,12 @@
 Building shot_features_fenwick (reads shots + plays_context)...
-Done. 499,443 rows in shot_features_fenwick.
+Done. 495,703 rows in shot_features_fenwick.
 
---- 1. Parity with legacy shot_features on shared rows (2022 must be all zeros; 2023/2024 nonzero only in the context columns) ---
+--- 1. Parity with legacy shot_features on shared rows, leaving out the shots legacy gives a 'stoppage' previous event (docstring item 10) (2022 must be all zeros; 2023/2024 nonzero only in the context columns) ---
   season_start | rows_compared | static_cols | secs_since_last | dist_from_last | last_event | is_rebound | is_rush
   -------------+---------------+-------------+-----------------+----------------+------------+------------+--------
-  2022         | 87538         | 0           | 0               | 0              | 0          | 0          | 0      
-  2023         | 84434         | 0           | 1066            | 1074           | 924        | 13         | 0      
-  2024         | 79007         | 0           | 1170            | 1179           | 981        | 28         | 0      
+  2022         | 87500         | 0           | 0               | 0              | 0          | 0          | 0      
+  2023         | 84411         | 0           | 1309            | 1317           | 1106       | 80         | 1      
+  2024         | 78970         | 0           | 1523            | 1537           | 1228       | 121        | 1      
 
 --- 2. Legacy rows missing from the new table (expected: only game type 02, period 5) ---
   season_start | game_type | period | legacy_rows_missing
@@ -22,48 +22,48 @@ Done. 499,443 rows in shot_features_fenwick.
   2022         | missed-shot  | 34528 | 0    
   2022         | shot-on-goal | 78737 | 0    
   2023         | goal         | 8590  | 8590 
-  2023         | missed-shot  | 38095 | 0    
+  2023         | missed-shot  | 37155 | 0    
   2023         | shot-on-goal | 75844 | 0    
   2024         | goal         | 8435  | 8435 
-  2024         | missed-shot  | 40472 | 0    
+  2024         | missed-shot  | 39144 | 0    
   2024         | shot-on-goal | 70572 | 0    
   2025         | goal         | 8572  | 8572 
-  2025         | missed-shot  | 40920 | 0    
+  2025         | missed-shot  | 39640 | 0    
   2025         | shot-on-goal | 69113 | 0    
   2026         | goal         | 1251  | 1251 
-  2026         | missed-shot  | 5710  | 0    
+  2026         | missed-shot  | 5518  | 0    
   2026         | shot-on-goal | 9803  | 0    
 
 --- 4. Goal rate by distance band, regular season, no empty net (bands under 60 ft should be flat across seasons) ---
   band     | season_start | n     | goal_pct
   ---------+--------------+-------+---------
   a_lt20   | 2022         | 35086 | 12.32   
-  a_lt20   | 2023         | 34488 | 12.40   
-  a_lt20   | 2024         | 32018 | 12.36   
-  a_lt20   | 2025         | 34211 | 11.95   
-  a_lt20   | 2026         | 5301  | 12.28   
+  a_lt20   | 2023         | 34339 | 12.46   
+  a_lt20   | 2024         | 31762 | 12.46   
+  a_lt20   | 2025         | 33911 | 12.05   
+  a_lt20   | 2026         | 5234  | 12.44   
   b_20_40  | 2022         | 37742 | 7.20    
-  b_20_40  | 2023         | 37709 | 6.88    
-  b_20_40  | 2024         | 37056 | 7.17    
-  b_20_40  | 2025         | 36843 | 7.40    
-  b_20_40  | 2026         | 5695  | 7.27    
+  b_20_40  | 2023         | 37370 | 6.94    
+  b_20_40  | 2024         | 36644 | 7.25    
+  b_20_40  | 2025         | 36385 | 7.49    
+  b_20_40  | 2026         | 5633  | 7.35    
   c_40_60  | 2022         | 30047 | 2.31    
-  c_40_60  | 2023         | 28343 | 2.33    
-  c_40_60  | 2024         | 27512 | 2.33    
-  c_40_60  | 2025         | 26390 | 2.50    
-  c_40_60  | 2026         | 3849  | 2.65    
+  c_40_60  | 2023         | 28044 | 2.35    
+  c_40_60  | 2024         | 27110 | 2.37    
+  c_40_60  | 2025         | 26074 | 2.54    
+  c_40_60  | 2026         | 3808  | 2.68    
   d_60plus | 2022         | 10476 | 0.71    
-  d_60plus | 2023         | 13519 | 0.78    
-  d_60plus | 2024         | 14294 | 0.85    
-  d_60plus | 2025         | 12945 | 0.81    
-  d_60plus | 2026         | 1770  | 0.96    
+  d_60plus | 2023         | 13447 | 0.79    
+  d_60plus | 2024         | 14160 | 0.86    
+  d_60plus | 2025         | 12821 | 0.82    
+  d_60plus | 2026         | 1749  | 0.97    
 
 --- 5. Attempts from behind the goal line per game, regular season (flat if dropping failed-bank-attempt was right) ---
   season_start | behind_line_per_game
   -------------+---------------------
   2022         | 0.767               
   2023         | 1.245               
-  2024         | 0.798               
+  2024         | 0.796               
   2025         | 0.643               
   2026         | 0.787               
 
@@ -71,68 +71,68 @@ Done. 499,443 rows in shot_features_fenwick.
   shot_type    | season_start | n     | goal_pct
   -------------+--------------+-------+---------
   backhand     | 2022         | 8395  | 7.66    
-  backhand     | 2023         | 8094  | 7.93    
-  backhand     | 2024         | 7753  | 8.10    
-  backhand     | 2025         | 7884  | 8.40    
-  backhand     | 2026         | 1226  | 8.40    
+  backhand     | 2023         | 8069  | 7.96    
+  backhand     | 2024         | 7721  | 8.13    
+  backhand     | 2025         | 7845  | 8.44    
+  backhand     | 2026         | 1216  | 8.47    
   bat          | 2022         | 287   | 16.38   
-  bat          | 2023         | 427   | 13.58   
-  bat          | 2024         | 399   | 10.53   
-  bat          | 2025         | 551   | 9.44    
-  bat          | 2026         | 72    | 9.72    
+  bat          | 2023         | 426   | 13.62   
+  bat          | 2024         | 387   | 10.85   
+  bat          | 2025         | 527   | 9.87    
+  bat          | 2026         | 68    | 10.29   
   between-legs | 2022         | 68    | 8.82    
-  between-legs | 2023         | 80    | 11.25   
-  between-legs | 2024         | 71    | 1.41    
-  between-legs | 2025         | 71    | 11.27   
+  between-legs | 2023         | 79    | 11.39   
+  between-legs | 2024         | 68    | 1.47    
+  between-legs | 2025         | 70    | 11.43   
   between-legs | 2026         | 9     | 11.11   
   cradle       | 2022         | 7     | 14.29   
   cradle       | 2023         | 9     | 33.33   
   cradle       | 2024         | 10    | 0.00    
   cradle       | 2025         | 6     | 16.67   
   deflected    | 2022         | 2280  | 9.78    
-  deflected    | 2023         | 2325  | 8.17    
-  deflected    | 2024         | 1917  | 10.02   
-  deflected    | 2025         | 1827  | 11.55   
-  deflected    | 2026         | 253   | 12.65   
+  deflected    | 2023         | 2322  | 8.18    
+  deflected    | 2024         | 1908  | 10.06   
+  deflected    | 2025         | 1826  | 11.56   
+  deflected    | 2026         | 252   | 12.70   
   poke         | 2022         | 418   | 12.20   
   poke         | 2023         | 428   | 9.35    
-  poke         | 2024         | 453   | 13.91   
+  poke         | 2024         | 450   | 14.00   
   poke         | 2025         | 369   | 11.11   
-  poke         | 2026         | 55    | 14.55   
+  poke         | 2026         | 54    | 14.81   
   slap         | 2022         | 13834 | 5.16    
-  slap         | 2023         | 13538 | 4.94    
-  slap         | 2024         | 13055 | 4.69    
-  slap         | 2025         | 13197 | 4.85    
-  slap         | 2026         | 1802  | 4.44    
+  slap         | 2023         | 13262 | 5.04    
+  slap         | 2024         | 12698 | 4.82    
+  slap         | 2025         | 12834 | 4.99    
+  slap         | 2026         | 1759  | 4.55    
   tip-in       | 2022         | 9636  | 8.77    
-  tip-in       | 2023         | 10096 | 8.34    
-  tip-in       | 2024         | 9829  | 7.76    
-  tip-in       | 2025         | 10658 | 6.76    
-  tip-in       | 2026         | 1691  | 6.62    
+  tip-in       | 2023         | 10084 | 8.35    
+  tip-in       | 2024         | 9767  | 7.81    
+  tip-in       | 2025         | 10572 | 6.81    
+  tip-in       | 2026         | 1659  | 6.75    
   wrap-around  | 2022         | 973   | 5.55    
-  wrap-around  | 2023         | 905   | 6.08    
-  wrap-around  | 2024         | 779   | 4.75    
+  wrap-around  | 2023         | 904   | 6.08    
+  wrap-around  | 2024         | 778   | 4.76    
   wrap-around  | 2025         | 679   | 4.57    
   wrap-around  | 2026         | 97    | 3.09    
   wrist-snap   | 2022         | 77453 | 6.75    
-  wrist-snap   | 2023         | 78157 | 6.56    
-  wrist-snap   | 2024         | 76614 | 6.58    
-  wrist-snap   | 2025         | 75147 | 6.94    
-  wrist-snap   | 2026         | 11410 | 7.34    
+  wrist-snap   | 2023         | 77617 | 6.61    
+  wrist-snap   | 2024         | 75889 | 6.64    
+  wrist-snap   | 2025         | 74463 | 7.00    
+  wrist-snap   | 2026         | 11310 | 7.41    
 
 --- 7. Raw wrist vs snap by season (why they are merged) ---
   raw_shot_type | season_start | n     | goal_pct | avg_ft
   --------------+--------------+-------+----------+-------
   snap          | 2022         | 17504 | 8.68     | 34.8  
-  snap          | 2023         | 15948 | 9.29     | 34.8  
-  snap          | 2024         | 22924 | 8.38     | 36.0  
-  snap          | 2025         | 27510 | 8.10     | 35.9  
-  snap          | 2026         | 4693  | 8.37     | 35.3  
+  snap          | 2023         | 15803 | 9.37     | 34.8  
+  snap          | 2024         | 22676 | 8.47     | 36.0  
+  snap          | 2025         | 27226 | 8.18     | 35.9  
+  snap          | 2026         | 4645  | 8.46     | 35.4  
   wrist         | 2022         | 59932 | 6.16     | 37.6  
-  wrist         | 2023         | 62199 | 5.85     | 38.7  
-  wrist         | 2024         | 53670 | 5.77     | 39.8  
-  wrist         | 2025         | 47613 | 6.22     | 38.4  
-  wrist         | 2026         | 6714  | 6.58     | 37.9  
+  wrist         | 2023         | 61804 | 5.89     | 38.7  
+  wrist         | 2024         | 53193 | 5.83     | 39.8  
+  wrist         | 2025         | 47213 | 6.27     | 38.4  
+  wrist         | 2026         | 6662  | 6.63     | 37.9  
 
 --- 8. Categorical values that give away the answer (expected: 0 rows). Flags any value that is always a goal (n >= 10) or never a goal (n >= 200) ---
   feature | value | n | goals
@@ -143,31 +143,45 @@ Done. 499,443 rows in shot_features_fenwick.
   season_start | post_rebounds_per_game | post_rebounds | post_goal_pct | other_rebound_goal_pct
   -------------+------------------------+---------------+---------------+-----------------------
   2022         | 0.142                  | 199           | 27.64         | 13.90                 
-  2023         | 0.129                  | 180           | 23.89         | 11.13                 
-  2024         | 0.172                  | 240           | 20.00         | 11.01                 
-  2025         | 0.177                  | 247           | 23.08         | 10.70                 
-  2026         | 0.119                  | 24            | 16.67         | 10.78                 
+  2023         | 0.128                  | 179           | 24.02         | 11.17                 
+  2024         | 0.170                  | 238           | 20.17         | 11.20                 
+  2025         | 0.174                  | 243           | 23.46         | 10.96                 
+  2026         | 0.114                  | 23            | 17.39         | 11.05                 
 
 --- 10. Shots after a giveaway or takeaway, by season and whose event it was (giveaways about 2x from 2024-25; see docstring item 9) ---
   season_start | last_event_type | made_by       | shots | goal_pct
   -------------+-----------------+---------------+-------+---------
-  2022         | giveaway        | opponent      | 7842  | 10.14   
+  2022         | giveaway        | opponent      | 7843  | 10.14   
   2022         | giveaway        | shooting team | 2559  | 5.86    
-  2023         | giveaway        | opponent      | 6767  | 9.62    
-  2023         | giveaway        | shooting team | 2387  | 6.49    
-  2024         | giveaway        | opponent      | 10893 | 6.56    
-  2024         | giveaway        | shooting team | 4376  | 7.15    
-  2025         | giveaway        | opponent      | 11537 | 7.43    
-  2025         | giveaway        | shooting team | 4449  | 6.86    
-  2026         | giveaway        | opponent      | 1702  | 6.99    
-  2026         | giveaway        | shooting team | 614   | 6.35    
+  2023         | giveaway        | opponent      | 6725  | 9.72    
+  2023         | giveaway        | shooting team | 2384  | 6.63    
+  2024         | giveaway        | opponent      | 10824 | 6.61    
+  2024         | giveaway        | shooting team | 4359  | 7.23    
+  2025         | giveaway        | opponent      | 11469 | 7.53    
+  2025         | giveaway        | shooting team | 4428  | 6.93    
+  2026         | giveaway        | opponent      | 1685  | 7.24    
+  2026         | giveaway        | shooting team | 610   | 6.39    
   2022         | takeaway        | opponent      | 2225  | 5.80    
-  2022         | takeaway        | shooting team | 6250  | 9.39    
-  2023         | takeaway        | opponent      | 2261  | 5.71    
-  2023         | takeaway        | shooting team | 5742  | 9.98    
-  2024         | takeaway        | opponent      | 1382  | 6.08    
-  2024         | takeaway        | shooting team | 3538  | 7.09    
-  2025         | takeaway        | opponent      | 1393  | 7.47    
-  2025         | takeaway        | shooting team | 3563  | 9.35    
-  2026         | takeaway        | opponent      | 172   | 7.56    
-  2026         | takeaway        | shooting team | 465   | 9.89    
+  2022         | takeaway        | shooting team | 6252  | 9.40    
+  2023         | takeaway        | opponent      | 2248  | 5.74    
+  2023         | takeaway        | shooting team | 5723  | 10.05   
+  2024         | takeaway        | opponent      | 1370  | 6.13    
+  2024         | takeaway        | shooting team | 3512  | 7.20    
+  2025         | takeaway        | opponent      | 1390  | 7.55    
+  2025         | takeaway        | shooting team | 3535  | 9.42    
+  2026         | takeaway        | opponent      | 173   | 7.51    
+  2026         | takeaway        | shooting team | 464   | 9.91    
+
+--- 11. Partial-window events left in the table, by season (expected: 0 rows) ---
+  season_start | reason | n
+  -------------+--------+--
+  (0 rows)
+
+--- 12. Shots whose latest earlier event is a stoppage with no faceoff between (docstring item 10). These were 'stoppage' at 0 s through v1.4. still_stoppage must be 0 ---
+  season_start | shots | goals | still_stoppage | now_zero_secs
+  -------------+-------+-------+----------------+--------------
+  2022         | 43    | 21    | 0              | 3            
+  2023         | 23    | 20    | 0              | 1            
+  2024         | 51    | 16    | 0              | 0            
+  2025         | 48    | 35    | 0              | 2            
+  2026         | 5     | 5     | 0              | 0            

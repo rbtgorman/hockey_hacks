@@ -72,6 +72,20 @@ DIFFERENCES FROM build_features.py
    own giveaway scored 0.80-0.95 of expected, against 1.05-1.07 after the
    opponent's. Giveaways per game about doubled in 2024-25 (check 10), so
    the opponent-giveaway group also carries that recording change.
+10. The previous-event lookup skips stoppages. Play only restarts with a
+   faceoff, so a stoppage can only be the latest event before a shot when
+   no faceoff came between them, and then the stoppage was caused by the
+   shot: it is logged in the same second, just before it (video review,
+   a coach's challenge, the goalie freezing it). Through v1.4 those 170
+   shots got last_event_type 'stoppage' at 0 seconds and 57% of them were
+   goals (about 7% is normal), so the feature was seeing the result. A
+   stoppage followed by a faceoff is never the latest event anyway (the
+   faceoff is), so leaving stoppages out of this one lookup is the same as
+   skipping only the ones with no faceoff before the shot. Those shots now
+   take the event before the stoppage. Penalty shots are not affected:
+   they come after a 'penalty' event with typeCode 'PS' and keep
+   last_event_type 'penalty'. legacy shot_features keeps the old rule.
+   Check 12 confirms it.
 
 Every other feature is defined exactly as in build_features.py. The first
 verify query checks that claim: on 2022-23, where neither regime-only event
@@ -138,7 +152,8 @@ pop AS (
       AND NOT (substr(game_id::text, 5, 2) = '02' AND period >= 5)
 ),
 
--- Most recent event of any type in the same game and period.
+-- Most recent event in the same game and period, skipping stoppages
+-- (docstring item 10: one with no faceoff after it was caused by the shot).
 shot_prev_any AS (
     SELECT DISTINCT ON (s.game_id, s.event_idx)
         s.game_id,
@@ -152,6 +167,7 @@ shot_prev_any AS (
     LEFT JOIN ctx_kept c
         ON c.game_id = s.game_id
        AND c.period  = s.period
+       AND c.event_type <> 'stoppage'
        AND (c.game_seconds <  s.game_seconds
             OR (c.game_seconds = s.game_seconds AND c.event_idx < s.event_idx))
     ORDER BY s.game_id, s.event_idx, c.game_seconds DESC, c.event_idx DESC
@@ -275,7 +291,8 @@ CREATE INDEX shot_features_fenwick_game_event_idx ON shot_features_fenwick (game
 
 
 VERIFY_QUERIES = [
-    ("1. Parity with legacy shot_features on shared rows "
+    ("1. Parity with legacy shot_features on shared rows, leaving out the "
+     "shots legacy gives a 'stoppage' previous event (docstring item 10) "
      "(2022 must be all zeros; 2023/2024 nonzero only in the context columns)",
      """
      SELECT substr(n.game_id::text, 1, 4) AS season_start,
@@ -304,6 +321,7 @@ VERIFY_QUERIES = [
      FROM shot_features_fenwick n
      JOIN shot_features o
        ON o.game_id = n.game_id AND o.event_idx = n.event_idx
+     WHERE o.last_event_type IS DISTINCT FROM 'stoppage'
      GROUP BY 1
      ORDER BY 1;
      """),
@@ -454,6 +472,32 @@ VERIFY_QUERIES = [
            IN ('teammate-blocked', 'short', 'failed-bank-attempt')
      GROUP BY 1, 2
      ORDER BY 1, 2;
+     """),
+    ("12. Shots whose latest earlier event is a stoppage with no faceoff "
+     "between (docstring item 10). These were 'stoppage' at 0 s through v1.4. "
+     "still_stoppage must be 0",
+     """
+     WITH raw_prev AS (
+         SELECT DISTINCT ON (f.game_id, f.event_idx)
+                f.game_id, f.is_goal, f.last_event_type,
+                f.seconds_since_last_event, c.event_type AS raw_prev_type
+         FROM shot_features_fenwick f
+         JOIN plays_context c
+           ON c.game_id = f.game_id
+          AND c.period  = f.period
+          AND (c.game_seconds <  f.game_seconds
+               OR (c.game_seconds = f.game_seconds AND c.event_idx < f.event_idx))
+         ORDER BY f.game_id, f.event_idx, c.game_seconds DESC, c.event_idx DESC
+     )
+     SELECT substr(game_id::text, 1, 4) AS season_start,
+            COUNT(*) AS shots,
+            COUNT(*) FILTER (WHERE is_goal) AS goals,
+            COUNT(*) FILTER (WHERE last_event_type = 'stoppage') AS still_stoppage,
+            COUNT(*) FILTER (WHERE seconds_since_last_event = 0) AS now_zero_secs
+     FROM raw_prev
+     WHERE raw_prev_type = 'stoppage'
+     GROUP BY 1
+     ORDER BY 1;
      """),
 ]
 

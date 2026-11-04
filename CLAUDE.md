@@ -94,6 +94,12 @@ Updated 2026-11-04 (v1.4 live).
   from `results/v1_4-fenwick/` and a rerun of the v1.3 comparison.
 - **Leaderboard** has a Test season column; runs whose test season was in progress are
   marked "to date" (`model/reporting.py`).
+- **Stoppage leak fixed in the table** (2026-11-04, see `docs/FINDINGS.md`): 170 shots had
+  a stoppage the shot itself caused (review, challenge, goalie froze it) as their previous
+  event, 57% goals, and v1.4 learned it (97.8 xG on 97 goals). `shot_prev_any` now skips
+  stoppages; check 12 in the build guards it. v1.4 is not retrained; the next
+  `refresh.sh` rescores it on the fixed table (2026-27 O/E 0.999 -> 1.001). Penalty shots
+  are separate ('penalty' event, typeCode PS) and fine.
 - **'Short' misses** were dropped from `shot_features_fenwick` (`71a1a15`). v1.3 never saw
   them, but `shot_xg` still holds old v1.2 rows for them, so always join `shot_xg` through
   `shot_features_fenwick`. `export/profiles.py` and `export/period_tables.py` do.
@@ -145,7 +151,8 @@ Updated 2026-11-04 (v1.4 live).
 
 ## Next up
 
-1. "What's next" in the README: shooters and goalies.
+1. Shooters (v1.5) then goalies (v1.6), each measured against v1.4's settings retrained on
+   the fixed table. Owner's rules are in the 2026-11-04 session log entry.
 2. When 2026-27 has more games, refresh the model tab's test numbers (see above).
 
 Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by

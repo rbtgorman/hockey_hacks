@@ -5,6 +5,12 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-04
 
+- PC: fixed the stoppage leak in `shot_features_fenwick` (this commit). 170 shots had a
+  stoppage caused by the shot as their previous event, all at 0 s, 97 goals; v1.4 gave them
+  97.8 xG. `shot_prev_any` skips stoppages now; only those 170 rows changed (checked against
+  the old rule built side by side). New build check 12; check 1 leaves them out of legacy
+  parity. Penalty shots aren't affected and get no flag. Written up in `docs/FINDINGS.md`,
+  whose plan now names v1.5 (shooter) and v1.6 (goalie). v1.4 not retrained or rescored.
 - PC: v1.4-fenwick is live (`26ae177`). Added to `model/score_fenwick.py` as the default, rescored every
   shot into `shot_xg` (v1.3 and v1.2 rows kept), re-exported the period page and profiles,
   and rewrote the model tab and methods page for v1.4. Checks before pushing: 2026-27 came
