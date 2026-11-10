@@ -91,9 +91,8 @@ During the season, `export/refresh.sh` runs the whole update for the current sea
 
 ## What's next
 
-- **Clean up the data first.** Count the 'short' misses (basically fanned shots and flubs the NHL has logged as misses since 2023-24) and take them out. Find out why tip-ins go in less than the model expects (78 for every 100). And check whether shot locations get recorded differently from rink to rink.
-- **Tune the model properly.** Run a real settings search scored on log loss, make sure xG never goes up as a shot gets farther away, and add a calibration step.
-- **Add who's shooting and who's in net.** The builders for both already exist.
+- **Done lately:** the 'short' misses are out, the tip-in drop is explained (the NHL calls more shots tip-ins since 2025-26), the settings search and distance rule are in (v1.4), and the stoppage leak is closed (v1.4.1). Rinks were checked for recording shots differently: a few log shots about 1 ft closer or farther than the same teams' other games, but goals ÷ xG at those rinks doesn't move the way it would if that were scorekeeping, so the model stays as is ([write-up](docs/FINDINGS.md)).
+- **Shooters and goalies stay out of xG on purpose,** so goals minus xG and goals saved above expected mean something. Their skill comes in later as its own layer, for the game simulator.
 - **Keep the test clean.** 2025-26 has been looked at a lot now, so 2026-27 becomes the next real test.
 
 ## Credits

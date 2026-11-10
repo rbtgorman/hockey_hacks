@@ -1,0 +1,285 @@
+Rink-by-rink shot location check, model v1.4.1-fenwick, regular season 2022-23 to 2025-26.
+445,418 unblocked, non-empty-net attempts in 5,248 games. Rinks: venues with 20+ games in the season. Ranges: 95%, 1000 game resamples.
+A = against the shooting teams' shots in their other games; B = against the defending teams' other games.
+
+==========================================================================================
+1. 2022-23, rink vs. matched (A), sorted by mean distance gap
+==========================================================================================
+d gap = rink mean distance minus matched, ft. <=20 gap = share within 20 ft, points.
+O/E = goals / xG at the rink, divided by the season's league-wide goals / xG (0.952). rel = rink O/E / matched O/E. * = range clear of 0 (or 1) in both A and B.
+
+                        rink  games  shots       mean d              d gap A d gap B   median           <=20 gap A                  O/E                rel A rel B
+       STL Enterprise Center     41   3381 32.7 vs 34.8 -2.1 (-3.1 to -1.1)*    -2.0 29 vs 31 -1.0 (-3.3 to +1.2)  1.05 (0.94 to 1.17)  1.01 (0.88 to 1.17)   1.01
+       NSH Bridgestone Arena     40   3539 33.2 vs 35.0 -1.8 (-2.8 to -0.7)*    -1.2 31 vs 32 -1.3 (-3.0 to +0.7)  0.89 (0.78 to 0.99)* 0.92 (0.78 to 1.07)   0.98
+            ANA Honda Center     41   3783 34.1 vs 35.7 -1.6 (-2.7 to -0.5)     +0.7 31 vs 32 +3.4 (+1.1 to +5.7)  1.01 (0.92 to 1.10)  1.02 (0.89 to 1.16)   1.01
+            TBL Amalie Arena     41   3664 33.6 vs 35.0 -1.4 (-2.5 to -0.4)     -0.6 31 vs 32 -0.4 (-2.6 to +1.7)  0.94 (0.85 to 1.04)  0.98 (0.87 to 1.12)   0.93
+               CAR PNC Arena     40   3514 34.0 vs 35.3 -1.3 (-2.4 to +0.1)     -0.4 31 vs 33 +5.4 (+3.2 to +7.7)* 0.91 (0.81 to 1.02)  0.94 (0.82 to 1.08)   0.92
+        LAK Crypto.com Arena     41   3440 34.2 vs 35.3 -1.1 (-2.4 to +0.1)     -0.9 30 vs 33 +2.0 (+0.0 to +4.2)  1.03 (0.90 to 1.17)  1.00 (0.85 to 1.17)   0.93
+           CHI United Center     41   3378 34.7 vs 35.7 -1.0 (-2.2 to +0.2)     +0.9 32 vs 33 +1.0 (-1.1 to +3.1)  1.10 (0.97 to 1.23)  1.16 (1.00 to 1.35)   1.15
+             MTL Centre Bell     41   3306 34.3 vs 35.2 -0.9 (-2.2 to +0.2)     +0.7 31 vs 32 +3.3 (+1.1 to +5.7)  1.10 (0.97 to 1.24)  1.10 (0.95 to 1.28)   1.13
+           ARI Mullett Arena     41   3569 34.1 vs 35.0 -0.9 (-1.9 to +0.2)     +0.1 32 vs 32 +0.5 (-1.7 to +2.5)  1.04 (0.91 to 1.17)  1.04 (0.89 to 1.21)   1.03
+            VAN Rogers Arena     41   3392 33.9 vs 34.7 -0.8 (-1.8 to +0.2)     -0.5 29 vs 31 +2.5 (+0.8 to +4.3)  1.04 (0.92 to 1.17)  0.95 (0.82 to 1.10)   0.94
+               NYI UBS Arena     41   3558 34.6 vs 35.4 -0.8 (-2.0 to +0.3)     -0.2 31 vs 32 +2.0 (-0.2 to +4.3)  0.85 (0.72 to 0.99)* 0.85 (0.71 to 1.02)   0.86
+    OTT Canadian Tire Centre     41   3637 34.6 vs 35.3 -0.7 (-1.8 to +0.5)     +0.2 30 vs 32 +2.4 (+0.3 to +4.5)  0.99 (0.88 to 1.11)  1.07 (0.91 to 1.24)   0.97
+   NYR Madison Square Garden     41   3457 33.2 vs 33.8 -0.6 (-1.6 to +0.4)     -0.8 30 vs 31 +4.0 (+2.1 to +6.0)* 0.96 (0.83 to 1.07)  0.95 (0.80 to 1.10)   1.05
+            EDM Rogers Place     41   3555 32.9 vs 33.5 -0.6 (-1.7 to +0.5)     -1.4 28 vs 30 +0.4 (-1.8 to +2.6)  0.97 (0.88 to 1.06)  0.87 (0.76 to 0.99)   0.93
+   CGY Scotiabank Saddledome     41   3574 35.2 vs 35.7 -0.5 (-1.6 to +0.8)     +0.7 32 vs 33 -0.2 (-2.2 to +1.7)  0.96 (0.85 to 1.07)  0.97 (0.84 to 1.12)   0.96
+          FLA FLA Live Arena     41   3869 34.2 vs 34.6 -0.3 (-1.4 to +0.7)     -0.5 31 vs 31 +1.1 (-1.1 to +3.2)  0.98 (0.87 to 1.09)  1.05 (0.92 to 1.20)   0.93
+       WSH Capital One Arena     41   3558 34.6 vs 34.8 -0.3 (-1.4 to +0.8)     +0.1 32 vs 32 +1.3 (-0.6 to +3.3)  1.05 (0.93 to 1.16)  1.04 (0.90 to 1.20)   1.06
+  SJS SAP Center at San Jose     40   3469 33.4 vs 33.7 -0.2 (-1.2 to +0.8)     -0.6 30 vs 30 -2.1 (-4.5 to +0.3)  1.08 (0.96 to 1.20)  1.09 (0.95 to 1.25)   1.06
+        CBJ Nationwide Arena     40   3571 34.9 vs 35.0 -0.1 (-1.2 to +1.0)     +0.5 33 vs 32 -1.1 (-2.7 to +0.6)  1.01 (0.88 to 1.15)  1.06 (0.90 to 1.24)   0.95
+        PIT PPG Paints Arena     41   3839 34.9 vs 35.0 -0.1 (-1.3 to +1.2)     +0.5 32 vs 31 -0.1 (-2.1 to +1.9)  0.94 (0.85 to 1.02)  0.98 (0.86 to 1.11)   0.93
+      WPG Canada Life Centre     41   3640 34.5 vs 34.6 -0.0 (-1.0 to +1.0)     +0.2 31 vs 32 +1.6 (-0.5 to +3.8)  0.85 (0.74 to 0.97)* 0.86 (0.72 to 1.02)   0.86
+    SEA Climate Pledge Arena     41   3379 35.3 vs 35.0 +0.2 (-1.0 to +1.4)     +0.5 32 vs 32 +1.1 (-1.0 to +3.1)  1.16 (1.02 to 1.32)* 1.00 (0.84 to 1.18)   1.13
+          BUF KeyBank Center     41   3649 34.6 vs 34.4 +0.2 (-0.8 to +1.2)     +0.6 31 vs 31 -0.1 (-2.4 to +2.2)  1.12 (1.01 to 1.24)* 1.06 (0.92 to 1.22)   1.17
+    DET Little Caesars Arena     41   3317 35.5 vs 35.0 +0.5 (-0.5 to +1.5)     +1.2 31 vs 32 +0.8 (-0.7 to +2.4)  1.13 (0.99 to 1.28)  1.10 (0.94 to 1.28)   1.11
+DAL American Airlines Center     41   3586 35.0 vs 34.5 +0.5 (-0.6 to +1.7)     +0.4 32 vs 31 -1.8 (-4.2 to +0.4)  1.00 (0.88 to 1.14)  0.96 (0.83 to 1.14)   1.07
+      PHI Wells Fargo Center     41   3477 35.9 vs 35.0 +0.8 (-0.2 to +2.0)     +1.6 33 vs 32 -0.4 (-2.4 to +1.6)  1.06 (0.95 to 1.16)  1.05 (0.93 to 1.19)   1.06
+        TOR Scotiabank Arena     41   3498 34.0 vs 33.1 +0.9 (-0.4 to +2.2)     -0.1 30 vs 29 -1.2 (-3.8 to +1.2)  0.94 (0.86 to 1.03)  0.96 (0.85 to 1.09)   0.98
+       NJD Prudential Center     41   3524 35.2 vs 34.3 +0.9 (-0.2 to +2.0)     +0.4 32 vs 31 -1.3 (-3.4 to +0.6)  1.00 (0.89 to 1.12)  0.98 (0.86 to 1.12)   1.04
+          VGK T-Mobile Arena     41   3516 35.5 vs 34.3 +1.2 (-0.3 to +2.5)     +0.6 32 vs 31 -2.0 (-4.3 to +0.5)  1.02 (0.90 to 1.16)  0.99 (0.85 to 1.16)   1.08
+              COL Ball Arena     40   3362 35.4 vs 34.2 +1.2 (+0.1 to +2.3)*    +1.2 33 vs 31 -1.2 (-3.3 to +0.9)  1.02 (0.89 to 1.15)  1.00 (0.85 to 1.17)   1.07
+      MIN Xcel Energy Center     41   3435 36.7 vs 35.0 +1.7 (+0.6 to +2.8)*    +2.4 35 vs 32 -3.0 (-5.0 to -1.0)* 0.99 (0.84 to 1.13)  1.03 (0.86 to 1.20)   1.07
+               BOS TD Garden     40   3392 35.8 vs 34.0 +1.7 (+0.7 to +2.9)*    +1.2 33 vs 31 -2.3 (-4.5 to -0.1)* 0.88 (0.78 to 0.99)* 0.79 (0.68 to 0.91)   0.97
+
+==========================================================================================
+1. 2023-24, rink vs. matched (A), sorted by mean distance gap
+==========================================================================================
+d gap = rink mean distance minus matched, ft. <=20 gap = share within 20 ft, points.
+O/E = goals / xG at the rink, divided by the season's league-wide goals / xG (1.014). rel = rink O/E / matched O/E. * = range clear of 0 (or 1) in both A and B.
+
+                        rink  games  shots       mean d              d gap A d gap B   median           <=20 gap A                  O/E                rel A rel B
+   NYR Madison Square Garden     41   3588 33.9 vs 35.7 -1.8 (-3.4 to -0.4)*    -1.8 31 vs 33 +0.7 (-1.7 to +3.1)  0.95 (0.84 to 1.06)  0.91 (0.76 to 1.05)   0.98
+             MTL Centre Bell     41   3632 33.9 vs 35.2 -1.4 (-2.3 to -0.4)*    -1.2 31 vs 32 +2.0 (+0.2 to +3.9)  0.92 (0.83 to 1.03)  0.86 (0.76 to 0.98)   0.92
+              COL Ball Arena     41   3536 34.4 vs 35.7 -1.3 (-2.4 to -0.2)     -0.8 31 vs 33 +2.5 (+0.7 to +4.4)  1.11 (0.99 to 1.22)  1.12 (0.97 to 1.29)   1.09
+            VAN Rogers Arena     41   3383 34.3 vs 35.5 -1.2 (-2.3 to -0.2)     -0.6 31 vs 33 +3.2 (+1.1 to +5.5)* 0.99 (0.88 to 1.12)  0.93 (0.80 to 1.08)   0.99
+  SJS SAP Center at San Jose     41   3532 35.2 vs 36.3 -1.2 (-2.2 to -0.0)     +0.5 33 vs 33 +1.5 (-0.3 to +3.3)  1.01 (0.88 to 1.15)  1.03 (0.86 to 1.23)   1.02
+            EDM Rogers Place     40   3549 33.3 vs 34.4 -1.1 (-2.0 to -0.2)*    -1.2 30 vs 31 +1.2 (-0.7 to +3.0)  1.00 (0.90 to 1.11)  1.08 (0.94 to 1.23)   0.98
+           CHI United Center     41   3372 34.9 vs 35.9 -0.9 (-2.0 to +0.2)     +0.7 32 vs 34 +1.1 (-1.0 to +3.3)  0.92 (0.83 to 1.03)  1.01 (0.88 to 1.17)   0.85
+            TBL Amalie Arena     41   3438 34.7 vs 35.5 -0.8 (-1.7 to +0.3)     -0.4 31 vs 33 +0.6 (-1.4 to +2.6)  1.09 (1.00 to 1.18)* 1.07 (0.93 to 1.22)   1.03
+      WPG Canada Life Centre     41   3517 35.0 vs 35.8 -0.8 (-1.7 to +0.2)     -0.9 33 vs 33 +1.3 (-0.7 to +3.4)  0.95 (0.85 to 1.05)  0.97 (0.84 to 1.12)   1.03
+        LAK Crypto.com Arena     41   3519 35.4 vs 36.1 -0.7 (-1.9 to +0.5)     +0.1 33 vs 34 +0.9 (-0.9 to +2.8)  0.94 (0.84 to 1.06)  0.92 (0.79 to 1.07)   0.95
+       STL Enterprise Center     41   3511 34.5 vs 35.2 -0.7 (-1.6 to +0.4)     +0.3 32 vs 32 +0.5 (-1.4 to +2.5)  0.97 (0.86 to 1.08)  1.04 (0.88 to 1.21)   1.03
+          BUF KeyBank Center     41   3519 34.8 vs 35.4 -0.6 (-1.8 to +0.5)     -0.1 33 vs 33 +0.8 (-1.3 to +2.7)  0.94 (0.81 to 1.07)  0.93 (0.79 to 1.10)   0.96
+   CGY Scotiabank Saddledome     41   3525 35.4 vs 35.9 -0.5 (-1.5 to +0.5)     +0.5 33 vs 33 +0.2 (-1.7 to +2.1)  1.01 (0.91 to 1.12)  1.01 (0.89 to 1.16)   0.99
+            ANA Honda Center     41   3505 35.6 vs 36.0 -0.4 (-1.4 to +0.5)     +1.0 33 vs 33 +1.8 (-0.1 to +3.6)  0.96 (0.86 to 1.08)  0.94 (0.80 to 1.10)   0.93
+       NSH Bridgestone Arena     41   3524 34.6 vs 34.8 -0.2 (-1.3 to +0.8)     -0.3 32 vs 32 -1.0 (-3.2 to +1.2)  0.99 (0.88 to 1.09)  1.02 (0.89 to 1.16)   1.02
+        PIT PPG Paints Arena     41   3772 35.3 vs 35.5 -0.2 (-1.4 to +1.1)     +0.4 32 vs 33 -0.1 (-2.1 to +1.8)  0.91 (0.79 to 1.03)  0.94 (0.79 to 1.11)   0.92
+               BOS TD Garden     41   3474 34.9 vs 35.1 -0.1 (-1.4 to +1.0)     -0.3 32 vs 32 +0.1 (-1.9 to +2.1)  0.95 (0.84 to 1.07)  0.93 (0.80 to 1.06)   1.03
+       NJD Prudential Center     40   3375 34.7 vs 34.8 -0.1 (-1.1 to +0.8)     -0.6 32 vs 32 +1.0 (-0.9 to +2.8)  1.10 (0.99 to 1.20)  1.05 (0.90 to 1.19)   1.13
+DAL American Airlines Center     41   3518 35.1 vs 35.2 -0.0 (-1.3 to +1.1)     -0.5 32 vs 32 +0.2 (-1.7 to +2.4)  1.13 (1.02 to 1.26)* 1.10 (0.97 to 1.26)   1.19
+               CAR PNC Arena     41   3527 36.0 vs 35.9 +0.1 (-1.0 to +1.4)     +0.3 34 vs 34 -0.4 (-2.4 to +1.6)  0.97 (0.84 to 1.13)  0.92 (0.78 to 1.11)   0.98
+           ARI Mullett Arena     41   3581 35.2 vs 35.0 +0.1 (-0.9 to +1.1)     +0.5 32 vs 32 +0.3 (-1.6 to +2.2)  1.01 (0.90 to 1.14)  1.00 (0.86 to 1.16)   1.01
+        CBJ Nationwide Arena     41   3787 35.9 vs 35.8 +0.2 (-1.0 to +1.4)     +1.6 33 vs 33 -0.6 (-2.8 to +1.5)  0.95 (0.83 to 1.06)  0.96 (0.82 to 1.11)   0.87
+               NYI UBS Arena     40   3547 35.4 vs 35.2 +0.2 (-0.7 to +1.2)     +0.2 33 vs 32 -1.1 (-3.0 to +0.8)  1.00 (0.88 to 1.12)  0.97 (0.82 to 1.11)   1.01
+    OTT Canadian Tire Centre     39   3317 36.1 vs 35.9 +0.2 (-0.8 to +1.3)     +1.2 33 vs 33 -0.6 (-2.8 to +1.3)  1.15 (1.03 to 1.25)* 1.19 (1.04 to 1.34)   1.10
+       WSH Capital One Arena     41   3457 35.5 vs 35.2 +0.3 (-0.8 to +1.6)     -0.3 33 vs 32 -1.1 (-3.1 to +0.8)  0.98 (0.86 to 1.11)  1.00 (0.85 to 1.17)   0.95
+    DET Little Caesars Arena     40   3422 36.2 vs 35.8 +0.4 (-0.9 to +1.6)     +1.2 33 vs 33 -2.0 (-4.1 to +0.1)  1.07 (0.95 to 1.19)  1.04 (0.91 to 1.19)   1.02
+        TOR Scotiabank Arena     41   3716 34.8 vs 34.3 +0.5 (-0.6 to +1.5)     -0.2 31 vs 32 -0.0 (-1.8 to +2.1)  1.09 (0.97 to 1.23)  1.07 (0.92 to 1.22)   1.11
+          VGK T-Mobile Arena     41   3456 36.1 vs 35.5 +0.5 (-0.7 to +1.7)     +0.9 33 vs 32 -2.2 (-4.5 to +0.0)  0.99 (0.88 to 1.11)  0.99 (0.85 to 1.14)   0.95
+      FLA Amerant Bank Arena     41   3680 36.4 vs 35.5 +0.8 (-0.4 to +2.1)     +1.0 33 vs 33 +1.5 (-0.3 to +3.3)  0.92 (0.82 to 1.01)  0.90 (0.77 to 1.05)   1.00
+      MIN Xcel Energy Center     40   3376 36.2 vs 35.3 +0.9 (-0.2 to +2.0)     +1.1 34 vs 32 -2.4 (-4.3 to -0.4)  1.04 (0.90 to 1.17)  1.07 (0.92 to 1.23)   1.03
+      PHI Wells Fargo Center     41   3476 36.4 vs 35.5 +1.0 (-0.0 to +1.9)     +1.2 34 vs 33 -1.1 (-2.9 to +0.8)  0.98 (0.86 to 1.10)  0.98 (0.83 to 1.14)   0.92
+    SEA Climate Pledge Arena     40   3314 37.4 vs 35.5 +1.9 (+0.2 to +4.1)*    +2.2 34 vs 33 -1.5 (-3.3 to +0.4)  1.01 (0.89 to 1.14)  1.07 (0.92 to 1.25)   1.05
+
+==========================================================================================
+1. 2024-25, rink vs. matched (A), sorted by mean distance gap
+==========================================================================================
+d gap = rink mean distance minus matched, ft. <=20 gap = share within 20 ft, points.
+O/E = goals / xG at the rink, divided by the season's league-wide goals / xG (1.020). rel = rink O/E / matched O/E. * = range clear of 0 (or 1) in both A and B.
+
+                        rink  games  shots       mean d              d gap A d gap B   median           <=20 gap A                  O/E                rel A rel B
+             MTL Centre Bell     41   3410 34.4 vs 36.2 -1.8 (-2.9 to -0.8)*    -1.3 31 vs 33 +3.2 (+1.4 to +5.2)* 0.95 (0.82 to 1.06)  0.92 (0.78 to 1.05)   0.93
+            EDM Rogers Place     41   3474 34.5 vs 36.2 -1.7 (-2.7 to -0.5)*    -1.2 31 vs 33 +2.2 (+0.4 to +4.2)* 1.03 (0.92 to 1.16)  1.05 (0.91 to 1.23)   1.03
+       WSH Capital One Arena     41   3449 35.4 vs 37.0 -1.6 (-2.7 to -0.4)     -0.2 34 vs 34 +2.2 (-0.1 to +4.6)  1.06 (0.94 to 1.18)  1.00 (0.86 to 1.15)   1.10
+            ANA Honda Center     41   3683 35.6 vs 36.9 -1.2 (-2.6 to +0.2)     +0.7 33 vs 34 +2.8 (+0.6 to +4.9)  0.92 (0.84 to 1.01)  0.95 (0.83 to 1.08)   0.98
+   CGY Scotiabank Saddledome     41   3486 35.9 vs 37.1 -1.2 (-2.2 to -0.2)     +0.4 34 vs 35 +1.4 (-0.2 to +3.2)  0.92 (0.81 to 1.04)  0.95 (0.81 to 1.09)   0.91
+           CAR Lenovo Center     41   3412 35.2 vs 36.2 -1.1 (-2.2 to +0.1)     +0.1 32 vs 34 +2.4 (+0.4 to +4.4)  1.02 (0.90 to 1.13)  1.15 (1.01 to 1.32)   1.00
+            TBL Amalie Arena     41   3397 35.1 vs 36.1 -1.0 (-2.0 to -0.0)     -1.0 33 vs 33 +1.1 (-0.7 to +2.8)  0.98 (0.87 to 1.10)  0.98 (0.83 to 1.14)   0.97
+        CBJ Nationwide Arena     40   3444 35.7 vs 36.4 -0.7 (-1.9 to +0.5)     +0.4 33 vs 34 +1.1 (-1.2 to +3.5)  1.16 (1.01 to 1.31)* 1.15 (0.97 to 1.35)   1.11
+   NYR Madison Square Garden     41   3476 35.2 vs 35.9 -0.6 (-1.7 to +0.5)     +0.2 33 vs 33 +1.1 (-0.9 to +3.1)  0.98 (0.86 to 1.12)  0.92 (0.78 to 1.10)   1.02
+    DET Little Caesars Arena     41   3428 35.3 vs 35.9 -0.6 (-1.7 to +0.4)     -0.6 33 vs 33 +2.2 (+0.1 to +4.5)  1.00 (0.88 to 1.12)  1.04 (0.88 to 1.19)   0.98
+            VAN Rogers Arena     41   3196 36.3 vs 36.8 -0.5 (-1.7 to +0.6)     +0.4 33 vs 34 +1.4 (-0.7 to +3.4)  1.02 (0.89 to 1.17)  1.00 (0.85 to 1.18)   1.03
+       STL Enterprise Center     41   3203 36.0 vs 36.5 -0.5 (-1.7 to +0.7)     -0.1 34 vs 34 -1.6 (-3.8 to +0.7)  1.04 (0.92 to 1.15)  1.03 (0.89 to 1.16)   0.98
+  SJS SAP Center at San Jose     41   3446 36.6 vs 37.0 -0.4 (-1.6 to +0.8)     +1.2 34 vs 34 -0.0 (-2.0 to +2.0)  1.01 (0.89 to 1.13)  1.01 (0.87 to 1.16)   0.98
+               BOS TD Garden     41   3394 36.3 vs 36.6 -0.3 (-1.4 to +0.9)     +0.5 34 vs 33 -1.3 (-3.2 to +0.5)  0.95 (0.83 to 1.08)  0.98 (0.83 to 1.15)   0.86
+           CHI United Center     40   3262 35.4 vs 35.7 -0.3 (-1.3 to +0.6)     +0.2 33 vs 34 -0.1 (-2.2 to +2.3)  1.08 (0.99 to 1.17)  1.09 (0.95 to 1.23)   1.06
+              COL Ball Arena     41   3359 35.8 vs 36.1 -0.2 (-1.5 to +0.9)     -0.2 32 vs 33 +0.5 (-1.7 to +2.6)  0.97 (0.86 to 1.08)  0.98 (0.83 to 1.15)   0.98
+    OTT Canadian Tire Centre     41   3368 36.1 vs 36.2 -0.1 (-1.2 to +0.9)     +0.2 33 vs 34 -0.8 (-3.0 to +1.4)  1.05 (0.91 to 1.19)  1.10 (0.93 to 1.28)   1.07
+        PIT PPG Paints Arena     41   3576 35.2 vs 35.2 -0.1 (-1.3 to +1.1)     -0.8 33 vs 32 -1.1 (-2.7 to +0.6)  1.07 (0.95 to 1.19)  1.12 (0.95 to 1.29)   1.04
+      WPG Canada Life Centre     41   3446 36.2 vs 36.2 +0.1 (-1.2 to +1.2)     -0.1 33 vs 33 +0.1 (-2.0 to +2.3)  0.89 (0.78 to 1.01)  0.84 (0.72 to 0.97)   0.93
+          VGK T-Mobile Arena     41   3491 36.0 vs 36.0 +0.1 (-1.3 to +1.4)     +0.5 33 vs 33 -1.0 (-3.5 to +1.4)  1.02 (0.88 to 1.16)  1.03 (0.87 to 1.21)   1.02
+DAL American Airlines Center     40   3361 36.0 vs 35.9 +0.2 (-1.0 to +1.4)     -0.1 33 vs 32 +0.1 (-2.0 to +2.0)  0.92 (0.81 to 1.03)  0.89 (0.76 to 1.03)   0.94
+       NSH Bridgestone Arena     41   3287 35.5 vs 35.2 +0.2 (-0.9 to +1.4)     +0.1 33 vs 32 -1.3 (-3.4 to +0.9)  1.04 (0.91 to 1.17)  1.21 (1.03 to 1.42)   1.02
+      PHI Wells Fargo Center     41   3250 35.2 vs 34.9 +0.3 (-0.7 to +1.4)     -1.1 32 vs 32 -0.5 (-2.8 to +1.6)  1.07 (0.96 to 1.20)  1.09 (0.95 to 1.25)   0.95
+          BUF KeyBank Center     40   3376 36.3 vs 35.9 +0.3 (-0.9 to +1.6)     +1.0 33 vs 33 -0.8 (-2.8 to +0.9)  1.11 (0.98 to 1.23)  1.06 (0.91 to 1.23)   1.09
+        LAK Crypto.com Arena     41   3361 37.0 vs 36.6 +0.4 (-0.7 to +1.6)     +1.1 35 vs 34 -1.8 (-4.0 to +0.3)  0.97 (0.83 to 1.12)  1.04 (0.85 to 1.24)   0.94
+        TOR Scotiabank Arena     41   3358 36.1 vs 35.6 +0.5 (-0.6 to +1.6)     +0.3 34 vs 33 -0.8 (-2.9 to +1.2)  0.91 (0.81 to 1.02)  0.86 (0.74 to 1.00)   0.96
+       NJD Prudential Center     40   3216 35.5 vs 35.0 +0.5 (-0.5 to +1.5)     -0.8 32 vs 32 +0.4 (-1.5 to +2.4)  0.98 (0.85 to 1.12)  1.01 (0.86 to 1.19)   1.04
+               NYI UBS Arena     41   3538 36.1 vs 35.3 +0.7 (-0.4 to +1.8)     +0.6 33 vs 32 -1.3 (-3.7 to +1.0)  0.98 (0.86 to 1.10)  1.05 (0.89 to 1.22)   0.98
+      FLA Amerant Bank Arena     40   3546 36.6 vs 35.8 +0.8 (-0.4 to +1.9)     +0.1 34 vs 34 +0.4 (-1.9 to +2.6)  0.89 (0.78 to 1.01)  0.90 (0.75 to 1.09)   0.86
+    SEA Climate Pledge Arena     41   3640 37.3 vs 36.4 +0.9 (-0.1 to +1.9)     +1.6 35 vs 34 -0.7 (-2.7 to +1.2)  1.02 (0.91 to 1.14)  0.96 (0.82 to 1.14)   0.97
+            UTA Delta Center     41   3449 37.1 vs 35.9 +1.1 (-0.1 to +2.3)     +1.7 34 vs 33 -1.5 (-3.4 to +0.9)  0.95 (0.85 to 1.04)  0.93 (0.80 to 1.05)   0.95
+      MIN Xcel Energy Center     41   3388 37.6 vs 36.0 +1.6 (+0.8 to +2.4)*    +1.1 35 vs 33 -2.3 (-4.3 to -0.5)  1.02 (0.90 to 1.15)  1.02 (0.87 to 1.19)   1.07
+
+==========================================================================================
+1. 2025-26, rink vs. matched (A), sorted by mean distance gap
+==========================================================================================
+d gap = rink mean distance minus matched, ft. <=20 gap = share within 20 ft, points.
+O/E = goals / xG at the rink, divided by the season's league-wide goals / xG (0.992). rel = rink O/E / matched O/E. * = range clear of 0 (or 1) in both A and B.
+
+                          rink  games  shots       mean d              d gap A d gap B   median           <=20 gap A                  O/E                rel A rel B
+              EDM Rogers Place     41   3465 32.7 vs 34.4 -1.8 (-3.0 to -0.4)     -1.2 29 vs 31 +1.7 (-0.4 to +3.9)  1.02 (0.90 to 1.14)  0.99 (0.85 to 1.13)   1.01
+          PIT PPG Paints Arena     40   3403 32.7 vs 34.4 -1.6 (-2.7 to -0.6)*    -1.4 30 vs 32 +2.0 (-0.3 to +4.1)  1.05 (0.95 to 1.16)  1.00 (0.87 to 1.14)   1.12
+                 NYI UBS Arena     41   3473 33.8 vs 35.1 -1.3 (-2.3 to -0.3)     -0.0 31 vs 32 +1.3 (-0.7 to +3.3)  0.94 (0.82 to 1.05)  0.93 (0.79 to 1.07)   1.01
+        WPG Canada Life Centre     41   3390 33.9 vs 35.1 -1.2 (-2.4 to -0.1)     -1.1 31 vs 32 +1.8 (-0.5 to +4.5)  0.99 (0.89 to 1.09)  1.01 (0.88 to 1.16)   0.97
+             CAR Lenovo Center     41   3474 34.4 vs 35.6 -1.1 (-2.4 to +0.1)     +0.3 32 vs 33 +2.3 (-0.0 to +4.7)  1.07 (0.96 to 1.19)  1.09 (0.94 to 1.25)   1.10
+              VAN Rogers Arena     41   3490 34.0 vs 35.1 -1.1 (-2.3 to -0.0)     +0.0 31 vs 33 +1.3 (-0.6 to +3.4)  0.97 (0.86 to 1.08)  0.97 (0.83 to 1.12)   0.94
+         NJD Prudential Center     41   3404 33.9 vs 34.8 -0.9 (-2.0 to +0.3)     -0.9 31 vs 32 +1.8 (-0.5 to +4.1)  0.95 (0.84 to 1.05)  1.03 (0.88 to 1.20)   0.96
+             CHI United Center     41   3249 34.7 vs 35.5 -0.8 (-2.0 to +0.3)     +0.7 32 vs 33 +2.5 (+0.6 to +4.6)  0.99 (0.86 to 1.12)  1.00 (0.85 to 1.17)   1.03
+     CGY Scotiabank Saddledome     41   3447 34.9 vs 35.7 -0.8 (-2.0 to +0.5)     +0.3 32 vs 33 +1.3 (-0.9 to +3.6)  0.90 (0.79 to 1.01)  0.96 (0.83 to 1.11)   0.87
+              ANA Honda Center     41   3713 34.0 vs 34.8 -0.8 (-1.8 to +0.4)     -0.2 31 vs 33 +1.6 (-0.3 to +3.5)  1.07 (0.96 to 1.18)  1.11 (0.98 to 1.26)   1.05
+         NSH Bridgestone Arena     40   3275 34.0 vs 34.6 -0.6 (-1.6 to +0.3)     -0.1 32 vs 32 +0.5 (-1.4 to +2.5)  1.01 (0.88 to 1.14)  1.05 (0.89 to 1.22)   1.04
+         WSH Capital One Arena     41   3471 34.7 vs 35.1 -0.5 (-1.6 to +0.5)     +0.0 32 vs 32 +1.7 (-0.4 to +3.8)  0.96 (0.83 to 1.07)  0.97 (0.83 to 1.14)   0.97
+            VGK T-Mobile Arena     41   3340 34.9 vs 35.3 -0.4 (-1.6 to +0.7)     -0.0 32 vs 33 +0.3 (-2.1 to +2.7)  1.08 (0.95 to 1.20)  1.13 (0.97 to 1.30)   1.02
+          LAK Crypto.com Arena     41   3491 34.8 vs 35.2 -0.4 (-1.5 to +0.6)     -0.2 32 vs 33 +0.9 (-1.2 to +3.0)  0.95 (0.83 to 1.07)  0.98 (0.84 to 1.12)   0.97
+    SJS SAP Center at San Jose     41   3321 34.2 vs 34.6 -0.4 (-1.7 to +0.6)     +0.1 32 vs 32 +0.7 (-1.4 to +3.0)  1.04 (0.92 to 1.16)  1.00 (0.86 to 1.14)   1.00
+        FLA Amerant Bank Arena     40   3408 34.4 vs 34.7 -0.3 (-1.3 to +0.7)     -0.7 32 vs 32 +0.5 (-1.7 to +2.8)  1.01 (0.87 to 1.15)  1.03 (0.87 to 1.21)   0.92
+  DAL American Airlines Center     41   3027 33.8 vs 34.1 -0.2 (-1.4 to +1.0)     -1.2 31 vs 30 -0.0 (-2.1 to +2.1)  1.06 (0.95 to 1.18)  0.98 (0.84 to 1.14)   1.09
+                 BOS TD Garden     41   3482 35.2 vs 35.4 -0.2 (-1.4 to +1.1)     +0.8 33 vs 33 +0.9 (-1.2 to +2.9)  1.00 (0.89 to 1.11)  0.95 (0.83 to 1.09)   0.97
+      OTT Canadian Tire Centre     41   3267 34.6 vs 34.7 -0.1 (-1.5 to +1.2)     -0.2 32 vs 32 +0.6 (-1.7 to +3.1)  0.99 (0.88 to 1.09)  0.96 (0.83 to 1.09)   0.89
+               MTL Centre Bell     41   3278 34.1 vs 34.0 +0.1 (-1.0 to +1.1)     -0.4 31 vs 31 -0.7 (-2.9 to +1.7)  1.06 (0.94 to 1.18)  0.99 (0.85 to 1.14)   1.10
+        MIN Grand Casino Arena     41   3572 34.8 vs 34.6 +0.2 (-1.1 to +1.4)     -0.2 32 vs 32 -2.5 (-4.6 to -0.2)  0.90 (0.82 to 0.99)* 0.86 (0.77 to 0.97)   0.92
+      SEA Climate Pledge Arena     41   3453 35.1 vs 34.8 +0.3 (-0.7 to +1.4)     +0.2 33 vs 32 +0.2 (-2.3 to +2.9)  0.99 (0.89 to 1.08)  1.01 (0.89 to 1.14)   1.00
+      DET Little Caesars Arena     41   3361 34.9 vs 34.5 +0.4 (-0.7 to +1.4)     +0.3 33 vs 32 -1.5 (-3.3 to +0.5)  1.02 (0.93 to 1.12)  1.10 (0.96 to 1.25)   1.07
+          TOR Scotiabank Arena     41   3484 35.2 vs 34.7 +0.5 (-0.6 to +1.5)     +1.0 33 vs 32 -1.4 (-3.4 to +0.7)  1.07 (0.95 to 1.19)  1.06 (0.93 to 1.21)   1.07
+TBL Benchmark International Ar     40   3267 35.3 vs 34.6 +0.6 (-0.6 to +1.8)     +0.5 33 vs 32 -1.2 (-3.1 to +0.8)  0.99 (0.89 to 1.10)  0.92 (0.79 to 1.07)   1.01
+      PHI Xfinity Mobile Arena     41   3088 35.1 vs 34.2 +0.8 (-0.3 to +2.1)     +0.3 32 vs 31 -2.4 (-4.7 to -0.1)  0.96 (0.87 to 1.04)  0.93 (0.82 to 1.05)   0.94
+          CBJ Nationwide Arena     41   3516 35.3 vs 34.5 +0.8 (-0.1 to +1.8)     +0.3 33 vs 32 -2.0 (-4.0 to -0.0)  1.01 (0.90 to 1.14)  1.06 (0.92 to 1.23)   1.01
+         STL Enterprise Center     41   3228 35.6 vs 34.7 +0.9 (-0.1 to +2.0)     +0.8 33 vs 32 -2.5 (-4.5 to -0.5)* 1.00 (0.86 to 1.15)  1.01 (0.87 to 1.18)   0.95
+     NYR Madison Square Garden     41   3339 35.7 vs 34.7 +1.0 (-0.3 to +2.2)     +0.9 34 vs 32 -2.6 (-4.5 to -0.6)  0.92 (0.78 to 1.05)  0.87 (0.72 to 1.02)   0.95
+            BUF KeyBank Center     41   3546 35.6 vs 34.2 +1.4 (+0.3 to +2.4)     +0.6 34 vs 32 -1.8 (-3.8 to +0.3)  1.00 (0.88 to 1.13)  0.97 (0.83 to 1.11)   1.04
+                COL Ball Arena     41   3674 36.3 vs 34.8 +1.5 (+0.5 to +2.6)*    +1.5 34 vs 33 -2.1 (-4.1 to -0.1)* 0.99 (0.85 to 1.14)  1.01 (0.84 to 1.20)   1.08
+              UTA Delta Center     41   3460 36.6 vs 34.4 +2.2 (+1.1 to +3.2)*    +2.5 33 vs 31 -2.0 (-3.8 to -0.1)* 1.05 (0.95 to 1.14)  1.00 (0.87 to 1.15)   1.05
+
+==========================================================================================
+2. Is there more spread between rinks than chance would give?
+==========================================================================================
+z = gap / its resampling spread. With no rink effects at all, z averages 0 and its
+variance is about 1; a variance well above 1 means rinks really differ. 'clear' =
+rinks whose range clears 0 (or 1) in both A and B; about 5% would by chance alone.
+
+           var(z)                           clear                        
+season    2022-23 2023-24 2024-25 2025-26 2022-23 2023-24 2024-25 2025-26
+measure                                                                  
+mean_d       2.99    1.73    2.24    2.73     5.0     4.0     3.0     3.0
+oe           1.64    1.31    1.12    0.75     6.0     3.0     1.0     1.0
+oe_rel       1.28    0.98    1.18    0.79     0.0     0.0     0.0     0.0
+within_20    3.34    1.72    1.98    2.36     4.0     1.0     2.0     3.0
+
+==========================================================================================
+3. Rinks off in the same direction every season (comparison A)
+==========================================================================================
+Sign of the gap in each season (+ farther / higher, - closer / lower); 'clear' = seasons where
+the range clears 0 (or 1) in both A and B. 4 seasons: pooled gap, its range from the season resamples
+(weighted by shots), for A and for B. By chance alone, about 1 rink in 8 has the same sign all 4 seasons.
+
+
+--- mean_d: 11 of 31 rinks same sign all 4 seasons (chance: about 4); pooled range clear of 0: 15 ---
+home                                    venues signs  clear               pooled A               pooled B
+ EDM                              Rogers Place  ----      2 -1.28 (-1.80 to -0.73) -1.26 (-1.76 to -0.72)
+ ANA                              Honda Center  ----      0 -1.03 (-1.55 to -0.44) +0.57 (+0.04 to +1.13)
+ VAN                              Rogers Arena  ----      0 -0.93 (-1.46 to -0.41) -0.18 (-0.72 to +0.37)
+ CHI                             United Center  ----      0 -0.76 (-1.33 to -0.24) +0.62 (+0.08 to +1.17)
+ CGY                     Scotiabank Saddledome  ----      0 -0.73 (-1.27 to -0.16) +0.48 (-0.08 to +1.02)
+ SJS                    SAP Center at San Jose  ----      0 -0.55 (-1.09 to -0.02) +0.30 (-0.23 to +0.84)
+ PIT                          PPG Paints Arena  ----      1 -0.46 (-1.04 to +0.12) -0.28 (-0.87 to +0.33)
+ TOR                          Scotiabank Arena  ++++      0 +0.58 (+0.03 to +1.09) +0.23 (-0.30 to +0.76)
+ PHI Wells Fargo Center / Xfinity Mobile Arena  ++++      0 +0.73 (+0.17 to +1.31) +0.54 (-0.00 to +1.07)
+ SEA                      Climate Pledge Arena  ++++      1 +0.81 (+0.16 to +1.55) +1.12 (+0.48 to +1.82)
+ MIN   Grand Casino Arena / Xcel Energy Center  ++++      2 +1.09 (+0.49 to +1.61) +1.08 (+0.54 to +1.56)
+
+--- within_20: 8 of 31 rinks same sign all 4 seasons (chance: about 4); pooled range clear of 0: 11 ---
+home                                    venues signs  clear               pooled A               pooled B
+ MIN   Grand Casino Arena / Xcel Energy Center  ----      1 -2.54 (-3.51 to -1.54) -1.43 (-2.34 to -0.48)
+ PHI Wells Fargo Center / Xfinity Mobile Arena  ----      0 -1.06 (-2.08 to -0.08) -0.34 (-1.34 to +0.73)
+ TOR                          Scotiabank Arena  ----      0 -0.84 (-1.89 to +0.10) +0.49 (-0.55 to +1.42)
+ FLA       Amerant Bank Arena / FLA Live Arena  ++++      0 +0.88 (-0.17 to +1.94) +0.63 (-0.39 to +1.56)
+ WPG                        Canada Life Centre  ++++      0 +1.22 (+0.18 to +2.30) +1.31 (+0.23 to +2.45)
+ EDM                              Rogers Place  ++++      1 +1.37 (+0.32 to +2.36) +2.49 (+1.54 to +3.39)
+ VAN                              Rogers Arena  ++++      1 +2.12 (+1.14 to +3.08) +1.29 (+0.31 to +2.29)
+ ANA                              Honda Center  ++++      0 +2.39 (+1.35 to +3.36) +0.27 (-0.80 to +1.24)
+
+--- oe: 6 of 31 rinks same sign all 4 seasons (chance: about 4); pooled range clear of 1: 2 ---
+home                 venues signs  clear               pooled A               pooled B
+ WPG     Canada Life Centre  ----      1 0.920 (0.865 to 0.973) 0.920 (0.865 to 0.973)
+ NYI              UBS Arena  ----      1 0.941 (0.884 to 0.998) 0.941 (0.884 to 0.998)
+ BOS              TD Garden  ----      1 0.945 (0.889 to 1.000) 0.945 (0.889 to 1.000)
+ NYR  Madison Square Garden  ----      0 0.953 (0.894 to 1.016) 0.953 (0.894 to 1.016)
+ SJS SAP Center at San Jose  ++++      0 1.034 (0.973 to 1.098) 1.034 (0.973 to 1.098)
+ DET   Little Caesars Arena  ++++      0 1.057 (0.995 to 1.117) 1.057 (0.995 to 1.117)
+
+--- oe_rel: 6 of 31 rinks same sign all 4 seasons (chance: about 4); pooled range clear of 1: 4 ---
+home                venues signs  clear               pooled A               pooled B
+ NYR Madison Square Garden  ----      0 0.912 (0.845 to 0.989) 0.998 (0.926 to 1.083)
+ BOS             TD Garden  ----      0 0.913 (0.846 to 0.979) 0.960 (0.893 to 1.033)
+ VAN          Rogers Arena  ----      0 0.962 (0.890 to 1.046) 0.973 (0.901 to 1.049)
+ STL     Enterprise Center  ++++      0 1.023 (0.949 to 1.100) 0.994 (0.925 to 1.071)
+ CHI         United Center  ++++      0 1.066 (0.988 to 1.146) 1.023 (0.957 to 1.105)
+ DET  Little Caesars Arena  ++++      0 1.069 (0.995 to 1.153) 1.046 (0.974 to 1.124)
+
+==========================================================================================
+4. Anaheim: are the extra close tip-ins part of a wider close-shot pattern?
+==========================================================================================
+Honda Center vs. matched (A and B), by season. Tip-ins and all other shots separately.
+within 10 in points; tip share = tip-ins as a share of all attempts, points; rel O/E = goals / xG
+at the rink over matched (under 1: xG too high there).
+
+ season           shots vs    n    within 10                    gap          mean d gap       tip share gap             rel O/E
+2022-23         tip-ins  A  460 51.1 vs 32.8 +18.3 (+13.0 to +23.9) -3.0 (-4.7 to -1.0)                     0.94 (0.57 to 1.40)
+2022-23         tip-ins  B  460 51.1 vs 27.3 +23.7 (+17.0 to +30.6) -3.9 (-5.8 to -1.9)                     0.88 (0.55 to 1.31)
+2022-23 all other shots  A 3323  8.7 vs 10.3    -1.7 (-3.2 to -0.1) -0.5 (-1.7 to +0.7)                     1.03 (0.90 to 1.19)
+2022-23 all other shots  B 3323  8.7 vs 11.7    -3.0 (-4.5 to -1.4) +2.0 (+1.0 to +3.0)                     1.02 (0.89 to 1.19)
+2022-23       all shots  A 3783 13.9 vs 12.1    +1.7 (+0.2 to +3.3) -1.6 (-2.7 to -0.4) +4.3 (+3.0 to +5.6) 1.02 (0.89 to 1.15)
+2022-23       all shots  B 3783 13.9 vs 13.1    +0.8 (-0.9 to +2.1) +0.7 (-0.3 to +1.8) +3.3 (+2.0 to +4.7) 1.01 (0.88 to 1.13)
+2023-24         tip-ins  A  439 46.9 vs 30.8 +16.1 (+10.2 to +23.3) -3.5 (-6.0 to -1.1)                     1.20 (0.86 to 1.71)
+2023-24         tip-ins  B  439 46.9 vs 29.1 +17.8 (+10.9 to +23.8) -1.8 (-3.6 to +0.1)                     1.27 (0.88 to 1.85)
+2023-24 all other shots  A 3066 10.2 vs 11.1    -1.0 (-2.2 to +0.2) +0.9 (-0.2 to +2.0)                     0.89 (0.74 to 1.03)
+2023-24 all other shots  B 3066 10.2 vs 11.6    -1.4 (-2.6 to +0.0) +2.2 (+0.9 to +3.3)                     0.87 (0.73 to 1.02)
+2023-24       all shots  A 3505 14.8 vs 12.8    +2.0 (+0.4 to +3.2) -0.4 (-1.4 to +0.6) +4.3 (+2.8 to +5.7) 0.94 (0.81 to 1.10)
+2023-24       all shots  B 3505 14.8 vs 13.2    +1.6 (+0.0 to +3.0) +1.0 (-0.2 to +2.2) +3.5 (+2.2 to +4.9) 0.93 (0.80 to 1.09)
+2024-25         tip-ins  A  437 41.2 vs 25.1 +16.0 (+10.8 to +22.1) -2.4 (-4.5 to -0.0)                     0.91 (0.64 to 1.33)
+2024-25         tip-ins  B  437 41.2 vs 30.5  +10.7 (+5.5 to +17.1) -1.7 (-3.6 to +0.4)                     1.37 (1.02 to 1.87)
+2024-25 all other shots  A 3246  9.9 vs 10.2    -0.3 (-1.9 to +1.4) -0.3 (-1.6 to +1.1)                     0.94 (0.81 to 1.08)
+2024-25 all other shots  B 3246  9.9 vs 11.6    -1.7 (-3.3 to -0.3) +1.6 (+0.3 to +3.0)                     0.93 (0.79 to 1.08)
+2024-25       all shots  A 3683 13.6 vs 11.5    +2.1 (+0.6 to +3.8) -1.2 (-2.7 to +0.2) +3.6 (+2.5 to +4.9) 0.95 (0.84 to 1.08)
+2024-25       all shots  B 3683 13.6 vs 13.4    +0.3 (-1.2 to +1.8) +0.7 (-0.4 to +1.9) +2.7 (+1.6 to +3.8) 0.98 (0.86 to 1.12)
+2025-26         tip-ins  A  489 45.0 vs 35.7   +9.3 (+4.2 to +15.2) -1.0 (-2.6 to +0.5)                     1.00 (0.61 to 1.51)
+2025-26         tip-ins  B  489 45.0 vs 41.0    +3.9 (-2.8 to +9.9) -0.2 (-1.6 to +1.5)                     0.79 (0.48 to 1.27)
+2025-26 all other shots  A 3224 11.5 vs 11.8    -0.3 (-1.9 to +1.2) +0.1 (-1.1 to +1.4)                     1.12 (0.97 to 1.31)
+2025-26 all other shots  B 3224 11.5 vs 12.5    -1.0 (-2.5 to +0.6) +0.6 (-0.5 to +1.7)                     1.10 (0.94 to 1.25)
+2025-26       all shots  A 3713 15.9 vs 14.1    +1.8 (+0.2 to +3.6) -0.8 (-1.9 to +0.2) +3.4 (+2.1 to +4.7) 1.11 (0.97 to 1.26)
+2025-26       all shots  B 3713 15.9 vs 15.3    +0.6 (-0.8 to +2.1) -0.2 (-1.2 to +0.9) +3.1 (+1.9 to +4.2) 1.05 (0.92 to 1.18)
+
+==========================================================================================
+5. How much would a 1 ft recording shift move xG?
+==========================================================================================
+Every 2022-23 to 2025-26 shot rescored with distance_ft 1 ft shorter and 1 ft longer, nothing else
+changed (angle and location stay put, so this is a rough guide). A rink that records shots 1 ft too close
+would get about the 'closer' change in xG, so its goals / xG would land near 1 / (1 + change).
+
+  1 ft closer   total xG +5.95%
+  1 ft farther  total xG -4.35%
+
+==========================================================================================
+6. Rinks where A and B agree on distance: what the gap implies vs. what happened
+==========================================================================================
+Rinks whose pooled distance gap clears 0 the same way in A and B. 'implied' = goals / xG you'd see
+there if the whole gap were scorekeeping: the rink's shots rescored at their distance minus the gap
+(B's pooled gap and A's), over their xG as recorded. 'seen' = pooled rel O/E with its range.
+
+home gap A gap B        implied                 seen A                 seen B
+ MTL -1.01 -0.54 0.955 to 0.974 0.965 (0.899 to 1.035) 1.016 (0.945 to 1.091)
+ SEA +0.81 +1.12 1.048 to 1.071 1.010 (0.937 to 1.092) 1.036 (0.964 to 1.111)
+ EDM -1.28 -1.26 0.942 to 0.944 0.998 (0.934 to 1.074) 0.989 (0.920 to 1.065)
+ MIN +1.09 +1.08 1.062 to 1.065 0.994 (0.923 to 1.069) 1.019 (0.943 to 1.094)

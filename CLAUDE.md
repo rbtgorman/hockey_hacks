@@ -107,6 +107,15 @@ Updated 2026-11-10 (v1.4.1 live).
   "Where it still struggles" (tip-ins 90, 60+ ft 86), and "Why xG doesn't know who's
   shooting" (`#finishing`, the ~8% story). When 2026-27 fills in, refresh those numbers from
   `results/test_to_date/`.
+- **Rink check done, no fix** (2026-11-10, `diagnostics/check_rinks.py`,
+  `results/checks/rinks.txt`, FINDINGS "Checking rinks for scorekeeping"). Owner's rules:
+  group by `games.venue` (20+ games a season), 2022-23 to 2025-26 each season on its own,
+  compare against the same teams' other games, ranges from game resamples, report only.
+  Recorded distance differs by rink beyond chance (about ±1 ft; EDM, MTL closer; MIN, SEA
+  farther in both the shooter- and defender-matched comparisons), but matched goals / xG
+  doesn't: no rink clears 1 in any season, and the gaps' implied effect (1 ft = about 5% of
+  xG) mostly doesn't show up. Anaheim's close tip-ins are a tip-in habit (more tips, logged
+  closer), not a wider close-shot pattern.
 - **Leaderboard** has a Test season column; runs whose test season was in progress are
   marked "to date" (`model/reporting.py`).
 - **Stoppage leak fixed in the table** (2026-11-04, see `docs/FINDINGS.md`): 170 shots had
@@ -171,12 +180,12 @@ Updated 2026-11-10 (v1.4.1 live).
 
 ## Waiting on the owner
 
-- Nothing right now.
+- What to do next, now that the rink check found nothing to fix.
 
 ## Next up
 
-1. **Rink-by-rink shot location check** from the README ("check whether shot locations get
-   recorded differently from rink to rink").
+Nothing decided. The rink check is done (below); the owner picks what's next. Candidates
+from the notes: the EDGE goalie comparison, the game simulator's shooter/goalie layer.
 
 Standing decision from the owner (2026-11-04): **shooter and goalie skill stay out of the
 live xG, for good**, finishing priors included. "Goals minus xG" and "goals saved above

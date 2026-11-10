@@ -20,11 +20,15 @@ METHOD
 - Ranges: 95% intervals from resampling the season's games (all of them together,
   so the comparison side is resampled too), 1,000 times.
 - The median distance is shown as a point only. Means, shares and goals / xG get ranges.
+- Sizing (sections 5 and 6): v1.4.1 rescored with distance_ft moved, everything else held,
+  to see what goals / xG a pure scorekeeping gap would produce at a rink.
 
 Run: .venv/bin/python -m diagnostics.check_rinks > results/checks/rinks.txt
 """
 from __future__ import annotations
 
+import contextlib
+import io
 import warnings
 
 import numpy as np
@@ -50,7 +54,7 @@ SELECT g.season, g.game_id, g.venue, g.home_team_abbr AS home,
        CASE WHEN s.shooter_team_id = g.home_team_id THEN g.away_team_abbr
             ELSE g.home_team_abbr END AS defender,
        f.distance_ft AS d, f.is_goal::int AS goal, x.xg,
-       s.raw_details_json->>'shotType' = 'tip-in' AS tip
+       COALESCE(s.raw_details_json->>'shotType' = 'tip-in', false) AS tip
 FROM shot_features_fenwick f
 JOIN shots s ON s.shot_id = f.shot_id
 JOIN shot_xg x ON x.shot_id = f.shot_id AND x.model_version = %(model)s
@@ -109,6 +113,7 @@ class Season:
             out[name + "_base"] = base[:, ix[c]]
         out["oe"] = at[:, ix["goal"]] / at[:, ix["xg"]]
         out["oe_base"] = base[:, ix["goal"]] / base[:, ix["xg"]]
+        out["season_oe"] = S_t[:, ix["goal"]].sum() / S_t[:, ix["xg"]].sum()
         out["shots"] = N_vt.sum(axis=1)
         return out
 
@@ -153,7 +158,7 @@ def run_season(shots: pd.DataFrame, rng: np.random.Generator):
                     "within_20": d["within_20"] - d["within_20_base"],
                     "within_10": d["within_10"] - d["within_10_base"],
                     "tip_share": d["tip_share"] - d["tip_share_base"],
-                    "oe": d["oe"], "oe_rel": d["oe"] / d["oe_base"]}
+                    "oe": d["oe"] / d["season_oe"], "oe_rel": d["oe"] / d["oe_base"]}
 
         p = eff(point)
         b = [eff(d) for d in draws]
@@ -196,13 +201,17 @@ def main() -> None:
 
     rng = np.random.default_rng(SEED)
     res = {s: run_season(df[df.season == s], rng) for s in SEASONS}
+    for s in SEASONS:
+        sub = df[df.season == s]
+        res[s]["season_oe"] = sub.goal.sum() / sub.xg.sum()
 
     # -------------------------------------------------------------- per season
     for s in SEASONS:
         a, b = res[s]["shooter"], res[s]["defender"].set_index("venue")
         section(f"1. {season_label(s)}, rink vs. matched (A), sorted by mean distance gap",
                 "d gap = rink mean distance minus matched, ft. <=20 gap = share within 20 ft, "
-                "points.\nO/E = goals / xG at the rink. rel = rink O/E / matched O/E. "
+                "points.\nO/E = goals / xG at the rink, divided by the season's league-wide "
+                f"goals / xG ({res[s]['season_oe']:.3f}). rel = rink O/E / matched O/E. "
                 "* = range clear of 0 (or 1) in both A and B.")
         rows = []
         for _, r in a.sort_values("mean_d").iterrows():
@@ -244,8 +253,8 @@ def main() -> None:
             "Sign of the gap in each season (+ farther / higher, - closer / lower); "
             "'clear' = seasons where\nthe range clears 0 (or 1) in both A and B. "
             "4 seasons: pooled gap, its range from the season resamples\n"
-            "(weighted by shots). By chance alone, about 1 rink in 8 has the same sign "
-            "all 4 seasons.")
+            "(weighted by shots), for A and for B. By chance alone, about 1 rink in 8 has the "
+            "same sign all 4 seasons.")
     keyed = {}
     for s in SEASONS:
         a, b = res[s]["shooter"], res[s]["defender"].set_index("venue")
@@ -265,9 +274,15 @@ def main() -> None:
             pooled = np.average(vals, weights=wts)
             pd_draws = np.nansum(draws * wts[:, None], axis=0) / wts.sum()
             lo, hi = np.nanquantile(pd_draws, [0.025, 0.975])
+            vals_b = [by[s][1][k] for s in SEASONS]
+            draws_b = np.stack([by[s][1][k + "_draws"] for s in SEASONS])
+            pooled_b = np.average(vals_b, weights=wts)
+            lo_b, hi_b = np.nanquantile(np.nansum(draws_b * wts[:, None], axis=0) / wts.sum(),
+                                        [0.025, 0.975])
             rows.append({"home": home, "venues": " / ".join(sorted({by[s][0].venue for s in SEASONS})),
                          "signs": signs, "clear": nclear,
-                         "pooled": rng_text(pooled * scale, lo * scale, hi * scale, fmt),
+                         "pooled A": rng_text(pooled * scale, lo * scale, hi * scale, fmt),
+                         "pooled B": rng_text(pooled_b * scale, lo_b * scale, hi_b * scale, fmt),
                          "_same": len(set(signs)) == 1, "_p": pooled,
                          "_clr": (lo > null) or (hi < null)})
         t = pd.DataFrame(rows)
@@ -279,8 +294,8 @@ def main() -> None:
     # -------------------------------------------------------------- Anaheim
     section("4. Anaheim: are the extra close tip-ins part of a wider close-shot pattern?",
             "Honda Center vs. matched (A and B), by season. Tip-ins and all other shots "
-            "separately.\nwithin 10 / within 20 in points; tip share = tip-ins as a share of all "
-            "attempts.")
+            "separately.\nwithin 10 in points; tip share = tip-ins as a share of all attempts, "
+            "points; rel O/E = goals / xG\nat the rink over matched (under 1: xG too high there).")
     rows = []
     for s in SEASONS:
         sub = df[df.season == s]
@@ -296,7 +311,8 @@ def main() -> None:
                     d = S.compute(np.bincount(idx, minlength=len(S.games)).astype(float))
                     draws.append((d["within_10"][i] - d["within_10_base"][i],
                                   d["mean_d"][i] - d["mean_d_base"][i],
-                                  d["tip_share"][i] - d["tip_share_base"][i]))
+                                  d["tip_share"][i] - d["tip_share_base"][i],
+                                  d["oe"][i] / d["oe_base"][i]))
                 q = np.nanquantile(np.array(draws), [0.025, 0.975], axis=0)
                 rows.append({
                     "season": season_label(s), "shots": label, "vs": "A" if side == "shooter" else "B",
@@ -309,8 +325,88 @@ def main() -> None:
                     "tip share gap": (rng_text((p["tip_share"][i] - p["tip_share_base"][i]) * 100,
                                                q[0, 2] * 100, q[1, 2] * 100, "{:+.1f}")
                                       if label == "all shots" else ""),
+                    "rel O/E": rng_text(p["oe"][i] / p["oe_base"][i], q[0, 3], q[1, 3], "{:.2f}"),
                 })
     print(pd.DataFrame(rows).to_string(index=False))
+    sensitivity()
+    implied_vs_seen(res, keyed)
+
+
+def implied_vs_seen(res, keyed) -> None:
+    """For rinks where A and B agree on a distance gap: the goals / xG that gap implies."""
+    import joblib
+    from model import train_v1 as v1
+    from model import train_v1_4_1_fenwick as live
+    section("6. Rinks where A and B agree on distance: what the gap implies vs. what happened",
+            "Rinks whose pooled distance gap clears 0 the same way in A and B. 'implied' = goals / "
+            "xG you'd see\nthere if the whole gap were scorekeeping: the rink's shots rescored "
+            "at their distance minus the gap\n(B's pooled gap and A's), over their xG as "
+            "recorded. 'seen' = pooled rel O/E with its range.")
+    with contextlib.redirect_stdout(io.StringIO()):   # the trainer prints its own summary
+        df = live.load_features()
+    df = df[df.season.isin(SEASONS) & ~df.empty_net.astype(bool)]
+    with pg_conn() as conn:
+        g = pd.read_sql("SELECT game_id, venue FROM games", conn)
+    df = df.merge(g, on="game_id", how="left")
+    model = joblib.load(v1.ARTIFACT_DIR / f"{live.ARTIFACT_STEM}.pkl")
+    rows = []
+    for home, by in keyed.items():
+        if len(by) < len(SEASONS):
+            continue
+        wts = np.array([by[s][0].shots for s in SEASONS], float)
+        pooled = {}
+        for side, j in (("A", 0), ("B", 1)):
+            vals = [by[s][j]["mean_d"] for s in SEASONS]
+            draws = np.stack([by[s][j]["mean_d_draws"] for s in SEASONS])
+            pd_draws = np.nansum(draws * wts[:, None], axis=0) / wts.sum()
+            lo, hi = np.nanquantile(pd_draws, [0.025, 0.975])
+            pooled[side] = (np.average(vals, weights=wts), lo, hi)
+        a, b = pooled["A"], pooled["B"]
+        agree = (a[1] > 0 and b[1] > 0) or (a[2] < 0 and b[2] < 0)
+        if not agree:
+            continue
+        venues = {by[s][0].venue for s in SEASONS}
+        shots = df[df.venue.isin(venues)]
+        x = shots[live.ALL_FEATURES]
+        rec = model.predict_proba(x)[:, 1].sum()
+        implied = []
+        for gap in (b[0], a[0]):
+            y = x.copy()
+            y["distance_ft"] = (y["distance_ft"] - gap).clip(lower=0)
+            implied.append(model.predict_proba(y)[:, 1].sum() / rec)
+        seen = {}
+        for side, j in (("A", 0), ("B", 1)):
+            vals = [by[s][j]["oe_rel"] for s in SEASONS]
+            draws = np.stack([by[s][j]["oe_rel_draws"] for s in SEASONS])
+            pd_draws = np.nansum(draws * wts[:, None], axis=0) / wts.sum()
+            lo, hi = np.nanquantile(pd_draws, [0.025, 0.975])
+            seen[side] = rng_text(np.average(vals, weights=wts), lo, hi, "{:.3f}")
+        rows.append({"home": home, "gap A": f"{a[0]:+.2f}", "gap B": f"{b[0]:+.2f}",
+                     "implied": f"{min(implied):.3f} to {max(implied):.3f}",
+                     "seen A": seen["A"], "seen B": seen["B"]})
+    print(pd.DataFrame(rows).to_string(index=False))
+
+
+def sensitivity() -> None:
+    """How much a recording shift of 1 ft moves v1.4.1's xG, holding everything else."""
+    import joblib
+    from model import train_v1 as v1
+    from model import train_v1_4_1_fenwick as live
+    section("5. How much would a 1 ft recording shift move xG?",
+            "Every 2022-23 to 2025-26 shot rescored with distance_ft 1 ft shorter and 1 ft "
+            "longer, nothing else\nchanged (angle and location stay put, so this is a rough "
+            "guide). A rink that records shots 1 ft too close\nwould get about the 'closer' "
+            "change in xG, so its goals / xG would land near 1 / (1 + change).")
+    with contextlib.redirect_stdout(io.StringIO()):   # the trainer prints its own summary
+        df = live.load_features()
+    df = df[df.season.isin(SEASONS) & ~df.empty_net.astype(bool)]
+    model = joblib.load(v1.ARTIFACT_DIR / f"{live.ARTIFACT_STEM}.pkl")
+    base = model.predict_proba(df[live.ALL_FEATURES])[:, 1].sum()
+    for label, shift in (("1 ft closer", -1.0), ("1 ft farther", 1.0)):
+        x = df[live.ALL_FEATURES].copy()
+        x["distance_ft"] = (x["distance_ft"] + shift).clip(lower=0)
+        new = model.predict_proba(x)[:, 1].sum()
+        print(f"  {label:13} total xG {new / base - 1:+.2%}")
 
 
 if __name__ == "__main__":
