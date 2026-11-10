@@ -5,6 +5,9 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-10
 
+- Cloud: the owner picked the game simulator as what's next and stopped for the day
+  before it started. The plan-first instructions and decisions are under Next up in
+  `CLAUDE.md`; nothing built yet.
 - PC: rink-by-rink shot location check (`88871da`), report only (`diagnostics/check_rinks.py`,
   `results/checks/rinks.txt`, FINDINGS). Rinks do record distance a little differently
   (about ±1 ft, beyond chance; EDM and MTL closer, MIN and SEA farther, in both matched

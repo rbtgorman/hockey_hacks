@@ -180,20 +180,45 @@ Updated 2026-11-10 (v1.4.1 live).
 
 ## Waiting on the owner
 
-- What to do next, now that the rink check found nothing to fix.
+- The owner picked the game simulator on 2026-11-10 and stopped for the day before it
+  started. Confirm with them, then start on item 1 under Next up.
 
 ## Next up
 
-Nothing decided. The rink check is done (below); the owner picks what's next. Candidates
-from the notes: the EDGE goalie comparison, the game simulator's shooter/goalie layer.
+1. **Game simulator, plan first** (README step 4). Write the plan in `docs/SIMULATOR.md`,
+   commit and push it, and stop for the owner's OK before building anything. Decisions
+   already made (2026-11-10), don't ask:
+   - Order: a team-level version first (v0), then a goalie layer, then a shooter layer.
+     The skill layers can only be judged inside the simulator: v1.5 and v1.6 showed
+     shot-level log loss can't see them. Each layer stays only if it improves game
+     predictions. The EDGE goalie comparison becomes a sanity check in the goalie layer.
+   - v0: each team's attack and defense from xG for and against (5-on-5, power play and
+     penalty kill separately, plus how often it draws and takes penalties), from games
+     before the game's date only, pulled toward the league average and weighted toward
+     recent games. Home ice included. xG stays as it is.
+   - Simulate many games: three periods, then overtime and a shootout the way the NHL
+     plays them. Outputs: win chances (regulation, OT, shootout), goal totals, and
+     per-period numbers the period page could use later.
+   - Keep v0 simple, and list in the plan what it leaves out (score effects, empty nets,
+     rest days, travel and so on).
+   - Judge it on game results: log loss of the win chances plus a calibration check,
+     against two simple baselines: the league's home-win rate for every game, and a
+     plain Elo rating.
+   - Build and pick on 2023-24 to 2025-26. The one real test is 2026-27, once, after it
+     has enough games; the plan says how many and why. v1.4.1 never saw 2026-27 shots,
+     so it's the only season where the xG is fully out of sample.
+   - Nothing on the site until it passes that test. No betting language anywhere.
+   - Keep the plan short: what goes in, how it's tested, what v0 leaves out, and the
+     order of the steps after it.
 
 Standing decision from the owner (2026-11-04): **shooter and goalie skill stay out of the
 live xG, for good**, finishing priors included. "Goals minus xG" and "goals saved above
 expected" only mean something if xG doesn't know who's shooting or who's in net. That skill
 becomes a separate layer later, for the game simulator.
 
-Still open, lower priority: the EDGE goalie comparison from FINDINGS; refresh the model
-tab's 2026-27 test numbers as the season goes (refresh.sh, then report_test_to_date).
+Still open, lower priority: refresh the model tab's 2026-27 test numbers as the season
+goes (refresh.sh, then report_test_to_date). The EDGE goalie comparison from FINDINGS is
+now part of the simulator's goalie layer.
 
 Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by
 hand on the PC). Each refresh commits a few hundred small files under `site/data/`, and player
