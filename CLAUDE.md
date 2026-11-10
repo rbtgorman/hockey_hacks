@@ -87,8 +87,14 @@ Updated 2026-11-10 (v1.4.1 live).
   kept in `shot_xg`** (owner's call); the v1.4 rows were scored on the table before the fix.
   The scorer only replaces its own version's rows. The saved model is gitignored, so it's
   only on the PC; rerunning the trainer rebuilds it.
-- **Data is through 2026-10-28.** `export/refresh.sh` hasn't been run since; the v1.4.1
-  work used the table as it stood.
+- **Data is through 2026-11-09** (refreshed 2026-11-10: 285 games in 2026-27, 502,509
+  attempts in all). Only v1.4.1 scores the new games in `shot_xg`.
+- **Site's 2026-27 numbers come from `results/test_to_date/`** (`model/report_test_to_date.py`,
+  log `results/test_to_date.log`): every saved model (v1.4.1, v1.4, v1.3, v1.2) rescored on
+  the test season as it stands, report only. Rerun it after a refresh before touching the
+  copy. Training-time `results/<version>/` files stay frozen. Through Nov 9: log loss
+  v1.4.1 0.22955, v1.4 0.22951, v1.3 0.22951, v1.2 0.23147; O/E 1.014; AUC 0.7797. v1.4's
+  early edge over v1.3 is gone, and the copy says so.
 - **v1.3-fenwick** (`model/train_v1_3_fenwick.py`, log in `results/v1_3_fenwick_train.log`):
   trained on 2022-23 to 2025-26 with recency weights (half-life 1 season). Chosen on late
   2025-26 (log loss: recency h=1 0.22100, h=2 0.22113, era flag 0.22129, plain retrain
@@ -100,7 +106,7 @@ Updated 2026-11-10 (v1.4.1 live).
   fine-tuning (`#v14`) and tip-ins (`#v13`, which the profile pages' xG note links to),
   "Where it still struggles" (tip-ins 90, 60+ ft 86), and "Why xG doesn't know who's
   shooting" (`#finishing`, the ~8% story). When 2026-27 fills in, refresh those numbers from
-  `results/v1_4_1-fenwick/`.
+  `results/test_to_date/`.
 - **Leaderboard** has a Test season column; runs whose test season was in progress are
   marked "to date" (`model/reporting.py`).
 - **Stoppage leak fixed in the table** (2026-11-04, see `docs/FINDINGS.md`): 170 shots had
@@ -178,7 +184,7 @@ expected" only mean something if xG doesn't know who's shooting or who's in net.
 becomes a separate layer later, for the game simulator.
 
 Still open, lower priority: the EDGE goalie comparison from FINDINGS; refresh the model
-tab's 2026-27 test numbers when the season has more games.
+tab's 2026-27 test numbers as the season goes (refresh.sh, then report_test_to_date).
 
 Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by
 hand on the PC). Each refresh commits a few hundred small files under `site/data/`, and player

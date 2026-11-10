@@ -5,6 +5,13 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-10
 
+- PC: ran `export/refresh.sh`: 83 new games (2026-27 now 285 games, through Nov 9), one
+  shift chart from the HTML fallback, build checks clean. New report-only
+  `model/report_test_to_date.py` rescores 2026-27 with every saved model into
+  `results/test_to_date/`; the model tab, methods page and README now take their 2026-27
+  numbers from it (23,378 shots, 1,797 goals vs 1,771.8 xG, AUC 0.780, log loss 0.2296 vs
+  0.2295 for v1.4 and v1.3). v1.4's edge over v1.3 is gone and the copy says so. Nothing
+  re-picked. Pages checked at 320, 375 and 1440px.
 - PC: v1.4.1-fenwick is live (`a6332e3`): v1.4's recipe refit on the stoppage-fixed table, 1692 trees,
   replacing v1.4 on principle. It reproduced the v1.5 baseline's late 2025-26 log loss
   (0.221075). 2026-27, reported only: log loss 0.22622 vs v1.4's 0.22618 on the same fixed

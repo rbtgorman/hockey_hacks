@@ -10,8 +10,8 @@ The long-term goal is real game projections, something like what the baseball si
 
 So I'm building it in order, and testing each piece before anything gets stacked on it:
 
-1. **Get the data.** Done. 5,794 games (regular season and playoffs) from 2022-23 through October 28, 2026, and 499,443 unblocked shots.
-2. **Figure out shot quality.** In progress. The xG model works, but it doesn't know yet who shot or who was in net.
+1. **Get the data.** Done. 5,877 games (regular season and playoffs) from 2022-23 through November 9, 2026, and 502,509 unblocked shots.
+2. **Figure out shot quality.** In progress. The xG model works. It doesn't know who shot or who was in net, on purpose, so goals minus xG means something.
 3. **Size up teams fairly.** In progress. That's the [period scoring page](https://hockeyhacks.netlify.app/periods).
 4. **Simulate games.** Not started. It waits for a separate layer for shooter and goalie skill (xG stays blind to them on purpose) and a test on a season it never saw.
 
@@ -38,9 +38,9 @@ The latest versions, from [results/leaderboard.md](results/leaderboard.md):
 Quick guide to the columns:
 - **AUC** is how often a goal gets a higher xG than a shot that didn't go in. 0.5 is a coin flip.
 - **Biggest calibration gap:** sort the shots into ten groups by xG. This is the largest difference between predicted and actual scoring in any group.
-- **Goals ÷ predicted:** 1.00 is dead on. v1.4.1 is within 2 goals on 2026-27 so far.
+- **Goals ÷ predicted:** 1.00 is dead on. v1.4.1 is 25 goals short (1.4%) on 2026-27 so far.
 
-AUC only compares within the same test season. The 2026-27 test is only about a month of games (16,572 shots), so those numbers will move. On those same shots tip-ins go in 90 times per 100 expected for v1.4.1, 88 for v1.3 and 78 for v1.2. v1.4's gain over v1.3 is small: log loss 0.2256 vs. 0.2259, both measured before the stoppage fix. With the leak closed, v1.4.1 and v1.4 tie at 0.2262; v1.4.1 replaced v1.4 on principle, not on that score. My older models that only used shots on goal (v1 through v2.3) are kept in the leaderboard so they still reproduce.
+AUC only compares within the same test season. The table shows each model's numbers from the day it was made. Through November 9 (23,378 shots, `results/test_to_date/`), on the same shots: log loss 0.2296 for v1.4.1, 0.2295 for v1.4 and v1.3, 0.2315 for v1.2; tip-ins go in 91 times per 100 expected for v1.4.1, 89 for v1.3 and 78 for v1.2. v1.4's small early edge over v1.3 is gone. v1.4.1 replaced v1.4 on principle (the stoppage leak), not on score. My older models that only used shots on goal (v1 through v2.3) are kept in the leaderboard so they still reproduce.
 
 ## Stuff I learned the hard way
 
