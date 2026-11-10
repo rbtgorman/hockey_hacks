@@ -5,7 +5,7 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-10
 
-- PC: v1.4.1-fenwick is live: v1.4's recipe refit on the stoppage-fixed table, 1692 trees,
+- PC: v1.4.1-fenwick is live (`a6332e3`): v1.4's recipe refit on the stoppage-fixed table, 1692 trees,
   replacing v1.4 on principle. It reproduced the v1.5 baseline's late 2025-26 log loss
   (0.221075). 2026-27, reported only: log loss 0.22622 vs v1.4's 0.22618 on the same fixed
   shots (+0.00004, interval -0.00016 to +0.00024), 1,251 goals vs 1,253.5 xG. Rescored
