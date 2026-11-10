@@ -5,13 +5,13 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-10
 
-- PC: rink-by-rink shot location check, report only (`diagnostics/check_rinks.py`,
+- PC: rink-by-rink shot location check (`88871da`), report only (`diagnostics/check_rinks.py`,
   `results/checks/rinks.txt`, FINDINGS). Rinks do record distance a little differently
   (about ±1 ft, beyond chance; EDM and MTL closer, MIN and SEA farther, in both matched
   comparisons), but goals / xG against the same teams' other games shows nothing beyond
   chance, and the gaps' implied 5%-per-ft effect mostly doesn't appear. No fix suggested.
   Anaheim: more tip-ins logged, and logged closer; its other shots aren't closer.
-- PC: ran `export/refresh.sh`: 83 new games (2026-27 now 285 games, through Nov 9), one
+- PC: ran `export/refresh.sh` (`ceeebc4`): 83 new games (2026-27 now 285 games, through Nov 9), one
   shift chart from the HTML fallback, build checks clean. New report-only
   `model/report_test_to_date.py` rescores 2026-27 with every saved model into
   `results/test_to_date/`; the model tab, methods page and README now take their 2026-27
