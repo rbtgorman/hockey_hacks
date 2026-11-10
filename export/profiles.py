@@ -54,7 +54,7 @@ from ingest.db import pg_conn
 from . import profile_metrics as pm
 
 OUT_DIR = Path(__file__).resolve().parent.parent / "site" / "data"
-DEFAULT_MODEL = "v1.4-fenwick"
+DEFAULT_MODEL = "v1.4.1-fenwick"
 INDEX_BUDGET_KB = 150
 PROFILE_BUDGET_KB = 40
 SKATER_ROSTER = ["id", "name", "pos", "gp", "toi", "goals", "ixg", "on_xgf_pct_5v5"]

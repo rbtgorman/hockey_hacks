@@ -6,7 +6,7 @@ versions alone. Rerun it after every features.build_features_fenwick rebuild,
 since new games only get xG here.
 
 Usage (repo root, with the project venv's python):
-    .venv/bin/python3 -m model.score_fenwick                         # v1.4-fenwick
+    .venv/bin/python3 -m model.score_fenwick                         # v1.4.1-fenwick
     .venv/bin/python3 -m model.score_fenwick --version v1.1-fenwick
 """
 from __future__ import annotations
@@ -29,8 +29,9 @@ MODELS = {
     "v1.2-fenwick": ("xg_v1_2_fenwick", "model.train_v1_2_fenwick"),
     "v1.3-fenwick": ("xg_v1_3_fenwick", "model.train_v1_3_fenwick"),
     "v1.4-fenwick": ("xg_v1_4_fenwick", "model.train_v1_4_fenwick"),
+    "v1.4.1-fenwick": ("xg_v1_4_1_fenwick", "model.train_v1_4_1_fenwick"),
 }
-DEFAULT_VERSION = "v1.4-fenwick"
+DEFAULT_VERSION = "v1.4.1-fenwick"
 MIGRATION = Path(__file__).resolve().parent.parent / "db" / "migrations" / "003_shot_xg.sql"
 
 

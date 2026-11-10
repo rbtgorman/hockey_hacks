@@ -75,31 +75,39 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-04 (v1.4 live).
+Updated 2026-11-10 (v1.4.1 live).
 
-- **Live model:** v1.4-fenwick (details in the v1.4 bullet below). `model/score_fenwick.py`
-  defaults to it and every shot in `shot_xg` is scored with it. **v1.3 rows are kept in
-  `shot_xg`** (owner's call) so v1.3 vs v1.4 can be rerun; the scorer only replaces its own
-  version's rows. v1.2 rows are there too. Exports (period page, profiles) use v1.4.
+- **Live model:** v1.4.1-fenwick (`model/train_v1_4_1_fenwick.py`, log
+  `results/v1_4_1_fenwick_train.log`, results in `results/v1_4_1-fenwick/`). It's v1.4's
+  features, settings, recency weights and distance constraint refit on the stoppage-fixed
+  table, 1692 trees (the v1.5 "baseline"), replacing v1.4 on principle. 2026-27, reported
+  only, same fixed shots: log loss 0.22622 vs v1.4's 0.22618, AUC 0.7823 both, O/E 0.998 vs
+  1.001, tip-in O/E 0.904 both. v1.4's older 0.22565 had the leak in it. `model/score_fenwick.py`
+  defaults to it and exports (period page, profiles) use it. **v1.2, v1.3 and v1.4 rows are
+  kept in `shot_xg`** (owner's call); the v1.4 rows were scored on the table before the fix.
+  The scorer only replaces its own version's rows. The saved model is gitignored, so it's
+  only on the PC; rerunning the trainer rebuilds it.
+- **Data is through 2026-10-28.** `export/refresh.sh` hasn't been run since; the v1.4.1
+  work used the table as it stood.
 - **v1.3-fenwick** (`model/train_v1_3_fenwick.py`, log in `results/v1_3_fenwick_train.log`):
   trained on 2022-23 to 2025-26 with recency weights (half-life 1 season). Chosen on late
   2025-26 (log loss: recency h=1 0.22100, h=2 0.22113, era flag 0.22129, plain retrain
   0.22168; `results/v1_3-fenwick/selection.csv`). 2026-27 to date: AUC 0.7832, O/E 1.003,
   tip-in O/E 0.88 (v1.2 on the same shots: 0.7752, 0.997, 0.78).
-- **Site copy is on v1.4** (model tab in `site/index.html`, `site/methods.html`): headline
-  stats and calibration chart from `results/v1_4-fenwick/`, a new "What changed in this
-  version: fine-tuning" section (`#v14`) with a v1.4 vs v1.3 table, the tip-in story kept as
-  "The version before" (`#v13`, which the profile pages' xG note links to), and "Where it
-  still struggles" (tip-ins 90, 60+ ft 86). When 2026-27 fills in, refresh those numbers
-  from `results/v1_4-fenwick/` and a rerun of the v1.3 comparison.
+- **Site copy is on v1.4.1** (model tab in `site/index.html`, `site/methods.html`): headline
+  stats and calibration chart from `results/v1_4_1-fenwick/`, "What changed in this version:
+  closing a leak" (`#v141`, the stoppage story, called the whistle on the page), then
+  fine-tuning (`#v14`) and tip-ins (`#v13`, which the profile pages' xG note links to),
+  "Where it still struggles" (tip-ins 90, 60+ ft 86), and "Why xG doesn't know who's
+  shooting" (`#finishing`, the ~8% story). When 2026-27 fills in, refresh those numbers from
+  `results/v1_4_1-fenwick/`.
 - **Leaderboard** has a Test season column; runs whose test season was in progress are
   marked "to date" (`model/reporting.py`).
 - **Stoppage leak fixed in the table** (2026-11-04, see `docs/FINDINGS.md`): 170 shots had
   a stoppage the shot itself caused (review, challenge, goalie froze it) as their previous
   event, 57% goals, and v1.4 learned it (97.8 xG on 97 goals). `shot_prev_any` now skips
-  stoppages; check 12 in the build guards it. v1.4 is not retrained; the next
-  `refresh.sh` rescores it on the fixed table (2026-27 O/E 0.999 -> 1.001). Penalty shots
-  are separate ('penalty' event, typeCode PS) and fine.
+  stoppages; check 12 in the build guards it. v1.4.1 is the refit on the fixed
+  table. Penalty shots are separate ('penalty' event, typeCode PS) and fine.
 - **Shooter (v1.5) and goalie (v1.6) priors tried, neither won** (2026-11-04, details in
   `docs/FINDINGS.md`). Priors in `shot_priors_fenwick` (`features/build_priors_fenwick.py`,
   rerun after every table build if they're used; leak test `tests/test_priors_fenwick.py`).
@@ -135,7 +143,7 @@ Updated 2026-11-04 (v1.4 live).
   (lightened from #ff6b6b, which only reached 4.54:1). Measured badge contrast in Chrome:
   6.59, 5.44 and 5.04:1.
 
-- **v1.4-fenwick, live since 2026-11-04** (`model/train_v1_4_fenwick.py`, logs
+- **v1.4-fenwick, live 2026-11-04 to 2026-11-10** (`model/train_v1_4_fenwick.py`, logs
   `results/v1_4_fenwick_select.log` and `_final.log`, results in `results/v1_4-fenwick/`).
   v1.3's features and recency weights, plus a 50-try settings search (best: try 31, 11
   leaves, 1734 trees, `search.csv`), and xG can never go up with distance (monotone
@@ -161,24 +169,13 @@ Updated 2026-11-04 (v1.4 live).
 
 ## Next up
 
-Owner's answers, 2026-11-04 (decided; not started):
+1. **Rink-by-rink shot location check** from the README ("check whether shot locations get
+   recorded differently from rink to rink").
 
-1. **Shooter and goalie skill stay out of the live xG, for good.** "Goals minus xG" and
-   "goals saved above expected" only mean something if xG doesn't know who's shooting or
-   who's in net. So no finishing prior in xG either. Shooter and goalie skill become a
-   separate layer later, for the game simulator. On the model tab, explain that shooters
-   who finished well in earlier games kept beating xG by about 8%: real finishing skill,
-   and exactly what "goals minus xG" is for. (Source: top fifth by shooter prior, goals /
-   xG 1.077 under the baseline on late 2025-26, `results/v1_5-fenwick/oe_by_prior_fifth.csv`.)
-2. **Replace v1.4 with the leak-free version as v1.4.1.** Decided on principle, so its
-   2026-27 numbers are only reported, never used to choose. It's the "baseline" in
-   `model/train_v1_5_fenwick.py`: v1.4's features, settings, recency weights and distance
-   constraint on the stoppage-fixed table, 1692 trees from selection, refit on 2022-23 to
-   2025-26. Then rescore `shot_xg` (keep older versions' rows, as before), re-export, and
-   add the stoppage story to the model tab and methods page (170 shots, 57% goals, v1.4
-   gave them 97.8 xG; see `docs/FINDINGS.md`).
-3. **After that:** the rink-by-rink shot location check from the README ("check whether
-   shot locations get recorded differently from rink to rink").
+Standing decision from the owner (2026-11-04): **shooter and goalie skill stay out of the
+live xG, for good**, finishing priors included. "Goals minus xG" and "goals saved above
+expected" only mean something if xG doesn't know who's shooting or who's in net. That skill
+becomes a separate layer later, for the game simulator.
 
 Still open, lower priority: the EDGE goalie comparison from FINDINGS; refresh the model
 tab's 2026-27 test numbers when the season has more games.

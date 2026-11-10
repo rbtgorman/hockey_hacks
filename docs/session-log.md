@@ -3,6 +3,18 @@
 What got done each working day, newest first. Claude adds to today's entry every time it
 pushes. Commit hashes point to the details.
 
+## 2026-11-10
+
+- PC: v1.4.1-fenwick is live: v1.4's recipe refit on the stoppage-fixed table, 1692 trees,
+  replacing v1.4 on principle. It reproduced the v1.5 baseline's late 2025-26 log loss
+  (0.221075). 2026-27, reported only: log loss 0.22622 vs v1.4's 0.22618 on the same fixed
+  shots (+0.00004, interval -0.00016 to +0.00024), 1,251 goals vs 1,253.5 xG. Rescored
+  `shot_xg` (v1.2, v1.3, v1.4 rows kept), re-exported, no refresh of new games (data still
+  through Oct 28). Model tab and methods: the whistle-leak section, the ~8% finishing section,
+  and "doesn't know players yet" reworded now that it's permanent. Also corrected a stale
+  period factor on the methods page (now x 1.0123). Pages checked at 320, 375 and 1440px: no
+  errors, no sideways scrolling.
+
 ## 2026-11-04
 
 - PC: end of day. The owner's answers are under "Next up" in CLAUDE.md: skill stays out

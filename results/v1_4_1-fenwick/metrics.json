@@ -1,0 +1,116 @@
+{
+  "version": "v1.4.1-fenwick",
+  "description": "v1.4's features, settings, recency weights and distance constraint, refit on the table with the stoppage leak closed (170 shots). Replaces v1.4 on principle; 2026-27 reported only.",
+  "generated_at_utc": "2026-11-10T16:46:00+00:00",
+  "git_commit": "583ebeb",
+  "git_dirty": true,
+  "data": {
+    "population": "fenwick",
+    "table": "shot_features_fenwick",
+    "n_shots": 495703,
+    "seasons": [
+      20222023,
+      20232024,
+      20242025,
+      20252026,
+      20262027
+    ],
+    "split": {
+      "select_train": "2022-23 to 2024-25 + 2025-26 before 2026-01-10 00:00:00",
+      "select_val": "2025-26 from 2026-01-10 00:00:00",
+      "refit_train": [
+        20222023,
+        20232024,
+        20242025,
+        20252026
+      ],
+      "test": 20262027
+    }
+  },
+  "splits": {
+    "train": {
+      "auc": 0.7925223465135695,
+      "pr_auc": 0.2844091973498055,
+      "log_loss": 0.21560013273611384,
+      "brier": 0.058949443538942624,
+      "n": 479131,
+      "goal_rate": 0.07179247429199948,
+      "mean_pred": 0.07206304876117725,
+      "observed_rate": 0.07179247429199948,
+      "o_e": 0.9962453091587273,
+      "citl": 0.0002705744691777756,
+      "cal_intercept": 0.09822023065801311,
+      "cal_slope": 1.0484855280617797
+    },
+    "val": {
+      "auc": 0.7864973573563172,
+      "pr_auc": 0.27708794432445133,
+      "log_loss": 0.2210745407804782,
+      "brier": 0.06056623304562767,
+      "n": 58797,
+      "goal_rate": 0.07349014405496879,
+      "mean_pred": 0.07476309526264342,
+      "observed_rate": 0.07349014405496879,
+      "o_e": 0.9829735352288085,
+      "citl": 0.0012729512076746358,
+      "cal_intercept": -0.036553411148513085,
+      "cal_slope": 0.9925542620846957
+    },
+    "test": {
+      "auc": 0.7822994003465722,
+      "pr_auc": 0.28006007533134797,
+      "log_loss": 0.22622007416654977,
+      "brier": 0.06214351777787825,
+      "n": 16572,
+      "goal_rate": 0.07548877624909486,
+      "mean_pred": 0.07563910786728935,
+      "observed_rate": 0.07548877624909486,
+      "o_e": 0.9980125146576524,
+      "citl": 0.00015033161819448526,
+      "cal_intercept": 0.003273271775915991,
+      "cal_slope": 1.0027205018155827
+    }
+  },
+  "calibration": {
+    "n_bins": 10,
+    "max_abs_gap": 0.00870275168576165,
+    "binning": "equal-count (qcut) on predicted probability"
+  },
+  "hyperparameters": {
+    "learning_rate": 0.0313799986210969,
+    "num_leaves": 11,
+    "max_depth": -1,
+    "min_child_samples": 153,
+    "reg_alpha": 2.265506976212656,
+    "reg_lambda": 0.0159687861464858,
+    "subsample": 0.9378552667752992,
+    "subsample_freq": 1,
+    "colsample_bytree": 0.5519592720795523,
+    "max_bin": 511,
+    "monotone_constraints_method": "intermediate",
+    "n_trees": 1692,
+    "half_life": 1.0,
+    "monotone": "distance_ft -1",
+    "calibration": null
+  },
+  "features": [
+    "distance_ft",
+    "angle_deg",
+    "x_norm",
+    "y_norm",
+    "score_diff",
+    "seconds_since_last_event",
+    "distance_from_last_event_ft",
+    "period_num",
+    "seconds_remaining_in_period",
+    "is_rebound",
+    "is_rush",
+    "empty_net",
+    "is_post_rebound",
+    "last_event_by_shooting_team",
+    "shot_type",
+    "strength_state",
+    "last_event_type"
+  ],
+  "notes": "Test is 2026-27 to date, reported only. 'val' is late 2025-26, which set the tree count, so it's optimistic."
+}

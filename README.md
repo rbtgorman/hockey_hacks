@@ -13,13 +13,13 @@ So I'm building it in order, and testing each piece before anything gets stacked
 1. **Get the data.** Done. 5,794 games (regular season and playoffs) from 2022-23 through October 28, 2026, and 499,443 unblocked shots.
 2. **Figure out shot quality.** In progress. The xG model works, but it doesn't know yet who shot or who was in net.
 3. **Size up teams fairly.** In progress. That's the [period scoring page](https://hockeyhacks.netlify.app/periods).
-4. **Simulate games.** Not started. It waits until the model knows shooters and goalies, and has been tested on a season it never saw.
+4. **Simulate games.** Not started. It waits for a separate layer for shooter and goalie skill (xG stays blind to them on purpose) and a test on a season it never saw.
 
 ## How the model works
 
 - **Shots:** every unblocked attempt (goals, saves and misses; analytics people call this Fenwick). Blocked shots and shootouts are out.
-- **Model:** LightGBM (gradient-boosted trees, 1,734 small ones) on 17 inputs: distance, angle, where on the ice, shot type, strength (5-on-5, PP and so on), empty net, score, period and time left, what happened right before (the play, which team made it, how long ago and how far away), rebounds, rebounds off the post, and rushes. One rule is built in: with everything else the same, a shot from farther out never gets a higher xG.
-- **Split:** always by season, never random. v1.4 learns from 2022-23 through 2025-26 and gets tested on 2026-27, which it never saw. Recent seasons count more: each season back counts half as much (2025-26 full, 2024-25 half, and so on), because the NHL started calling a lot more shots tip-ins in 2025-26. That beat the other fix, flagging which era a shot is from (v1.3). v1.4 then tried 50 combos of model settings. Both picks were made on the second half of 2025-26, so 2026-27 stayed untouched until the final test.
+- **Model:** LightGBM (gradient-boosted trees, 1,692 small ones) on 17 inputs: distance, angle, where on the ice, shot type, strength (5-on-5, PP and so on), empty net, score, period and time left, what happened right before (the play, which team made it, how long ago and how far away), rebounds, rebounds off the post, and rushes. One rule is built in: with everything else the same, a shot from farther out never gets a higher xG.
+- **Split:** always by season, never random. v1.4.1 learns from 2022-23 through 2025-26 and gets tested on 2026-27, which it never saw. Recent seasons count more: each season back counts half as much (2025-26 full, 2024-25 half, and so on), because the NHL started calling a lot more shots tip-ins in 2025-26. That beat the other fix, flagging which era a shot is from (v1.3). v1.4 then tried 50 combos of model settings. Both picks were made on the second half of 2025-26, so 2026-27 stayed untouched until the final test.
 - **Leak check:** every run confirms the score changes within games. If final scores had leaked into the inputs, it wouldn't.
 
 ## Results
@@ -32,14 +32,15 @@ The latest versions, from [results/leaderboard.md](results/leaderboard.md):
 | v1.1-fenwick | + rebounds off the post | 2025-26 | 0.7722 | 0.0084 | 0.985 |
 | v1.2-fenwick | + which team made the play before the shot | 2025-26 | 0.7788 | 0.0038 | 0.980 |
 | v1.3-fenwick | + 2025-26, recent seasons count more | 2026-27 so far | 0.7832 | 0.0075 | 1.003 |
-| **v1.4-fenwick** | **+ tuned settings, xG never rises with distance** | **2026-27 so far** | **0.7834** | **0.0072** | **0.999** |
+| v1.4-fenwick | + tuned settings, xG never rises with distance | 2026-27 so far | 0.7834 | 0.0072 | 0.999 |
+| **v1.4.1-fenwick** | **+ stoppage leak closed (170 shots)** | **2026-27 so far** | **0.7823** | **0.0087** | **0.998** |
 
 Quick guide to the columns:
 - **AUC** is how often a goal gets a higher xG than a shot that didn't go in. 0.5 is a coin flip.
 - **Biggest calibration gap:** sort the shots into ten groups by xG. This is the largest difference between predicted and actual scoring in any group.
-- **Goals ÷ predicted:** 1.00 is dead on. v1.4 is within 1 goal on 2026-27 so far.
+- **Goals ÷ predicted:** 1.00 is dead on. v1.4.1 is within 2 goals on 2026-27 so far.
 
-AUC only compares within the same test season. The 2026-27 test is only about a month of games (16,572 shots), so those numbers will move. On those same shots tip-ins go in 90 times per 100 expected for v1.4, 88 for v1.3 and 78 for v1.2. v1.4's gain over v1.3 is small: log loss 0.2256 vs. 0.2259. My older models that only used shots on goal (v1 through v2.3) are kept in the leaderboard so they still reproduce.
+AUC only compares within the same test season. The 2026-27 test is only about a month of games (16,572 shots), so those numbers will move. On those same shots tip-ins go in 90 times per 100 expected for v1.4.1, 88 for v1.3 and 78 for v1.2. v1.4's gain over v1.3 is small: log loss 0.2256 vs. 0.2259, both measured before the stoppage fix. With the leak closed, v1.4.1 and v1.4 tie at 0.2262; v1.4.1 replaced v1.4 on principle, not on that score. My older models that only used shots on goal (v1 through v2.3) are kept in the leaderboard so they still reproduce.
 
 ## Stuff I learned the hard way
 

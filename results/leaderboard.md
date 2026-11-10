@@ -35,6 +35,7 @@ Shots on goal plus missed shots. Shootout attempts are excluded, as are events l
 | **v1.2-fenwick** | 2025-26 | 0.7788 | 0.2680 | 0.2206 | 0.0600 | 0.0038 | 0.980 | 1.022 | `68ae979` |
 | **v1.3-fenwick** | 2026-27 to date | 0.7832 | 0.2824 | 0.2259 | 0.0620 | 0.0075 | 1.003 | 1.029 | `1acc9eb` |
 | **v1.4-fenwick** | 2026-27 to date | 0.7834 | 0.2848 | 0.2256 | 0.0620 | 0.0072 | 0.999 | 1.008 | `a4a537f` |
+| **v1.4.1-fenwick** | 2026-27 to date | 0.7823 | 0.2801 | 0.2262 | 0.0621 | 0.0087 | 0.998 | 1.003 | `583ebeb` |
 
 ## What each version changed
 
@@ -44,6 +45,7 @@ Shots on goal plus missed shots. Shootout attempts are excluded, as are events l
 - **v1.2-fenwick**: v1.1-fenwick plus last_event_by_shooting_team (whose event preceded the shot); trees chosen on 2024-25, then refit on 2022-23 to 2024-25; tested on 2025-26.
 - **v1.3-fenwick**: v1.2-fenwick features, trained on 2022-23 to 2025-26 with recency weights, half-life 1 seasons; chosen over the other tip-in fix on late 2025-26; tested on 2026-27.
 - **v1.4-fenwick**: v1.3-fenwick's features and recency weights (half-life 1 season), settings from a 50-try search on late 2025-26 log loss, xG never rises with distance; calibration: none. Tested on 2026-27.
+- **v1.4.1-fenwick**: v1.4's features, settings, recency weights and distance constraint, refit on the table with the stoppage leak closed (170 shots). Replaces v1.4 on principle; 2026-27 reported only.
 - **v2.2**: v1 architecture plus a static per-player shooter prior from skater_priors_train, pooled across the training seasons and applied to every shot regardless of date. Stops the v2/v2.1 leakage but the prior is stale.
 - **v2.3**: v1 architecture plus an expanding-window shooter prior (trailing 2-year window, resolved per player per game-date). Fixes the leakage and staleness introduced by the season-pooled priors in v2 and v2.2.
 - **v2.3-prepatch**: v1 architecture plus an expanding-window shooter prior (trailing 2-year window, resolved per player per game-date). Fixes the leakage and staleness introduced by the season-pooled priors in v2 and v2.2.

@@ -1,0 +1,91 @@
+============================================================
+v1.4.1-fenwick: 1692 trees, no search, no selection
+============================================================
+Loaded 495,703 unblocked attempts from shot_features_fenwick, 2022-10-07 to 2026-10-28
+Seasons present: [20222023, 20232024, 20242025, 20252026, 20262027]
+
+Event mix by season (share of rows):
+event_type   goal  missed-shot  shot-on-goal
+season                                      
+20222023    0.072        0.283         0.645
+20232024    0.071        0.306         0.624
+20242025    0.071        0.331         0.597
+20252026    0.073        0.338         0.589
+20262027    0.075        0.333         0.592
+Leakage check: 5,770/5,794 games (99.6%) have varying score_diff across shots — expect >80% for non-leaky in-game state.
+select_train:  2022-10-07 00:00:00 to 2026-01-09 00:00:00, 420,334 attempts, 7.16% goals
+select_val:    2026-01-10 00:00:00 to 2026-06-14 00:00:00, 58,797 attempts, 7.35% goals
+refit_train:   2022-10-07 00:00:00 to 2026-06-14 00:00:00, 479,131 attempts, 7.18% goals
+test:          2026-09-29 00:00:00 to 2026-10-28 00:00:00, 16,572 attempts, 7.55% goals
+
+--- Reproducing the baseline's selection fit ---
+  late 2025-26 log loss 0.221075, baseline on file 0.221075
+
+--- Refit on 2022-23 to 2025-26: 1692 trees ---
+  distance check: {'shots': 2000, 'steps': 400000, 'rises': 0, 'shots_with_a_rise': 0, 'largest_rise': 0.0}
+
+--- 2026-27 to date, reported only (chooses nothing) ---
+  v1.4.1-fenwick                           log loss 0.22622  AUC 0.7823  O/E 0.998  slope 1.003  tip-in O/E 0.904
+  v1.4-fenwick (saved, on the fixed table) log loss 0.22618  AUC 0.7823  O/E 1.001  slope 1.004  tip-in O/E 0.904
+  log loss change vs v1.4: +0.00004 (-0.00016 to +0.00024)
+  goals 1,251, xG v1.4.1 1,253.5, xG v1.4 1,249.7
+
+--- Reliability on 2026-27 ---
+ bin    n  mean_pred  actual_rate  pred_vs_actual_gap
+   0 1658     0.0039       0.0030              0.0009
+   1 1657     0.0109       0.0115             -0.0006
+   2 1657     0.0191       0.0205             -0.0014
+   3 1657     0.0298       0.0302             -0.0004
+   4 1657     0.0429       0.0374              0.0055
+   5 1657     0.0595       0.0616             -0.0021
+   6 1657     0.0798       0.0748              0.0049
+   7 1657     0.1059       0.1038              0.0021
+   8 1657     0.1422       0.1509             -0.0087
+   9 1658     0.2624       0.2612              0.0012
+
+--- O/E by segment on 2026-27 ---
+                  segment     n  oe_v1.4.1  oe_v1.4    dimension
+            goalie in net 16424      1.006    1.009          net
+                empty net   148      0.878    0.883          net
+                      5v5 13130      0.993    0.996     strength
+                       PP  2478      1.021    1.023     strength
+                    other   541      0.961    0.967     strength
+                       PK   423      1.068    1.064     strength
+               wrist-snap 11436      1.031    1.034    shot_type
+                     slap  1761      0.898    0.897    shot_type
+                   tip-in  1660      0.904    0.904    shot_type
+                 backhand  1233      0.945    0.947    shot_type
+                deflected   253      1.120    1.138    shot_type
+              wrap-around    97      0.541    0.540    shot_type
+                      bat    69      0.769    0.786    shot_type
+                     poke    54      0.954    0.989    shot_type
+             between-legs     9      1.090    1.045    shot_type
+                 20-40 ft  5646      0.989    0.992     distance
+                   <20 ft  5247      1.002    1.005     distance
+                 40-60 ft  3821      1.093    1.094     distance
+                   60+ ft  1858      0.861    0.865     distance
+                15-30 deg  4092      0.992    0.996        angle
+                 0-15 deg  3955      1.036    1.038        angle
+                30-45 deg  3933      0.831    0.832        angle
+                45-60 deg  2677      1.069    1.071        angle
+                  60+ deg  1915      1.149    1.157        angle
+           unblocked-shot  4768      1.057    1.062   last_event
+                  faceoff  4198      0.956    0.960   last_event
+                      hit  2730      0.939    0.940   last_event
+                 giveaway  2295      0.930    0.931   last_event
+             blocked-shot  1937      1.009    1.011   last_event
+                 takeaway   637      1.097    1.091   last_event
+                  penalty     7      1.247    1.272   last_event
+                    other 16549      0.999    1.002 post_rebound
+             post rebound    23      0.696    0.686 post_rebound
+                    other 13640      1.004    1.008     turnover
+     giveaway by opponent  1685      0.975    0.975     turnover
+giveaway by shooting team   610      0.812    0.816     turnover
+takeaway by shooting team   464      1.106    1.100     turnover
+     takeaway by opponent   173      1.066    1.061     turnover
+
+Results written to /home/bobert/my-projects/hockey-hacks/results/v1_4_1-fenwick/
+  metrics.json  reliability.csv  calibration.png  feature_importance.csv
+Leaderboard written to /home/bobert/my-projects/hockey-hacks/results/leaderboard.md
+
+Saved xg_v1_4_1_fenwick* and results to /home/bobert/my-projects/hockey-hacks/results/v1_4_1-fenwick/. Not scored into shot_xg.

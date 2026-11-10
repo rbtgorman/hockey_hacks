@@ -176,4 +176,4 @@ function updatedLine(index) {
 }
 
 /* The note every profile shows about the model behind the xG. */
-const XG_NOTE_HTML = "<p class=\"note\"><strong>About the xG here.</strong> It comes from the shot model, <span class=\"mv\"></span>, which was retrained in November 2026 because the NHL started calling a lot more shots tip-ins (<a href=\"index.html#v13\">the story</a>). It still doesn't know who's shooting or who's in net, so treat it as a first pass. Every number says what it's based on, and the ones with too little behind them are greyed out.</p>";
+const XG_NOTE_HTML = "<p class=\"note\"><strong>About the xG here.</strong> It comes from the shot model, <span class=\"mv\"></span>, which was retrained in November 2026 because the NHL started calling a lot more shots tip-ins (<a href=\"index.html#v13\">the story</a>). It doesn't know who's shooting or who's in net, on purpose: that's what makes goals minus xG mean something (<a href=\"index.html#finishing\">why</a>). Every number says what it's based on, and the ones with too little behind them are greyed out.</p>";
