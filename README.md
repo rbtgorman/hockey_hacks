@@ -13,7 +13,7 @@ So I'm building it in order, and testing each piece before anything gets stacked
 1. **Get the data.** Done. 5,877 games (regular season and playoffs) from 2022-23 through November 9, 2026, and 502,509 unblocked shots.
 2. **Figure out shot quality.** In progress. The xG model works. It doesn't know who shot or who was in net, on purpose, so goals minus xG means something.
 3. **Size up teams fairly.** In progress. That's the [period scoring page](https://hockeyhacks.netlify.app/periods).
-4. **Simulate games.** Not started. It waits for a separate layer for shooter and goalie skill (xG stays blind to them on purpose) and a test on a season it never saw.
+4. **Simulate games.** Planned ([docs/SIMULATOR.md](docs/SIMULATOR.md)), not built. A team-level version comes first, then goalie and shooter skill as separate layers (xG stays blind to them on purpose). Nothing goes on the site until it passes a test on a season it never saw.
 
 ## How the model works
 

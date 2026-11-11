@@ -3,6 +3,17 @@
 What got done each working day, newest first. Claude adds to today's entry every time it
 pushes. Commit hashes point to the details.
 
+## 2026-11-11
+
+- PC: game simulator plan in `docs/SIMULATOR.md` (this commit), waiting on the owner's OK.
+  v0 is team-level (xG rates at 5-on-5, PP, PK and penalty rates, from earlier games,
+  recency-weighted and pulled toward average, home ice), played out 10,000 times a game
+  with NHL overtime and shootout rules. Picked on 2023-24 to 2025-26, tested once on
+  2026-27 at 800 games against the home-win rate and a plain Elo. To size the test I ran a
+  rough Elo against the home-win rate on game results, 2026-27 to date included (no
+  simulator anything): per-game log loss gap SD 0.13-0.19; Elo's edge 0.018-0.026, except
+  0.0019 in 2025-26. README step 4 now points to the plan.
+
 ## 2026-11-10
 
 - Cloud: the owner picked the game simulator as what's next and stopped for the day

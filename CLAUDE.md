@@ -75,8 +75,11 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-10 (v1.4.1 live).
+Updated 2026-11-11 (v1.4.1 live, simulator plan waiting on the owner).
 
+- **Game simulator: plan written, not built** (`docs/SIMULATOR.md`). Team-level v0 first,
+  then goalie and shooter layers. Built and picked on 2023-24 to 2025-26, tested once on
+  2026-27 at 800 games against the home-win rate and a plain Elo.
 - **Live model:** v1.4.1-fenwick (`model/train_v1_4_1_fenwick.py`, log
   `results/v1_4_1_fenwick_train.log`, results in `results/v1_4_1-fenwick/`). It's v1.4's
   features, settings, recency weights and distance constraint refit on the stoppage-fixed
@@ -180,36 +183,17 @@ Updated 2026-11-10 (v1.4.1 live).
 
 ## Waiting on the owner
 
-- The owner picked the game simulator on 2026-11-10 and stopped for the day before it
-  started. Confirm with them, then start on item 1 under Next up.
+- **OK on the game simulator plan** (`docs/SIMULATOR.md`, written 2026-11-11). Nothing gets
+  built until they say so. Points they may want to change: the test at 800 games of
+  2026-27, the pass rules, and testing the skill layers on the rest of 2026-27 (or
+  waiting for 2027-28).
 
 ## Next up
 
-1. **Game simulator, plan first** (README step 4). Write the plan in `docs/SIMULATOR.md`,
-   commit and push it, and stop for the owner's OK before building anything. Decisions
-   already made (2026-11-10), don't ask:
-   - Order: a team-level version first (v0), then a goalie layer, then a shooter layer.
-     The skill layers can only be judged inside the simulator: v1.5 and v1.6 showed
-     shot-level log loss can't see them. Each layer stays only if it improves game
-     predictions. The EDGE goalie comparison becomes a sanity check in the goalie layer.
-   - v0: each team's attack and defense from xG for and against (5-on-5, power play and
-     penalty kill separately, plus how often it draws and takes penalties), from games
-     before the game's date only, pulled toward the league average and weighted toward
-     recent games. Home ice included. xG stays as it is.
-   - Simulate many games: three periods, then overtime and a shootout the way the NHL
-     plays them. Outputs: win chances (regulation, OT, shootout), goal totals, and
-     per-period numbers the period page could use later.
-   - Keep v0 simple, and list in the plan what it leaves out (score effects, empty nets,
-     rest days, travel and so on).
-   - Judge it on game results: log loss of the win chances plus a calibration check,
-     against two simple baselines: the league's home-win rate for every game, and a
-     plain Elo rating.
-   - Build and pick on 2023-24 to 2025-26. The one real test is 2026-27, once, after it
-     has enough games; the plan says how many and why. v1.4.1 never saw 2026-27 shots,
-     so it's the only season where the xG is fully out of sample.
-   - Nothing on the site until it passes that test. No betting language anywhere.
-   - Keep the plan short: what goes in, how it's tested, what v0 leaves out, and the
-     order of the steps after it.
+1. **Game simulator v0**, after the owner's OK: follow the steps in `docs/SIMULATOR.md`
+   (build in `sim/`, pick on 2023-24 to 2025-26, freeze `results/sim_v0/selection.json`,
+   report). The owner's decisions are written into the plan; don't re-ask them. Don't
+   look at simulator output on 2026-27 until it has 800 games, then test once.
 
 Standing decision from the owner (2026-11-04): **shooter and goalie skill stay out of the
 live xG, for good**, finishing priors included. "Goals minus xG" and "goals saved above
