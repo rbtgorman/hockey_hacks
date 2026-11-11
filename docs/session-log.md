@@ -5,7 +5,7 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-11
 
-- PC: audit fixes group 1, problems stop the refresh (commit below). Shot-table
+- PC: audit fixes group 1, problems stop the refresh (`7f02682`). Shot-table
   must-be-zero checks exit 1; new `ingest/check_ingest.py` in `refresh.sh` stops on
   missing games, goals that don't add up, or dropped shots, and prints parse warnings
   at the end; warnings counted per game in ingest_log (migration 004, backfilled: 0 in
