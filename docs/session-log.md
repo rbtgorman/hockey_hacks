@@ -5,7 +5,7 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-11
 
-- PC: read-only data audit (this commit): `diagnostics/check_data_audit.py`,
+- PC: read-only data audit (`16c18f2`): `diagnostics/check_data_audit.py`,
   `results/checks/data_audit.txt`. All OK except two small shift-chart issues: no shifts
   after the 1st OT in 15 playoff games (the API parser drops periods 5+), and 25
   regular-season team-games where the shift chart loses the goalie mid-period. Goals add
