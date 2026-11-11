@@ -66,6 +66,8 @@ The full write-up is in [docs/FINDINGS.md](docs/FINDINGS.md).
 | `results/` | Metrics, logs and calibration plots for every version |
 | `tests/` | Script-style tests. Run them with `python tests/test_period_math.py` and so on, not pytest. |
 
+The whole path from the NHL's API to the site, with every check along the way and what isn't checked yet, is in [docs/DATA_PIPELINE.md](docs/DATA_PIPELINE.md).
+
 ## Running it
 
 You need Python 3.10+ and PostgreSQL. Copy `.env.example` to `.env` and fill in your database login. Then:

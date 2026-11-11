@@ -75,11 +75,19 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-11 (v1.4.1 live, simulator plan waiting on the owner).
+Updated 2026-11-11 (v1.4.1 live; slowing down for a data audit before the simulator).
 
-- **Game simulator: plan written, not built** (`docs/SIMULATOR.md`). Team-level v0 first,
-  then goalie and shooter layers. Built and picked on 2023-24 to 2025-26, tested once on
-  2026-27 at 800 games against the home-win rate and a plain Elo.
+- **Data pipeline audit, code half done** (2026-11-11, cloud): `docs/DATA_PIPELINE.md` maps
+  every source, step, guard and known problem, with file references, and ranks 10 gaps.
+  Top three: the 12 shot-table checks print but never stop `refresh.sh`; nothing checks
+  that play-by-play goals add up to the final scores; shot strength (`situationCode`) and
+  time on ice (shift charts) come from two sources nobody compares. The data half (PC,
+  read-only) is the prompt at the end of that doc. The owner wants to be able to explain
+  every step to an employer, so: no fixes until the checks are in and the owner picks them.
+- **Game simulator: plan written, not built** (`docs/SIMULATOR.md`). The owner OK'd the
+  direction on 2026-11-11 with five changes (Next up, item 2) but chose to audit the data
+  first. Team-level v0 first, then goalie and shooter layers. Built and picked on 2023-24
+  to 2025-26, tested once on 2026-27 at 800 games against the home-win rate and plain Elo.
 - **Live model:** v1.4.1-fenwick (`model/train_v1_4_1_fenwick.py`, log
   `results/v1_4_1_fenwick_train.log`, results in `results/v1_4_1-fenwick/`). It's v1.4's
   features, settings, recency weights and distance constraint refit on the stoppage-fixed
@@ -183,17 +191,33 @@ Updated 2026-11-11 (v1.4.1 live, simulator plan waiting on the owner).
 
 ## Waiting on the owner
 
-- **OK on the game simulator plan** (`docs/SIMULATOR.md`, written 2026-11-11). Nothing gets
-  built until they say so. Points they may want to change: the test at 800 games of
-  2026-27, the pass rules, and testing the skill layers on the rest of 2026-27 (or
-  waiting for 2027-28).
+- Nothing right now. After the PC data checks report, the owner picks which gaps to fix.
 
 ## Next up
 
-1. **Game simulator v0**, after the owner's OK: follow the steps in `docs/SIMULATOR.md`
-   (build in `sim/`, pick on 2023-24 to 2025-26, freeze `results/sim_v0/selection.json`,
-   report). The owner's decisions are written into the plan; don't re-ask them. Don't
-   look at simulator output on 2026-27 until it has 800 games, then test once.
+1. **PC data checks** (read-only): run the prompt at the end of `docs/DATA_PIPELINE.md`,
+   write `results/checks/data_audit.txt`, report, and fix nothing until the owner picks.
+2. **Simulator plan changes** the owner agreed on 2026-11-11. Put them in
+   `docs/SIMULATOR.md`, then push:
+   - Penalties: rate teams on power plays drawn and given up (when the shift charts show
+     one side short-handed), not on raw penalty calls; fighting majors and matching
+     minors usually cancel out. Double minors are 4 minutes. Check that simulated minutes
+     per game at 5-on-5, power play and penalty kill match the shift charts.
+   - Off-season: the team ratings get a pull back toward average between seasons, like
+     Elo, as one more setting picked on the build seasons.
+   - Calibration pass rule: one overall check (calibration slope near 1 and intercept
+     near 0, each range covering that value) instead of "every group within its range",
+     which fails a perfectly calibrated model about 40% of the time with ten groups. Keep
+     the ten groups as the picture and the other two pass rules as they are. Test at 800
+     games of 2026-27 stays.
+   - Goalie and shooter layers: test them on the rest of 2026-27 after the first 800
+     games, compared with v0 on the same games, using only what would be known when the
+     site publishes (starters and lineups come late).
+   - Add to "What v0 leaves out": ratings aren't adjusted for the opponents faced.
+3. **Game simulator v0**, only when the owner says go: follow `docs/SIMULATOR.md` (build
+   in `sim/`, pick on 2023-24 to 2025-26, freeze `results/sim_v0/selection.json`,
+   report). Don't look at simulator output on 2026-27 until it has 800 games, then test
+   once.
 
 Standing decision from the owner (2026-11-04): **shooter and goalie skill stay out of the
 live xG, for good**, finishing priors included. "Goals minus xG" and "goals saved above

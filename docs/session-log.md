@@ -5,6 +5,11 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-11
 
+- Cloud: the owner chose to slow down before building the simulator, so the pipeline
+  is easy to explain end to end. Code-only audit in `docs/DATA_PIPELINE.md`: sources,
+  every step with file references, guards (CI vs by hand), known data problems, 10
+  gaps ranked, a reading list, and a read-only prompt for the PC data checks. Agreed
+  simulator plan changes are saved under Next up; nothing built.
 - PC: game simulator plan in `docs/SIMULATOR.md` (`0e0a970`), waiting on the owner's OK.
   v0 is team-level (xG rates at 5-on-5, PP, PK and penalty rates, from earlier games,
   recency-weighted and pulled toward average, home ice), played out 10,000 times a game
