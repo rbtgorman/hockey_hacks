@@ -20,7 +20,8 @@ from tqdm import tqdm
 
 from .config import RAW_DATA_DIR
 from .parser import parse_pbp
-from .db import pg_conn, upsert_game, insert_shots, insert_contexts, log_ingest
+from .db import (pg_conn, upsert_game, insert_shots, insert_contexts, log_ingest,
+                 ensure_warning_columns, log_parse_warnings)
 
 
 def wipe_derived_tables(cur) -> None:
@@ -104,6 +105,10 @@ def main():
             """, (args.season,))
             conn.commit()
 
+    with pg_conn() as conn, conn.cursor() as cur:
+        ensure_warning_columns(cur)  # migration 004, idempotent
+        conn.commit()
+
     ok = 0
     fail = 0
     total_shots = 0
@@ -119,6 +124,8 @@ def main():
                 n_shots = insert_shots(cur, result.shots)
                 insert_contexts(cur, result.contexts)
                 log_ingest(cur, "pbp", str(game_id), "ok", shots_parsed=n_shots)
+                log_parse_warnings(cur, game_id, result.parse_warnings,
+                                   result.shots_dropped)
                 conn.commit()
 
             ok += 1

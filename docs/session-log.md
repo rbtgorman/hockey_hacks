@@ -5,6 +5,13 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-11
 
+- PC: audit fixes group 1, problems stop the refresh (commit below). Shot-table
+  must-be-zero checks exit 1; new `ingest/check_ingest.py` in `refresh.sh` stops on
+  missing games, goals that don't add up, or dropped shots, and prints parse warnings
+  at the end; warnings counted per game in ingest_log (migration 004, backfilled: 0 in
+  5,877 games); CI runs the actors and priors tests. Each stop tested by planting
+  problems in a rolled-back transaction. Group 2 waits on the owner's go.
+- PC: reran the read-only audit; identical to `16c18f2` apart from the timestamp.
 - PC: read-only data audit (`16c18f2`): `diagnostics/check_data_audit.py`,
   `results/checks/data_audit.txt`. All OK except two small shift-chart issues: no shifts
   after the 1st OT in 15 playoff games (the API parser drops periods 5+), and 25

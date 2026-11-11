@@ -75,9 +75,22 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-11 (v1.4.1 live; slowing down for a data audit before the simulator).
+Updated 2026-11-11 (v1.4.1 live; fixing what the data audit found, before the simulator).
 
-- **Data pipeline audit done, nothing fixed** (2026-11-11). Code half (cloud):
+- **Audit fixes, group 1 of 3 done** (2026-11-11): problems now stop `export/refresh.sh`
+  before anything is scored or exported. `features/build_features_fenwick.py` exits 1 if
+  a must-be-zero check isn't 0 (`MUST_BE_ZERO`: missed-shot goals in check 3, checks 8,
+  11, 12). New step `ingest/check_ingest.py` (after the shift steps) stops on
+  completeness (games not OFF, non-ok ingest_log rows except "not official yet", games
+  missing an ok pbp/shifts/rosters row, finished seasons not exactly 1-1312, in-season
+  gaps that the API says are official), goals that don't add up, or any dropped shot.
+  Parse warnings are counted per game into ingest_log (migration
+  `db/migrations/004_ingest_log_warnings.sql`: `parse_warnings`, `shots_dropped`,
+  `warning_sample`; the parser's new `ParseResult.shots_dropped`), backfilled for all
+  5,877 games (0 warnings), and printed at the end of a refresh
+  (`check_ingest --report-warnings`). CI now runs `tests/test_parser_actors.py` (which
+  also tests the dropped-shot count) and `tests/test_priors_fenwick.py`.
+- **Data pipeline audit done** (2026-11-11). Code half (cloud):
   `docs/DATA_PIPELINE.md` maps every source, step, guard and known problem and ranks 10
   gaps. Data half (PC, read-only): `diagnostics/check_data_audit.py`, results with a
   summary on top in `results/checks/data_audit.txt`. The data is clean where it matters:
@@ -197,16 +210,25 @@ Updated 2026-11-11 (v1.4.1 live; slowing down for a data audit before the simula
 
 ## Waiting on the owner
 
-- **Which audit gaps to fix.** Candidates: make the shot-table must-be-zero checks stop
-  `refresh.sh` (gap 1); turn the goals-add-up and strength checks into standing checks
-  (gaps 2, 3); keep shifts for playoff periods 5+; count parse warnings into
-  `ingest_log` (gap 6); key `shot_xg` on game and event (gap 7); add the two tests to CI
-  (gap 9); FINDINGS wording on 'short' misses (gap 10). Gap 4 needs nothing; gap 5
-  looks low priority (1 penalty change in 30 games).
+- **Read the group 1 explanation and say go for group 2.** The owner wants each group
+  committed, explained in plain words, and stopped before the next.
 
 ## Next up
 
-1. **Audit fixes the owner picks** (see Waiting on the owner), one at a time.
+1. **Audit fixes, groups 2 and 3** (owner's list, 2026-11-11), one group per commit, then
+   stop and explain what changed, which lines and why:
+   - Group 2, shift charts: the API shift parser skips period 5 only in regular-season
+     games (the shootout); in the playoffs it's a 2nd OT, so re-parse the 15 playoff
+     games. For the 25 team-games where the shift chart loses the goalie mid-period, use
+     the HTML report like the empty-chart games; if the HTML report lacks the goalie
+     too, stop and tell the owner. Clip shifts that run past their period's end
+     (2024021158). Re-export profiles and report how much 5-on-5 time changed.
+   - Group 3, docs: in `docs/DATA_PIPELINE.md` mark gaps 2, 3, 4 and 8 checked with the
+     audit's numbers, and gaps 1, 6 and 9 fixed. `docs/FINDINGS.md`: 'short' misses are
+     no longer open. Make the old on-ice view in `db/` use the profiles' start < t <= end
+     rule.
+   - Left for later, just noted: late corrections (gap 5), keying `shot_xg` on game and
+     event instead of shot_id (gap 7), the 0.23% strength disagreement.
 2. **Simulator plan changes** the owner agreed on 2026-11-11. Put them in
    `docs/SIMULATOR.md`, then push:
    - Penalties: rate teams on power plays drawn and given up (when the shift charts show

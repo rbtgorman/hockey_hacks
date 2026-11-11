@@ -377,6 +377,12 @@ class ParseResult:
     shots: list[ShotRow] = field(default_factory=list)
     contexts: list[ContextRow] = field(default_factory=list)
     parse_warnings: list[str] = field(default_factory=list)
+    # Shot events (SHOT_EVENTS) that never made it into `shots`, because the
+    # team was missing or the play raised an error before it was stored. Each
+    # one also has a line in parse_warnings. ingest/run.py writes both counts
+    # to ingest_log, and ingest/check_ingest.py stops the refresh if any game
+    # dropped a shot.
+    shots_dropped: int = 0
 
 
 def parse_pbp(payload: dict) -> ParseResult:
@@ -437,6 +443,7 @@ def parse_pbp(payload: dict) -> ParseResult:
             if event_type in SHOT_EVENTS:
                 if team_id is None:
                     result.parse_warnings.append(f"shot at idx {i} missing eventOwnerTeamId")
+                    result.shots_dropped += 1
                     continue
 
                 is_home = (team_id == home_id)
@@ -536,6 +543,11 @@ def parse_pbp(payload: dict) -> ParseResult:
 
         except (KeyError, ValueError, TypeError) as e:
             result.parse_warnings.append(f"play idx {i}: {type(e).__name__}: {e}")
+            # A shot that raised before it was appended is lost. One that raised
+            # later, in the context block, is already stored.
+            if (isinstance(play, dict) and play.get("typeDescKey") in SHOT_EVENTS
+                    and not (result.shots and result.shots[-1].event_idx == i)):
+                result.shots_dropped += 1
             continue
 
     return result

@@ -99,6 +99,7 @@ RUN
 from __future__ import annotations
 
 import argparse
+import sys
 
 from ingest.db import pg_conn
 
@@ -512,7 +513,28 @@ def build() -> None:
         print(f"Done. {n:,} rows in shot_features_fenwick.")
 
 
-def verify() -> None:
+# The checks whose answer must be 0. Each rule gets the check's column names
+# and rows and returns the rows that break it. Any broken rule makes verify()
+# exit with an error, so `set -euo pipefail` in export/refresh.sh stops the
+# refresh before scoring and exports. The other checks are for reading.
+MUST_BE_ZERO = {
+    "3": ("missed-shot goals must be 0",
+          lambda cols, rows: [r for r in rows
+                              if r[cols.index("event_type")] == "missed-shot"
+                              and r[cols.index("goals")] != 0]),
+    "8": ("no category value may give away the answer (0 rows)",
+          lambda cols, rows: rows),
+    "11": ("no partial-window events may be left (0 rows)",
+           lambda cols, rows: rows),
+    "12": ("still_stoppage must be 0",
+           lambda cols, rows: [r for r in rows
+                               if r[cols.index("still_stoppage")] != 0]),
+}
+
+
+def verify() -> list[str]:
+    """Print every check; return one line per broken must-be-zero rule."""
+    failures = []
     with pg_conn() as conn, conn.cursor() as cur:
         for title, q in VERIFY_QUERIES:
             print(f"\n--- {title} ---")
@@ -527,6 +549,13 @@ def verify() -> None:
                 print("  " + " | ".join(str(r[i]).ljust(widths[i]) for i in range(len(cols))))
             if not rows:
                 print("  (0 rows)")
+            rule = MUST_BE_ZERO.get(title.split(".", 1)[0])
+            if rule:
+                bad = rule[1](cols, rows)
+                if bad:
+                    failures.append(f"check {title.split('.', 1)[0]}: {rule[0]}; "
+                                    f"{len(bad)} bad row(s), first: {bad[0]}")
+    return failures
 
 
 def main() -> None:
@@ -538,7 +567,13 @@ def main() -> None:
     args = p.parse_args()
     if not args.verify_only:
         build()
-    verify()
+    failures = verify()
+    if failures:
+        print("\nSHOT-TABLE CHECKS FAILED. Stopping (nothing after this should run):")
+        for f in failures:
+            print("  " + f)
+        sys.exit(1)
+    print("\nAll must-be-zero checks are 0 (checks 3, 8, 11, 12).")
 
 
 if __name__ == "__main__":

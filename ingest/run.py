@@ -11,6 +11,8 @@ Flow per season:
   2. For each game_id not already in ingest_log, fetch /gamecenter/{id}/play-by-play
   3. Parse -> upsert game, insert shots + contexts, log success
   4. Raw JSONs cached to raw_data/{season}/{game_id}.json
+  5. Parse-warning counts (and shots dropped) go on the game's ingest_log row;
+     ingest/check_ingest.py reads them at the end of a refresh
 
 A season still being played is safe to re-run nightly: the date walk stops at
 yesterday, and only games the NHL marks official (gameState OFF) are ingested
@@ -32,7 +34,7 @@ from .http_client import fetch_json, FetchError
 from .parser import parse_pbp
 from .db import (
     pg_conn, init_schema, upsert_game, insert_shots, insert_contexts,
-    log_ingest, already_ingested_games,
+    log_ingest, already_ingested_games, ensure_warning_columns, log_parse_warnings,
 )
 
 
@@ -115,6 +117,10 @@ def ingest_one_game(game_id: int, season_id: int) -> tuple[bool, int, str | None
     if result.game.game_state != "OFF":
         return (False, 0, f"game not official yet (state={result.game.game_state})")
 
+    if result.parse_warnings:
+        tqdm.write(f"  game {game_id}: {len(result.parse_warnings)} parse warning(s), "
+                   f"{result.shots_dropped} shot(s) dropped; first: {result.parse_warnings[0]}")
+
     # Write to DB in a single transaction per game
     try:
         with pg_conn() as conn, conn.cursor() as cur:
@@ -122,6 +128,7 @@ def ingest_one_game(game_id: int, season_id: int) -> tuple[bool, int, str | None
             n_shots = insert_shots(cur, result.shots)
             insert_contexts(cur, result.contexts)
             log_ingest(cur, "pbp", str(game_id), "ok", shots_parsed=n_shots)
+            log_parse_warnings(cur, game_id, result.parse_warnings, result.shots_dropped)
             conn.commit()
     except Exception as e:
         return (False, 0, f"db: {type(e).__name__}: {e}")
@@ -131,6 +138,10 @@ def ingest_one_game(game_id: int, season_id: int) -> tuple[bool, int, str | None
 
 def run(seasons: list[tuple[int, str, str]], max_games: int | None = None,
         resume: bool = True) -> None:
+    with pg_conn() as conn, conn.cursor() as cur:
+        ensure_warning_columns(cur)  # migration 004, idempotent
+        conn.commit()
+
     # Load already-done set once
     if resume:
         with pg_conn() as conn:

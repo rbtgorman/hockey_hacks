@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Iterable
 
 import psycopg2
@@ -135,6 +136,24 @@ def log_ingest(cur, kind: str, target_key: str, status: str,
             http_status = EXCLUDED.http_status,
             completed_at = NOW()
     """, (kind, target_key, status, shots_parsed, error_msg, http_status))
+
+
+MIGRATION_004 = Path(__file__).resolve().parent.parent / "db" / "migrations" / "004_ingest_log_warnings.sql"
+
+
+def ensure_warning_columns(cur) -> None:
+    """Add ingest_log's parse-warning columns if they aren't there (migration 004)."""
+    cur.execute(MIGRATION_004.read_text())
+
+
+def log_parse_warnings(cur, game_id: int, warnings: list[str], shots_dropped: int) -> None:
+    """Record a game's parse-warning counts on its 'pbp' ingest_log row."""
+    cur.execute("""
+        UPDATE ingest_log
+        SET parse_warnings = %s, shots_dropped = %s, warning_sample = %s
+        WHERE kind = 'pbp' AND target_key = %s
+    """, (len(warnings), shots_dropped,
+          " | ".join(warnings[:3]) or None, str(game_id)))
 
 
 def already_ingested_games(conn) -> set[int]:

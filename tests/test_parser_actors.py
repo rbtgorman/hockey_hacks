@@ -12,6 +12,8 @@ Covers:
   - a RENAMED NHL key still produces an actor, which is the whole point of
     generic extraction over a hardcoded map
   - shot-family context rows still carry no raw_details_json duplicate
+  - a shot lost to a parse problem is counted in shots_dropped; other
+    warnings are not
 """
 import sys
 from pathlib import Path
@@ -182,6 +184,26 @@ def main():
     if not assert_eq("shot count", len(result.shots), 3): failures += 1
     if not assert_eq("context count", len(result.contexts), 9): failures += 1
     if not assert_eq("parse warnings", len(result.parse_warnings), 0): failures += 1
+
+    print("\n=== dropped shots are counted (ingest_log.shots_dropped) ===")
+    # A shot with no team, a shot whose period can't be read, and a hit whose
+    # period can't be read: three warnings, two of them lost shots.
+    bad_period = {"number": "x", "periodType": "REG"}
+    broken = dict(PAYLOAD, plays=PAYLOAD["plays"] + [
+        _play(20, "shot-on-goal", {"xCoord": 70, "yCoord": 5, "shootingPlayerId": 107}),
+        # No coordinates, so the attack-side pre-pass skips it and only the
+        # main loop trips on the period.
+        dict(_play(21, "missed-shot", {"eventOwnerTeamId": 21, "shootingPlayerId": 108}),
+             periodDescriptor=bad_period),
+        dict(_play(22, "hit", {"xCoord": 0, "yCoord": 0, "eventOwnerTeamId": 21,
+                               "hittingPlayerId": 109, "hitteePlayerId": 209}),
+             periodDescriptor=bad_period),
+    ])
+    rb = parse_pbp(broken)
+    if not assert_eq("warnings", len(rb.parse_warnings), 3): failures += 1
+    if not assert_eq("shots dropped", rb.shots_dropped, 2): failures += 1
+    if not assert_eq("good shots still stored", len(rb.shots), 3): failures += 1
+    if not assert_eq("clean payload drops nothing", result.shots_dropped, 0): failures += 1
 
     print("\n=== RENAMED KEY: the reason this is generic, not a hardcoded map ===")
     # Suppose the NHL renames drawnByPlayerId to penaltyDrawnByPlayerId.

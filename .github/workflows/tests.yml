@@ -44,6 +44,11 @@ jobs:
       - name: Boxscore/landing parser
         run: python tests/test_parser_landing.py
 
+      # Who did what on each event (plays_context actor_1 / actor_2), and the
+      # count of shots the parser drops. Synthetic payloads, stdlib only.
+      - name: Play-by-play actors
+        run: python tests/test_parser_actors.py
+
       # export/period_math.py is stdlib-only for the same reason: the
       # Poisson-binomial and regression-to-the-mean math behind the period page.
       - name: Period table math
@@ -71,7 +76,7 @@ jobs:
         run: python -m compileall -q ingest features model export tests
 
   reporting-tests:
-    name: calibration stats test
+    name: calibration stats and priors tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -89,3 +94,9 @@ jobs:
       # sys.path instead of the repo root, so that import would fail.
       - name: O/E and calibration slope (synthetic, no database)
         run: python -m tests.test_calibration_stats
+
+      # The shooter and goalie priors only use games before the shot's date
+      # (the leak test). Needs numpy and pandas, so it lives in this job; it
+      # builds its own shots and never touches the database.
+      - name: Priors use only earlier games (synthetic, no database)
+        run: python tests/test_priors_fenwick.py
