@@ -5,6 +5,13 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-11
 
+- PC: read-only data audit (this commit): `diagnostics/check_data_audit.py`,
+  `results/checks/data_audit.txt`. All OK except two small shift-chart issues: no shifts
+  after the 1st OT in 15 playoff games (the API parser drops periods 5+), and 25
+  regular-season team-games where the shift chart loses the goalie mid-period. Goals add
+  up in all 5,877 games; strength sources disagree on 0.23% of shots; blocked shots carry
+  the shooter's team; 30 re-downloaded games unchanged but for one penalty length.
+  Nothing fixed; the owner picks.
 - Cloud: the owner chose to slow down before building the simulator, so the pipeline
   is easy to explain end to end. Code-only audit in `docs/DATA_PIPELINE.md`: sources,
   every step with file references, guards (CI vs by hand), known data problems, 10

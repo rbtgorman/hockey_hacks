@@ -77,13 +77,19 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 Updated 2026-11-11 (v1.4.1 live; slowing down for a data audit before the simulator).
 
-- **Data pipeline audit, code half done** (2026-11-11, cloud): `docs/DATA_PIPELINE.md` maps
-  every source, step, guard and known problem, with file references, and ranks 10 gaps.
-  Top three: the 12 shot-table checks print but never stop `refresh.sh`; nothing checks
-  that play-by-play goals add up to the final scores; shot strength (`situationCode`) and
-  time on ice (shift charts) come from two sources nobody compares. The data half (PC,
-  read-only) is the prompt at the end of that doc. The owner wants to be able to explain
-  every step to an employer, so: no fixes until the checks are in and the owner picks them.
+- **Data pipeline audit done, nothing fixed** (2026-11-11). Code half (cloud):
+  `docs/DATA_PIPELINE.md` maps every source, step, guard and known problem and ranks 10
+  gaps. Data half (PC, read-only): `diagnostics/check_data_audit.py`, results with a
+  summary on top in `results/checks/data_audit.txt`. The data is clean where it matters:
+  every season complete, goals add up to the final score in all 5,877 games, blocked
+  shots carry the shooter's team (gap 4 is a non-issue), one starter per team-game with
+  no fallback, 30 re-downloaded games unchanged apart from one penalty's length (15 -> 5
+  min), shot-table must-be-zero checks all 0. Strength from `situationCode` vs the shift
+  charts disagrees on 0.23% of unblocked shots. Two small shift issues: the API shift
+  parser drops periods 5+ (15 playoff games with 2+ overtimes have no shifts after the
+  1st OT), and in 25 regular-season team-games the NHL's shift chart loses the goalie
+  partway through a period, so profiles miss up to 20 min of 5-on-5 there. The owner
+  wants to be able to explain every step, so no fixes until they pick.
 - **Game simulator: plan written, not built** (`docs/SIMULATOR.md`). The owner OK'd the
   direction on 2026-11-11 with five changes (Next up, item 2) but chose to audit the data
   first. Team-level v0 first, then goalie and shooter layers. Built and picked on 2023-24
@@ -191,12 +197,16 @@ Updated 2026-11-11 (v1.4.1 live; slowing down for a data audit before the simula
 
 ## Waiting on the owner
 
-- Nothing right now. After the PC data checks report, the owner picks which gaps to fix.
+- **Which audit gaps to fix.** Candidates: make the shot-table must-be-zero checks stop
+  `refresh.sh` (gap 1); turn the goals-add-up and strength checks into standing checks
+  (gaps 2, 3); keep shifts for playoff periods 5+; count parse warnings into
+  `ingest_log` (gap 6); key `shot_xg` on game and event (gap 7); add the two tests to CI
+  (gap 9); FINDINGS wording on 'short' misses (gap 10). Gap 4 needs nothing; gap 5
+  looks low priority (1 penalty change in 30 games).
 
 ## Next up
 
-1. **PC data checks** (read-only): run the prompt at the end of `docs/DATA_PIPELINE.md`,
-   write `results/checks/data_audit.txt`, report, and fix nothing until the owner picks.
+1. **Audit fixes the owner picks** (see Waiting on the owner), one at a time.
 2. **Simulator plan changes** the owner agreed on 2026-11-11. Put them in
    `docs/SIMULATOR.md`, then push:
    - Penalties: rate teams on power plays drawn and given up (when the shift charts show

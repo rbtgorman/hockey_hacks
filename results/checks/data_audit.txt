@@ -1,0 +1,534 @@
+DATA AUDIT, 2026-11-11 (read-only; the checks from docs/DATA_PIPELINE.md section 7)
+Summary written by hand after reading the output below. Nothing was fixed.
+
+1 Completeness ........ OK. Every full season has all 1,312 regular-season games
+                        (numbers 1-1312, none missing); 2026-27 has 1-285. All 5,877
+                        games OFF; ingest_log has no failures.
+2 Goals add up ........ OK. 0 of 5,877 games: play-by-play goals (+1 for the shootout
+                        winner) match the final score in every game.
+3 Strength agrees ..... OK, small. situationCode and the shift charts disagree on the
+                        strength (even / up / down) for 0.23% of unblocked shots (0.2-0.3%
+                        each regular season). The start < t <= end rule is right: the
+                        other edge disagrees about 10x as often. Most of the rest is
+                        playoff 2nd+ overtimes (no shift data, see 7). 179 shots with a
+                        "1v0" code are penalty shots, as expected.
+4 Blocked shots' team . OK. eventOwnerTeamId is the shooter's team on 100% of blocked
+                        shots, every season (checked against the rosters). Gap 4 is not
+                        a problem.
+5 Late corrections .... OK in practice. 30 random older games re-downloaded: shots,
+                        goals, scores and coordinates identical. One change in 30: a
+                        penalty's duration went 15 -> 5 (2023020232, event 304).
+                        Doesn't touch xG; would touch penalty minutes in the simulator.
+6 Starting goalies .... OK. Every team-game has exactly one starter, none from the
+                        "first goalie listed" fallback, and the starter was in net for
+                        the first shot faced in all but 3 of 11,754 team-games.
+7 Shift coverage ...... LOOK, two small things.
+                        a) The API shift parser drops period 5 and later, so the 15
+                           playoff games that reached a 2nd overtime have no shifts after
+                           the 1st overtime (up to 47 min in 2022030311). Playoff only;
+                           profiles and the period page are regular season.
+                        b) 25 regular-season team-games (of 11,232) where the NHL's shift
+                           chart loses the goalie partway through a period (e.g.
+                           2022020567, 2025021031). Profiles count that time as "goalie
+                           pulled", so up to 20 min of 5-on-5 time goes missing in those
+                           games. 2024021158 has an OT goalie shift 241 s past the end.
+8 Shot-table checks ... OK. Every "must be 0" result is 0.
+
+Read-only data audit (diagnostics/check_data_audit.py), run 2026-11-11 14:07
+
+==============================================================================
+1. Completeness
+==============================================================================
+  season  game_type game_state  games
+20222023          2        OFF   1312
+20222023          3        OFF     88
+20232024          2        OFF   1312
+20232024          3        OFF     88
+20242025          2        OFF   1312
+20242025          3        OFF     86
+20252026          2        OFF   1312
+20252026          3        OFF     82
+20262027          2        OFF    285
+
+ingest_log by kind and status:
+   kind status    n
+    pbp     ok 5877
+rosters     ok 5877
+ shifts     ok 5877
+
+Regular-season game numbers (each season runs 0001..1312):
+  20222023: 1312 games, numbers 1..1312 missing 0 [] complete
+  20232024: 1312 games, numbers 1..1312 missing 0 [] complete
+  20242025: 1312 games, numbers 1..1312 missing 0 [] complete
+  20252026: 1312 games, numbers 1..1312 missing 0 [] complete
+  20262027: 285 games, numbers 1..285 missing 0 [] 
+
+VERDICT: OK    games not OFF: 0; ingest_log non-ok rows: 0; full seasons with missing/extra game numbers: 0 (2026-27 checked only up to its highest game number)
+
+==============================================================================
+2. Goals add up to the final score
+==============================================================================
+Games: 5,877; shootout games: 393
+Mismatches with the final score: 0 (0.000%)
+Shootout games where regulation+OT wasn't tied or the shootout goals were level: 0
+
+By season (mismatches):
+  season  game_type  sum  count
+20222023          2    0   1312
+20222023          3    0     88
+20232024          2    0   1312
+20232024          3    0     88
+20242025          2    0   1312
+20242025          3    0     86
+20252026          2    0   1312
+20252026          3    0     82
+20262027          2    0    285
+
+Every mismatch:
+  (none)
+
+VERDICT: OK    0 games where the goals don't add up (threshold 0)
+
+==============================================================================
+4. Blocked shots: whose team is eventOwnerTeamId?
+==============================================================================
+  season  blocked            who      n  share_pct
+20222023    False shooter's team 122066      100.0
+20222023     True shooter's team  41705      100.0
+20232024    False shooter's team 122529      100.0
+20232024     True shooter's team  48120      100.0
+20242025    False shooter's team 119954      100.0
+20242025     True shooter's team  47096      100.0
+20252026    False shooter's team 119357      100.0
+20252026     True shooter's team  43664      100.0
+20262027    False shooter's team  23827      100.0
+20262027     True shooter's team   8745      100.0
+
+Blocked shots: shooter's team 100.00%, blocker's team 0.00%
+
+VERDICT: OK    eventOwnerTeamId on blocked shots is the shooter's team (threshold: shooter's team on > 99%)
+
+==============================================================================
+6. Starting goalies
+==============================================================================
+Team-games by number of goalies marked starter:
+  season  starters  team_games
+20222023         1        2800
+20232024         1        2800
+20242025         1        2796
+20252026         1        2788
+20262027         1         570
+  (none)
+
+Team-games whose cached box score flags no starter (the 'first goalie listed' fallback): 0
+
+Starter vs goalie in net for the first shot on goal faced:
+  season  agree  team_games
+20222023   2799        2800
+20232024   2800        2800
+20242025   2795        2796
+20252026   2787        2788
+20262027    570         570
+  season    game_id  team_id  goalie_id  starter_id  agree
+20222023 2022020720       13    8479312     8475683  False
+20242025 2024021072       52    8476945     8477480  False
+20252026 2025020963       29    8478007     8482982  False
+
+VERDICT: OK    0 team-games without exactly one starter; 0 from the fallback; 3 where the starter wasn't in net for the first shot (threshold: 0, and a handful of the last)
+Loading shifts...
+
+==============================================================================
+3. Strength agrees: situationCode vs shift charts at each unblocked shot
+==============================================================================
+Shift rule here is start < t <= end (export/profiles.py). 'alt' is the other
+edge, start <= t < end, shown only to see if the edge rule explains a gap.
+
+Shots compared: 502,509; shots with a missing/odd situationCode: 0
+  season  game_type  shots  skaters_differ  alt_rule_differs  strength_class_differs  goalie_flag_differs  code_5v5_shift_not  shift_5v5_code_not  skaters_differ_pct  strength_class_differs_pct  goalie_flag_differs_pct
+20222023          2 114088             279              2977                     257                  109                 193                  57                0.24                        0.23                     0.10
+20222023          3   7978             147               339                      28                  138                 127                   3                1.84                        0.35                     1.73
+20232024          2 113979             395              2711                     317                   74                 221                  60                0.35                        0.28                     0.06
+20232024          3   7610              45               207                      15                   32                  33                   2                0.59                        0.20                     0.42
+20242025          2 110603             248              2600                     224                   55                 149                  54                0.22                        0.20                     0.05
+20242025          3   7548              62               246                      23                   43                  52                   1                0.82                        0.30                     0.57
+20252026          2 110180             277              2658                     228                   87                 173                  44                0.25                        0.21                     0.08
+20252026          3   7145              72               241                      34                   58                  51                   4                1.01                        0.48                     0.81
+20262027          2  23378              46               614                      41                   10                  28                   8                0.20                        0.18                     0.04
+
+How the skater counts differ (code home/away vs shifts home/away), top 15:
+               combo  shots
+5v5 code, 5v4 shifts    284
+5v5 code, 4v5 shifts    253
+5v5 code, 0v0 shifts    218
+5v5 code, 6v5 shifts     97
+5v5 code, 5v6 shifts     73
+1v0 code, 5v5 shifts     72
+0v1 code, 5v5 shifts     51
+6v5 code, 5v5 shifts     49
+5v6 code, 5v5 shifts     43
+4v5 code, 0v0 shifts     21
+5v6 code, 5v7 shifts     21
+5v4 code, 5v5 shifts     20
+1v0 code, 4v5 shifts     18
+5v5 code, 4v4 shifts     16
+5v4 code, 0v0 shifts     16
+
+By period (share of shots where skaters differ):
+ period  pct_differ
+      1        0.21
+      2        0.25
+      3        0.30
+      4        0.86
+      5      100.00
+      6      100.00
+      7      100.00
+
+Games with the most differing shots:
+   game_id  shots  differ
+2022030311    194      99
+2022030161    145      25
+2024030157    132      24
+2025030132    152      23
+2025030163     96      15
+2023030236    111      15
+2023030222    142      11
+2022030173    116      10
+2023020919    118      10
+2023020405     93       9
+2025030413    114       8
+2024020814     86       8
+
+Leaving out playoff periods 5+ (no shift data there, see check 7): 502,252 shots, skaters differ on 0.262%, strength class on 0.225%
+Shots with 0 or 1 skater on a side in the code (penalty shots): 179; codes: 1010 x111, 0101 x68
+
+VERDICT: OK    strength class (even / home up / away up) differs on 0.232% of shots; skater counts on 0.313% (threshold: class < 1%)
+
+==============================================================================
+7. Shift coverage per team-game
+==============================================================================
+  season  game_type     source  team_games  no_shifts  gap_over_60s  avg_skaters_off  goalie_time_off  shift_past_end_5s  median_avg_skaters  median_gap_s
+20222023          2        api        2624          0             0                0                3                  0            4.900000           0.0
+20222023          3        api         176          0             6                4                6                  0            4.915972           0.0
+20232024          2        api        2624          0             0                0                2                  0            4.903333           0.0
+20232024          3        api         176          0             6                4                4                  0            4.915833           0.0
+20242025          2        api        2510          0             0                0                4                  2            4.911944           0.0
+20242025          2 htmlreport         114          0             0                0                0                  0            4.912639           0.0
+20242025          3        api         172          0             8                4                4                  0            4.914722           0.0
+20252026          2        api        2624          0             0                0               11                  0            4.901940           0.0
+20252026          3        api         164          0             8                4               10                  0            4.900000           0.0
+20262027          2        api         444          0             0                0                3                  0            4.900000           0.0
+20262027          2 htmlreport         126          0             0                0                0                  0            4.898750           0.0
+
+Flags: no shifts at all; more than 60 s of the game with nobody from the team
+on the ice; average skaters outside 4.5-5.5; goalie on the ice more than the
+game or more than 5 minutes less; a shift ending more than 5 s after the game.
+
+Flagged team-games: 57 of 11,754 (0.485%)
+   game_id side source    L  gap_s  avg_sk  goalie_s  past_end  n_shifts
+2022030311 home    api 8387   3587    2.82      4796         0       539
+2022030311 away    api 8387   3587    2.80      4800         0       543
+2024030157 home    api 5770    970    4.17      4608         0       564
+2024030157 away    api 5770    970    4.14      4800         0       600
+2025030132 away    api 5633    833    4.23      4781         0       585
+2025030132 home    api 5633    833    4.18      4780         0       558
+2022030161 home    api 5540    740    4.22      4785         0       558
+2022030161 away    api 5540    740    4.24      4800         0       552
+2025030163 away    api 5530    730    4.20      4800         0       502
+2025030163 home    api 5530    730    4.23      4800         0       470
+2023030236 home    api 5502    702    4.34      4800         0       567
+2023030236 away    api 5502    702    4.35      4800         0       546
+2024030412 home    api 5285    485    4.46      4667         0       482
+2024030412 away    api 5285    485    4.40      4800         0       578
+2023030222 away    api 5244    444    4.43      4800         0       548
+2023030222 home    api 5244    444    4.46      4800         0       546
+2025030413 home    api 5138    338    4.63      4800         0       545
+2025030413 away    api 5138    338    4.65      4788         0       545
+2025030175 home    api 5128    328    4.57      4752         0       552
+2025030175 away    api 5128    328    4.56      4800         0       574
+2024030145 home    api 5057    257    4.67      4800         0       537
+2024030145 away    api 5057    257    4.65      4790         0       550
+2022030173 home    api 5020    220    4.72      4752         0       524
+2022030173 away    api 5020    220    4.69      4800         0       557
+2024030143 home    api 4956    156    4.75      4800         0       535
+
+Regular-season flagged team-games (25):
+   game_id side source    L  gap_s  avg_sk  goalie_s  past_end  n_shifts
+2022020378 home    api 3600      0    4.99      3273         0       377
+2022020425 home    api 3600      0    5.01      3144         0       372
+2022020567 home    api 3600      6    4.86      2400         0       394
+2023020405 away    api 3600      0    5.04      3274         0       326
+2023020577 home    api 3600      0    5.02      3238         0       350
+2024020095 away    api 3600      0    5.06      3270         0       392
+2024020505 home    api 3600      0    4.96      3267         0       331
+2024020514 away    api 3600      0    5.04      3276         0       363
+2024020964 away    api 3600      0    5.04      3249         0       419
+2024021158 home    api 3659      0    4.76      3659       241       373
+2024021158 away    api 3659      0    4.84      3659       241       380
+2025020406 home    api 3600      0    4.97      3267         0       356
+2025020544 home    api 3900      0    4.79      3401         0       412
+2025020623 home    api 3600      0    4.97      3292         0       379
+2025020756 away    api 3600      0    5.03      3136         0       360
+2025020895 home    api 3600      0    5.03      3270         0       359
+2025020982 away    api 3600      0    5.06      3085         0       353
+2025021031 home    api 3740      0    4.89      2636         0       361
+2025021031 away    api 3740      0    4.90      2636         0       330
+2025021039 away    api 3600      0    5.02      3182         0       337
+2025021153 away    api 3600      0    5.00      3285         0       371
+2025021205 home    api 3600      0    5.05      3170         0       382
+2026020191 home    api 3600      0    5.00      3246         0       379
+2026020211 home    api 3600      0    5.05      3214         0       367
+2026020282 away    api 3600      0    4.98      3225         0       347
+
+Playoff games that reached a 2nd overtime (period 5+): 15; with any shift in period 5+: 0
+   game_id   season  last_period  len_s
+2025030413 20252026            5   5138
+2023030144 20232024            5   4884
+2023030222 20232024            5   5244
+2024030412 20242025            5   5285
+2024030145 20242025            5   5057
+2022030161 20222023            5   5540
+2023030236 20232024            5   5502
+2025030132 20252026            5   5633
+2024030143 20242025            5   4956
+2022030173 20222023            5   5020
+2025030163 20252026            5   5530
+2023030321 20232024            5   4832
+2022030311 20222023            7   8387
+2024030157 20242025            5   5770
+2025030175 20252026            5   5128
+
+VERDICT: LOOK  57 flagged team-games; 15 playoff games with no shifts after the first overtime
+
+==============================================================================
+5. Late corrections: 30 random older games re-downloaded
+==============================================================================
+   game_id  plays_new  plays_cached  added  removed  changed  shots_new  shots_db  only_new  only_db  shot_rows_differ  cols_differing  goals_new  goals_db score_new score_db
+2022020352        355           355      0        0        0        116       116         0        0                 0               0          5         5       2-3      2-3
+2022020425        310           310      0        0        0        132       132         0        0                 0               0         10        10       4-6      4-6
+2022020605        306           306      0        0        0        113       113         0        0                 0               0          5         5       1-4      1-4
+2022020620        353           353      0        0        0        129       129         0        0                 0               0          7         7       5-2      5-2
+2022020663        288           288      0        0        0        112       112         0        0                 0               0          3         3       2-1      2-1
+2022020906        356           356      0        0        0        142       142         0        0                 0               0          6         6       2-4      2-4
+2022020959        318           318      0        0        0         94        94         0        0                 0               0          7         7       6-1      6-1
+2022021160        311           311      0        0        0        124       124         0        0                 0               0          8         8       5-3      5-3
+2022021283        278           278      0        0        0         99        99         0        0                 0               0          5         5       1-4      1-4
+2023020088        326           326      0        0        0        136       136         0        0                 0               0          5         5       1-4      1-4
+2023020203        330           330      0        0        0        135       135         0        0                 0               0          5         5       3-2      3-2
+2023020232        311           311      0        0        1        121       121         0        0                 0               0          3         3       3-0      3-0
+2023020653        321           321      0        0        0        111       111         0        0                 0               0          5         5       3-2      3-2
+2023020795        322           322      0        0        0        142       142         0        0                 0               0          6         6       4-2      4-2
+2023020830        347           347      0        0        0        138       138         0        0                 0               0          6         6       4-2      4-2
+2023020956        329           329      0        0        0        120       120         0        0                 0               0          8         8       3-5      3-5
+2023021172        321           321      0        0        0        121       121         0        0                 0               0          3         3       0-3      0-3
+2024020030        352           352      0        0        0        130       130         0        0                 0               0         11        11       5-6      5-6
+2024020169        313           313      0        0        0        129       129         0        0                 0               0          7         7       3-4      3-4
+2024020841        299           299      0        0        0        103       103         0        0                 0               0          3         3       1-2      1-2
+2024020955        329           329      0        0        0        129       129         0        0                 0               0          4         4       1-3      1-3
+2024021057        266           266      0        0        0         87        87         0        0                 0               0          6         6       1-5      1-5
+2024021086        293           293      0        0        0        116       116         0        0                 0               0          8         8       6-2      6-2
+2024021113        291           291      0        0        0        100       100         0        0                 0               0          5         5       2-3      2-3
+2025020352        299           299      0        0        0        114       114         0        0                 0               0          7         7       2-5      2-5
+2025020576        281           281      0        0        0        127       127         0        0                 0               0         10        10       3-7      3-7
+2025020821        312           312      0        0        0        122       122         0        0                 0               0          8         8       7-1      7-1
+2025020995        336           336      0        0        0        126       126         0        0                 0               0          9         9       4-5      4-5
+2025021136        296           296      0        0        0        118       118         0        0                 0               0          7         7       4-3      4-3
+2025030241        356           356      0        0        0        120       120         0        0                 0               0          4         4       3-1      3-1
+
+Examples of changed plays (field index, cached value, new value).
+Fields: 0 type, 1 period, 2 time, 3 situationCode, 4 x, 5 y, 6 team,
+7 shotType, 8 shooter, 9 goalie, 10 reason, 11 typeCode, 12 descKey, 13 duration
+  2023020232 event 304: [(13, 15, 5)]
+
+VERDICT: LOOK  1 of 30 games differ in any way from what we stored (threshold 0); goal or score changes: 0
+
+==============================================================================
+8. Shot-table checks: python -m features.build_features_fenwick --verify-only
+==============================================================================
+
+--- 1. Parity with legacy shot_features on shared rows, leaving out the shots legacy gives a 'stoppage' previous event (docstring item 10) (2022 must be all zeros; 2023/2024 nonzero only in the context columns) ---
+  season_start | rows_compared | static_cols | secs_since_last | dist_from_last | last_event | is_rebound | is_rush
+  -------------+---------------+-------------+-----------------+----------------+------------+------------+--------
+  2022         | 87500         | 0           | 0               | 0              | 0          | 0          | 0      
+  2023         | 84411         | 0           | 1309            | 1317           | 1106       | 80         | 1      
+  2024         | 78970         | 0           | 1523            | 1537           | 1228       | 121        | 1      
+
+--- 2. Legacy rows missing from the new table (expected: only game type 02, period 5) ---
+  season_start | game_type | period | legacy_rows_missing
+  -------------+-----------+--------+--------------------
+  2022         | 02        | 5      | 548                
+  2023         | 02        | 5      | 498                
+  2024         | 02        | 5      | 425                
+
+--- 3. Rows and goals by season and event type (missed-shot goals must be 0) ---
+  season_start | event_type   | n     | goals
+  -------------+--------------+-------+------
+  2022         | goal         | 8801  | 8801 
+  2022         | missed-shot  | 34528 | 0    
+  2022         | shot-on-goal | 78737 | 0    
+  2023         | goal         | 8590  | 8590 
+  2023         | missed-shot  | 37155 | 0    
+  2023         | shot-on-goal | 75844 | 0    
+  2024         | goal         | 8435  | 8435 
+  2024         | missed-shot  | 39144 | 0    
+  2024         | shot-on-goal | 70572 | 0    
+  2025         | goal         | 8572  | 8572 
+  2025         | missed-shot  | 39640 | 0    
+  2025         | shot-on-goal | 69113 | 0    
+  2026         | goal         | 1797  | 1797 
+  2026         | missed-shot  | 7757  | 0    
+  2026         | shot-on-goal | 13824 | 0    
+
+--- 4. Goal rate by distance band, regular season, no empty net (bands under 60 ft should be flat across seasons) ---
+  band     | season_start | n     | goal_pct
+  ---------+--------------+-------+---------
+  a_lt20   | 2022         | 35086 | 12.32   
+  a_lt20   | 2023         | 34339 | 12.46   
+  a_lt20   | 2024         | 31762 | 12.46   
+  a_lt20   | 2025         | 33911 | 12.05   
+  a_lt20   | 2026         | 7362  | 12.59   
+  b_20_40  | 2022         | 37742 | 7.20    
+  b_20_40  | 2023         | 37370 | 6.94    
+  b_20_40  | 2024         | 36644 | 7.25    
+  b_20_40  | 2025         | 36385 | 7.49    
+  b_20_40  | 2026         | 7956  | 7.54    
+  c_40_60  | 2022         | 30047 | 2.31    
+  c_40_60  | 2023         | 28044 | 2.35    
+  c_40_60  | 2024         | 27110 | 2.37    
+  c_40_60  | 2025         | 26074 | 2.54    
+  c_40_60  | 2026         | 5401  | 2.83    
+  d_60plus | 2022         | 10476 | 0.71    
+  d_60plus | 2023         | 13447 | 0.79    
+  d_60plus | 2024         | 14160 | 0.86    
+  d_60plus | 2025         | 12821 | 0.82    
+  d_60plus | 2026         | 2455  | 0.86    
+
+--- 5. Attempts from behind the goal line per game, regular season (flat if dropping failed-bank-attempt was right) ---
+  season_start | behind_line_per_game
+  -------------+---------------------
+  2022         | 0.767               
+  2023         | 1.245               
+  2024         | 0.796               
+  2025         | 0.643               
+  2026         | 0.737               
+
+--- 6. Goal rate by model shot_type and season, regular season, no empty net (each type should be roughly flat) ---
+  shot_type    | season_start | n     | goal_pct
+  -------------+--------------+-------+---------
+  backhand     | 2022         | 8395  | 7.66    
+  backhand     | 2023         | 8069  | 7.96    
+  backhand     | 2024         | 7721  | 8.13    
+  backhand     | 2025         | 7845  | 8.44    
+  backhand     | 2026         | 1696  | 8.96    
+  bat          | 2022         | 287   | 16.38   
+  bat          | 2023         | 426   | 13.62   
+  bat          | 2024         | 387   | 10.85   
+  bat          | 2025         | 527   | 9.87    
+  bat          | 2026         | 102   | 11.76   
+  between-legs | 2022         | 68    | 8.82    
+  between-legs | 2023         | 79    | 11.39   
+  between-legs | 2024         | 68    | 1.47    
+  between-legs | 2025         | 70    | 11.43   
+  between-legs | 2026         | 15    | 6.67    
+  cradle       | 2022         | 7     | 14.29   
+  cradle       | 2023         | 9     | 33.33   
+  cradle       | 2024         | 10    | 0.00    
+  cradle       | 2025         | 6     | 16.67   
+  cradle       | 2026         | 1     | 0.00    
+  deflected    | 2022         | 2280  | 9.78    
+  deflected    | 2023         | 2322  | 8.18    
+  deflected    | 2024         | 1908  | 10.06   
+  deflected    | 2025         | 1826  | 11.56   
+  deflected    | 2026         | 382   | 12.04   
+  poke         | 2022         | 418   | 12.20   
+  poke         | 2023         | 428   | 9.35    
+  poke         | 2024         | 450   | 14.00   
+  poke         | 2025         | 369   | 11.11   
+  poke         | 2026         | 83    | 15.66   
+  slap         | 2022         | 13834 | 5.16    
+  slap         | 2023         | 13262 | 5.04    
+  slap         | 2024         | 12698 | 4.82    
+  slap         | 2025         | 12834 | 4.99    
+  slap         | 2026         | 2520  | 5.08    
+  tip-in       | 2022         | 9636  | 8.77    
+  tip-in       | 2023         | 10084 | 8.35    
+  tip-in       | 2024         | 9767  | 7.81    
+  tip-in       | 2025         | 10572 | 6.81    
+  tip-in       | 2026         | 2348  | 6.77    
+  wrap-around  | 2022         | 973   | 5.55    
+  wrap-around  | 2023         | 904   | 6.08    
+  wrap-around  | 2024         | 778   | 4.76    
+  wrap-around  | 2025         | 679   | 4.57    
+  wrap-around  | 2026         | 132   | 3.03    
+  wrist-snap   | 2022         | 77453 | 6.75    
+  wrist-snap   | 2023         | 77617 | 6.61    
+  wrist-snap   | 2024         | 75889 | 6.64    
+  wrist-snap   | 2025         | 74463 | 7.00    
+  wrist-snap   | 2026         | 15895 | 7.46    
+
+--- 7. Raw wrist vs snap by season (why they are merged) ---
+  raw_shot_type | season_start | n     | goal_pct | avg_ft
+  --------------+--------------+-------+----------+-------
+  snap          | 2022         | 17504 | 8.68     | 34.8  
+  snap          | 2023         | 15803 | 9.37     | 34.8  
+  snap          | 2024         | 22676 | 8.47     | 36.0  
+  snap          | 2025         | 27226 | 8.18     | 35.9  
+  snap          | 2026         | 6446  | 8.84     | 35.2  
+  wrist         | 2022         | 59932 | 6.16     | 37.6  
+  wrist         | 2023         | 61804 | 5.89     | 38.7  
+  wrist         | 2024         | 53193 | 5.83     | 39.8  
+  wrist         | 2025         | 47213 | 6.27     | 38.4  
+  wrist         | 2026         | 9446  | 6.49     | 38.1  
+
+--- 8. Categorical values that give away the answer (expected: 0 rows). Flags any value that is always a goal (n >= 10) or never a goal (n >= 200) ---
+  feature | value | n | goals
+  --------+-------+---+------
+  (0 rows)
+
+--- 9. Post rebounds by season: per game, and goal rate against other rebounds (posts per game rise in 2024-25; see docstring item 8) ---
+  season_start | post_rebounds_per_game | post_rebounds | post_goal_pct | other_rebound_goal_pct
+  -------------+------------------------+---------------+---------------+-----------------------
+  2022         | 0.142                  | 199           | 27.64         | 13.90                 
+  2023         | 0.128                  | 179           | 24.02         | 11.17                 
+  2024         | 0.170                  | 238           | 20.17         | 11.20                 
+  2025         | 0.174                  | 243           | 23.46         | 10.96                 
+  2026         | 0.123                  | 35            | 17.14         | 12.36                 
+
+--- 10. Shots after a giveaway or takeaway, by season and whose event it was (giveaways about 2x from 2024-25; see docstring item 9) ---
+  season_start | last_event_type | made_by       | shots | goal_pct
+  -------------+-----------------+---------------+-------+---------
+  2022         | giveaway        | opponent      | 7843  | 10.14   
+  2022         | giveaway        | shooting team | 2559  | 5.86    
+  2023         | giveaway        | opponent      | 6725  | 9.72    
+  2023         | giveaway        | shooting team | 2384  | 6.63    
+  2024         | giveaway        | opponent      | 10824 | 6.61    
+  2024         | giveaway        | shooting team | 4359  | 7.23    
+  2025         | giveaway        | opponent      | 11469 | 7.53    
+  2025         | giveaway        | shooting team | 4428  | 6.93    
+  2026         | giveaway        | opponent      | 2405  | 7.28    
+  2026         | giveaway        | shooting team | 863   | 7.18    
+  2022         | takeaway        | opponent      | 2225  | 5.80    
+  2022         | takeaway        | shooting team | 6252  | 9.40    
+  2023         | takeaway        | opponent      | 2248  | 5.74    
+  2023         | takeaway        | shooting team | 5723  | 10.05   
+  2024         | takeaway        | opponent      | 1370  | 6.13    
+  2024         | takeaway        | shooting team | 3512  | 7.20    
+  2025         | takeaway        | opponent      | 1390  | 7.55    
+  2025         | takeaway        | shooting team | 3535  | 9.42    
+  2026         | takeaway        | opponent      | 245   | 7.35    
+  2026         | takeaway        | shooting team | 628   | 9.39    
+
+--- 11. Partial-window events left in the table, by season (expected: 0 rows) ---
+  season_start | reason | n
+  -------------+--------+--
+  (0 rows)
+
+--- 12. Shots whose latest earlier event is a stoppage with no faceoff between (docstring item 10). These were 'stoppage' at 0 s through v1.4. still_stoppage must be 0 ---
+  season_start | shots | goals | still_stoppage | now_zero_secs
+  -------------+-------+-------+----------------+--------------
+  2022         | 43    | 21    | 0              | 3            
+  2023         | 23    | 20    | 0              | 1            
+  2024         | 51    | 16    | 0              | 0            
+  2025         | 48    | 35    | 0              | 2            
+  2026         | 7     | 7     | 0              | 0            
+
+VERDICT: OK    must-be-zero results: check 3 missed-shot goals 0; check 8 0 rows; check 11 0 rows; check 12 still_stoppage 0; check 1 all zeros for 2022; check 2 only game type 02 period 5
