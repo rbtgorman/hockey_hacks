@@ -5,6 +5,8 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-11
 
+- PC: done for the day. Group 2 not started. Not yet seen: CI for `7f02682` (gh auth
+  expired on the PC) and a full refresh with the new stop steps.
 - PC: audit fixes group 1, problems stop the refresh (`7f02682`). Shot-table
   must-be-zero checks exit 1; new `ingest/check_ingest.py` in `refresh.sh` stops on
   missing games, goals that don't add up, or dropped shots, and prints parse warnings

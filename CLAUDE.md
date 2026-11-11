@@ -210,8 +210,14 @@ Updated 2026-11-11 (v1.4.1 live; fixing what the data audit found, before the si
 
 ## Waiting on the owner
 
-- **Read the group 1 explanation and say go for group 2.** The owner wants each group
-  committed, explained in plain words, and stopped before the next.
+- **Say go for group 2.** Stopped for the day on 2026-11-11 right after group 1
+  (`7f02682`, `9f77da4`). Group 2 is not started: no code, data or files touched for it.
+  The owner wants each group committed, explained in plain words, and stopped before
+  the next.
+- Two things from group 1 not yet seen working: the CI run for `7f02682` (`gh` on the
+  PC says "Bad credentials"; the owner can run `! gh auth login`), and a full
+  `export/refresh.sh` with the new stop steps (not run, so no new games were pulled;
+  data is still through 2026-11-09). The next refresh is that test.
 
 ## Next up
 
