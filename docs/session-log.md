@@ -5,7 +5,7 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-11
 
-- PC: game simulator plan in `docs/SIMULATOR.md` (this commit), waiting on the owner's OK.
+- PC: game simulator plan in `docs/SIMULATOR.md` (`0e0a970`), waiting on the owner's OK.
   v0 is team-level (xG rates at 5-on-5, PP, PK and penalty rates, from earlier games,
   recency-weighted and pulled toward average, home ice), played out 10,000 times a game
   with NHL overtime and shootout rules. Picked on 2023-24 to 2025-26, tested once on
