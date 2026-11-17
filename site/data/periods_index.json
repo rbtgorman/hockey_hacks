@@ -1,5 +1,5 @@
 {
- "generated_at": "2026-11-16T17:30:20+00:00",
+ "generated_at": "2026-11-17T20:45:03+00:00",
  "model_version": "v1.4.1-fenwick",
  "history_seasons": [
   20222023,
@@ -12,9 +12,9 @@
    "season": 20262027,
    "label": "2026-27",
    "file": "periods_20262027.json",
-   "games": 330,
+   "games": 332,
    "first_date": "2026-09-29",
-   "last_date": "2026-11-15"
+   "last_date": "2026-11-16"
   },
   {
    "season": 20252026,

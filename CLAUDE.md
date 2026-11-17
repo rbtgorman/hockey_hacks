@@ -175,14 +175,15 @@ Updated 2026-11-17 (v1.4.1 live; audit fixes done; simulator plan final, v0 not 
   kept in `shot_xg`** (owner's call); the v1.4 rows were scored on the table before the fix.
   The scorer only replaces its own version's rows. The saved model is gitignored, so it's
   only on the PC; rerunning the trainer rebuilds it.
-- **Data is through 2026-11-15** (refreshed 2026-11-16: 330 games in 2026-27, 5,922 games
-  and 506,230 attempts in all). Only v1.4.1 scores the new games in `shot_xg`.
+- **Data is through 2026-11-16** (refreshed 2026-11-17: 332 games in 2026-27, 5,924 games
+  and 506,404 attempts in all). Only v1.4.1 scores the new games in `shot_xg`.
 - **Site's 2026-27 numbers come from `results/test_to_date/`** (`model/report_test_to_date.py`,
   log `results/test_to_date.log`): every saved model (v1.4.1, v1.4, v1.3, v1.2) rescored on
   the test season as it stands, report only. Rerun it after a refresh before touching the
-  copy. Training-time `results/<version>/` files stay frozen. Through Nov 15: log loss
-  v1.4.1 0.22758, v1.4 0.22752, v1.3 0.22773, v1.2 0.22959; O/E 1.010; AUC 0.7816. v1.4's
-  0.0002 edge over v1.3 was gone on Nov 9 and is back on Nov 15; the copy says it goes
+  copy. Training-time `results/<version>/` files stay frozen. The report prints loader
+  output first; the log keeps only from the "to date:" line down. Through Nov 16: log loss
+  v1.4.1 0.22740, v1.4 0.22735, v1.3 0.22754, v1.2 0.22941; O/E 1.008; AUC 0.7812. v1.4's
+  0.0002 edge over v1.3 was gone on Nov 9 and is back on Nov 15-16; the copy says it goes
   back and forth.
 - **v1.3-fenwick** (`model/train_v1_3_fenwick.py`, log in `results/v1_3_fenwick_train.log`):
   trained on 2022-23 to 2025-26 with recency weights (half-life 1 season). Chosen on late
@@ -193,7 +194,7 @@ Updated 2026-11-17 (v1.4.1 live; audit fixes done; simulator plan final, v0 not 
   stats and calibration chart from `results/v1_4_1-fenwick/`, "What changed in this version:
   closing a leak" (`#v141`, the stoppage story, called the whistle on the page), then
   fine-tuning (`#v14`) and tip-ins (`#v13`, which the profile pages' xG note links to),
-  "Where it still struggles" (tip-ins 88, 60+ ft 86), and "Why xG doesn't know who's
+  "Where it still struggles" (tip-ins 88, 60+ ft 85), and "Why xG doesn't know who's
   shooting" (`#finishing`, the ~8% story). When 2026-27 fills in, refresh those numbers from
   `results/test_to_date/`.
 - **Rink check done, no fix** (2026-11-10, `diagnostics/check_rinks.py`,
