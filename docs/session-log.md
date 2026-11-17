@@ -9,7 +9,7 @@ pushes. Commit hashes point to the details.
   write-up of the linemate check with one chart (times as often as chance by share of
   ice time together, 5-on-5 vs power play, 95% ranges, hover and a table), linked from
   the home page and the home and methods footers. Checked at 320, 375 and 1440 px: no
-  errors, no sideways scrolling.
+  errors, no sideways scrolling. (`a601cff`)
 - PC: linemate ranges fixed: pair rates held at full-data values in every resample (the
   old ranges sat below the estimates because repeated games inflated "expected"). Same
   seed, two runs identical, 0 estimates outside their range, no estimate changed; 8 of
