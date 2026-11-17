@@ -144,7 +144,9 @@ Updated 2026-11-17 (v1.4.1 live; audit fixes done; simulator plan final, v0 not 
   "Linemates' points"). Lift (both-got-a-point games ÷ each pair's own rate x rate) grows
   with share of ice time together: all strengths 1.03 -> 1.55, 5-on-5 1.05 -> 2.14, power
   play 0.73 -> 2.75; same-goal share up to 80-90%. 20+ games-together tables agree;
-  2026-27 so far agrees. Fixed seed, two runs identical.
+  2026-27 so far agrees. Fixed seed, two runs identical. Ranges hold each pair's rates at
+  full-data values (0 estimates outside their range). SIMULATOR.md's shooter layer notes
+  that simulated points should go to on-ice scorer + up to 2 assisters.
 - **Game simulator: plan written, not built** (`docs/SIMULATOR.md`). The owner OK'd the
   direction on 2026-11-11 with five changes, all in the plan now (2026-11-17): teams rated
   on power plays drawn and given up (from the shift charts, not raw penalty calls; double

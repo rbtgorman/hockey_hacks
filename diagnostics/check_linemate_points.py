@@ -53,7 +53,8 @@ METHOD, step by step
    games together, with their lift over the season.
 13. The main tables are repeated with only pair-seasons that have 20+ games together.
 14. Ranges: 95% intervals from resampling games 1,000 times (whole games, so both
-   players' outcomes move together); pair rates are worked out again in every resample.
+   players' outcomes move together). Each pair's own rates in "expected" stay fixed at
+   their full-data values; a resample only changes which games count.
 
 Checks first (the script stops if one fails): season points match the official totals
 for a few stars, and no pair's time together exceeds either player's time on ice.
@@ -288,15 +289,23 @@ def prep(data, s):
                 sg=d[f"sg_{s}"].astype(np.float64), grp=d["grp"])
 
 
-def stats(P, w):
-    """Per (group-or-all, bin) sums with row weights w (resample counts)."""
+def pair_rates(P):
+    """Each pair-season's own point rates over all its games (full data), per row."""
     ps, nps = P["ps"], P["nps"]
-    n = np.bincount(ps, w, nps)
-    ra = np.bincount(ps, w * P["a"], nps)
-    rb = np.bincount(ps, w * P["b"], nps)
-    with np.errstate(invalid="ignore", divide="ignore"):
-        pa = np.where(n > 0, ra / n, 0)[ps]
-        pb = np.where(n > 0, rb / n, 0)[ps]
+    n = np.bincount(ps, None, nps)
+    pa = (np.bincount(ps, P["a"], nps) / n)[ps]
+    pb = (np.bincount(ps, P["b"], nps) / n)[ps]
+    return pa, pb
+
+
+def stats(P, w, rates):
+    """Per (group-or-all, bin) sums with row weights w (resample counts).
+
+    The pair rates are fixed at their full-data values (`rates`); a resample only changes
+    which games count. Re-working the rates inside each resample made "expected" drift up
+    when games repeated, which pushed the ranges below the estimates.
+    """
+    pa, pb = rates
     ab = P["a"] * P["b"]
     # A = higher-rate player: swap per row where pb > pa
     swap = pb > pa
@@ -345,11 +354,12 @@ def analyse(data, label, rng, n_boot=N_BOOT):
     for s in STRENGTHS:
         P = prep(data, s)
         rows_g = gidx[data[f"eit_{s}"] > 0]
-        point = summarize_all(stats(P, np.ones(len(rows_g))))
+        rates = pair_rates(P)
+        point = summarize_all(stats(P, np.ones(len(rows_g)), rates))
         boots = {g: {"lift": [], "phi": [], "sg": []} for g in point}
         for _ in range(n_boot):
             wg = np.bincount(rng.integers(0, G, G), minlength=G).astype(np.float64)
-            sm = summarize_all(stats(P, wg[rows_g]))
+            sm = summarize_all(stats(P, wg[rows_g], rates))
             for g in sm:
                 for k in boots[g]:
                     boots[g][k].append(sm[g][k])
@@ -372,6 +382,9 @@ def noise_note(lo, hi):
     return "inside the noise" if lo <= 1.0 <= hi else ("above 1" if lo > 1 else "below 1")
 
 
+OUTSIDE = []   # (label, lift, lo, hi) for any estimate outside its range
+
+
 def print_table(point, rng_, group, title):
     p, r = point[group], rng_[group]
     print(f"\n  {title}")
@@ -379,6 +392,8 @@ def print_table(point, rng_, group, title):
           f" {'lift':>5s} {'95% range':>12s} {'phi':>6s} {'same goal':>10s}")
     for k, lab in enumerate(BIN_LABELS + ["all bins"]):
         lo, hi = r["lift"][0][k], r["lift"][1][k]
+        if not lo <= p["lift"][k] <= hi:
+            OUTSIDE.append((f"{title} {lab}", p["lift"][k], lo, hi))
         print(f"  {lab:9s} {int(p['n'][k]):>11,d} {p['pA'][k]*100:5.1f}% {p['pB'][k]*100:5.1f}%"
               f" {p['both'][k]*100:5.1f}% {p['either'][k]*100:6.1f}% {p['lift'][k]:5.2f}"
               f" {fmt_range(lo, hi):>12s} {p['phi'][k]:6.3f} {p['sg'][k]*100:8.0f}%"
@@ -405,14 +420,13 @@ def top_pairs(data, names, rng, n_boot=N_BOOT):
         b = data["pb_all"][rows].astype(float)
         sg = data["sg_all"][rows].astype(float)
         n = len(rows)
-        lift = (a * b).sum() / (n * a.mean() * b.mean())
+        exp = n * a.mean() * b.mean()          # the pair's own rates, fixed at full data
+        lift = (a * b).sum() / exp
         # resample this pair's games (equivalent to resampling the season's games)
         lifts = []
         for _ in range(n_boot):
             i = rng.integers(0, n, n)
-            aa, bb = a[i], b[i]
-            e = n * aa.mean() * bb.mean()
-            lifts.append((aa * bb).sum() / e if e > 0 else np.nan)
+            lifts.append((a[i] * b[i]).sum() / exp)
         lo, hi = np.nanpercentile(lifts, [2.5, 97.5])
         season, p1, p2 = uk[t]
         if b.mean() > a.mean():
@@ -485,6 +499,11 @@ def main():
         point, r = res2[s]
         print(f"\n--- {STRENGTH_NAME[s]}, 2026-27 so far ---")
         print_table(point, r, "all", "All pairs")
+
+    print("\n" + "=" * 100)
+    print(f"RANGE CHECK: lift estimates outside their own 95% range: {len(OUTSIDE)}")
+    for row in OUTSIDE:
+        print("  %s: %.2f (%.2f-%.2f)" % row)
 
 
 if __name__ == "__main__":

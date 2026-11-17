@@ -5,6 +5,11 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-17
 
+- PC: linemate ranges fixed: pair rates held at full-data values in every resample (the
+  old ranges sat below the estimates because repeated games inflated "expected"). Same
+  seed, two runs identical, 0 estimates outside their range, no estimate changed; 8 of
+  the top-10 pairs' own lifts now include 1. FINDINGS updated. SIMULATOR.md shooter
+  layer: simulated points go to an on-ice scorer and up to two assisters.
 - PC: read-only linemate points check (`diagnostics/check_linemate_points.py`, output
   `results/checks/linemate_points.txt`, FINDINGS "Linemates' points"). Checks passed (5
   stars' G/A match NHL.com; together never above TOI). Lift rises with link: all

@@ -157,6 +157,9 @@ If it fails, it stays off the site and the write-up says so. No re-picking on 20
    on the build seasons.
 5. **Shooter layer:** the same idea for the skaters in the lineup (goals minus xG, pulled
    hard toward average). Kept only if it improves on top of whatever step 4 kept.
+   If the simulator ever projects player points, each simulated goal goes to a scorer
+   and up to two assisters from the players on the ice, because linemates' points move
+   together (FINDINGS "Linemates' points").
 6. **Test the layers** once, on the rest of 2026-27 after the first 800 games, against
    v0 on those same games. Only what would be known when the site publishes a game's
    numbers can go in: starting goalies and lineups are often confirmed late, so the
