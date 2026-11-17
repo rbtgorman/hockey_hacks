@@ -160,8 +160,10 @@ If it fails, it stays off the site and the write-up says so. No re-picking on 20
    If the simulator ever projects player points, each simulated goal goes to a scorer
    and up to two assisters from the players on the ice, because linemates' points move
    together (FINDINGS "Linemates' points").
-6. **Test the layers** once, on the rest of 2026-27 after the first 800 games, against
-   v0 on those same games. Only what would be known when the site publishes a game's
+6. **Test the layers** once, on the rest of 2026-27 after the first 800 games: one test
+   only, of the final version (v0 plus whichever layers steps 4 and 5 kept on the build
+   seasons), against v0 on those same games. No separate test per layer, and if neither
+   layer was kept there's nothing to test. Only what would be known when the site publishes a game's
    numbers can go in: starting goalies and lineups are often confirmed late, so the
    test uses the starter and lineup as they'd be known at publish time (for example,
    the likely starter from recent games), not who actually played.

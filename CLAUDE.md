@@ -160,8 +160,9 @@ Updated 2026-11-17 (v1.4.1 live; audit fixes done; simulator plan final, v0 not 
   minors 4 min) with a check of simulated minutes per strength against the shift charts;
   an off-season pull toward average, picked like the other settings; the calibration pass
   rule is one overall slope/intercept check (ten groups stay as the picture); the goalie
-  and shooter layers are tested on 2026-27 after the first 800 games against v0 on the
-  same games, with only publish-time information; and "ratings aren't adjusted for
+  and shooter layers get one test, on 2026-27 after the first 800 games: the final
+  version (v0 plus whatever layers were kept on the build seasons) against v0 on the
+  same games, with only publish-time information (owner, 2026-11-17); and "ratings aren't adjusted for
   opponents" under what v0 leaves out. Team-level v0 first, then goalie and shooter
   layers. Built and picked on 2023-24 to 2025-26, tested once on 2026-27 at 800 games
   against the home-win rate and plain Elo.
