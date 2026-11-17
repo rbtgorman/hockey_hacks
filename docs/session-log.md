@@ -5,6 +5,11 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-17
 
+- PC: end of day. Simulator step 2 work in progress committed (`sim/pick.py`, engine
+  counts simulated power plays drawn). The first full search was stopped in stage 1, no
+  results saved, nothing frozen. Owner's review list for tomorrow is in CLAUDE.md Next up
+  1 (power-play time gap, two scrum cases in power_plays(), rebuild + rerun, CI, v0 vs
+  Elo gap, then freeze).
 - PC: simulator v0 step 1 built in `sim/` (data, ratings, engine, Elo, scoring) with
   engine-rule and leak tests (all pass). Power plays: netted calls confirmed by a drop in
   the penalized team's skater edge (fixes 4-on-4 and pulled-goalie delayed calls), two

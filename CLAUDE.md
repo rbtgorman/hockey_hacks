@@ -75,7 +75,7 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-17 (v1.4.1 live; audit fixes done; simulator plan final, v0 not started).
+Updated 2026-11-17 (v1.4.1 live; simulator v0 step 1 built, step 2 in progress, nothing frozen).
 
 - **Audit fixes done, all 3 groups** (group 3 on 2026-11-17, docs and loose ends).
   `docs/DATA_PIPELINE.md` section 5 marks every gap fixed, checked or left for later,
@@ -164,6 +164,17 @@ Updated 2026-11-17 (v1.4.1 live; audit fixes done; simulator plan final, v0 not 
   sqrt-symmetric), `engine.py` (vectorized event simulation, analytic 3-on-3 overtime and
   shootout), `elo.py`, `evaluate.py`. Tests (numpy, PC only, not CI):
   `tests/test_sim_engine.py`, `tests/test_sim_ratings.py` (leak test on made-up games).
+- **Simulator v0, step 2 in progress, nothing frozen** (2026-11-17). `sim/pick.py` is
+  committed as work in progress: grid H {10,20,40,80} x K5 {5,10,20,40} x Kst {5,15,40}
+  x keep {.25,.5,.75,1}, stage 1 at 1,000 sims (same seed), top 5 rerun at 10,000; Elo
+  grid K x home bonus x keep; writes `results/sim_v0/` (selection.json, grids,
+  build_predictions.csv, build_report.txt). The engine now also counts simulated power
+  plays drawn (`pp_drawn`). The first full search was stopped in stage 1 at the end of
+  the day, so there are no results; `results/sim_v0/` doesn't exist yet. A 2-setting
+  smoke test (200 sims, scratch only) showed: v0 beats the home-win rate clearly and is
+  near Elo; v0's calibration slope about 1.25 (chances too bunched); overtime 17%
+  predicted vs 22% real (no score effects); goals 5.59 vs 5.74 a game (extra-attacker
+  goals fall outside every strength); power-play time 4.30 vs 4.66 min per team-game.
 - **Game simulator: plan written** (`docs/SIMULATOR.md`). The owner OK'd the
   direction on 2026-11-11 with five changes, all in the plan now (2026-11-17): teams rated
   on power plays drawn and given up (from the shift charts, not raw penalty calls; double
@@ -281,17 +292,36 @@ Updated 2026-11-17 (v1.4.1 live; audit fixes done; simulator plan final, v0 not 
 
 ## Waiting on the owner
 
-- Say go for building simulator v0 (`docs/SIMULATOR.md`, Steps 1-2), when ready.
+- Nothing new. Step 2 needs the review items below (Next up 1) done before anything is
+  frozen; then the owner reads the step-2 report.
 
 ## Next up
 
-1. **Left from the audit, for later** (owner, 2026-11-11): late corrections (gap 5),
+1. **Owner's review of simulator v0 before freezing** (2026-11-17), in this order:
+   a. Explain the power-play time gap (4.30 simulated vs 4.66 real minutes per
+      team-game) before freezing anything. Compare power plays per team-game, sim vs
+      real, regulation only. Compare the average length of a counted power play, real
+      vs sim. Find real power-play seconds that fall outside every counted power play,
+      split into short runs (under 10 s) and long ones. Short runs are probably
+      line-change timing: a second with 4 skaters reads as a power play, while a second
+      with 6 gets thrown out, so count 6-skater seconds to see how often the timing slips.
+   b. Two scrum cases in `power_plays()` (`sim/data.py`), to confirm on made-up
+      penalties. First: 2+2 on one player vs 2 on an opponent gets joined into a 4
+      before netting; it should net first, leaving a 2-minute power play. Second: a
+      major plus a minor on one player counts as 5 minutes, but the team is short 7.
+      Check real ones on the shift charts, count them, and fix what's worth fixing, with
+      a test.
+   c. Any change to `sim/data.py`: rebuild the cache (`load(..., refresh=True)`) and
+      rerun the step-2 search (`.venv/bin/python -m sim.pick`, about 30 min on 4 workers;
+      stop it by PID, not `pkill -f`).
+   d. CI: add `tests/test_sim_engine.py` and `tests/test_sim_ratings.py` to the
+      reporting-tests job, and add `sim` to the compileall line.
+   e. Step-2 report: v0 vs Elo directly, with the range on the gap. Only then freeze
+      `results/sim_v0/selection.json`.
+2. **Simulator step 3**, later: test v0 once on 2026-27 at 800 games (not before).
+3. **Left from the audit, for later** (owner, 2026-11-11): late corrections (gap 5),
    keying `shot_xg` on game and event instead of shot_id (gap 7), the 0.23% strength
    disagreement (gap 3).
-2. **Game simulator v0**, only when the owner says go: follow `docs/SIMULATOR.md` (build
-   in `sim/`, pick on 2023-24 to 2025-26, freeze `results/sim_v0/selection.json`,
-   report). Don't look at simulator output on 2026-27 until it has 800 games, then test
-   once.
 
 Standing decision from the owner (2026-11-04): **shooter and goalie skill stay out of the
 live xG, for good**, finishing priors included. "Goals minus xG" and "goals saved above

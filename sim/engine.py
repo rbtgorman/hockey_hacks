@@ -61,7 +61,8 @@ def simulate(rates, games, n_sims, seed, track_time=False, chunk_rows=4_000_000)
 
     Returns per game: home win chance (and its regulation / overtime / shootout parts),
     the chance of overtime and of a shootout, mean goals by team and period (regulation),
-    the spread of combined goals (overtime goal included, shootout not), and, with
+    the spread of combined goals (overtime goal included, shootout not), power plays
+    drawn (both teams, regulation, including any dropped as a third penalty), and, with
     track_time, mean seconds at each home-view strength.
     """
     games = np.asarray(games)
@@ -86,6 +87,7 @@ def _simulate_chunk(rates, games, n_sims, seed, track_time):
     rem = np.zeros((M, 2, 2))                        # team, box slot: seconds left
     kind = np.zeros((M, 2, 2), np.int8)
     toi = np.zeros(G * 9)
+    n_drawn = np.zeros(G)
     live = np.arange(M)
     while live.size:
         n_box = (rem[live] > 0).sum(axis=2)          # [m, 2]
@@ -130,6 +132,7 @@ def _simulate_chunk(rates, games, n_sims, seed, track_time):
             for drew, team in ((hd, 1), (ad, 0)):      # home draws -> away to the box
                 if drew.any():
                     rr = rows[drew]
+                    n_drawn += np.bincount(gi[rr], minlength=G)
                     kinds = (rng.random(rr.size)[:, None] > mix_cum[gi[rr]]).sum(axis=1)
                     _add_penalty(rem, kind, rr, team, np.minimum(kinds, 2))
         live = live[t[live] < REG - 1e-9]
@@ -159,7 +162,7 @@ def _simulate_chunk(rates, games, n_sims, seed, track_time):
         p_home_so=p_tie * (1 - p_ot_goal) * so, p_away_so=p_tie * (1 - p_ot_goal) * (1 - so),
         p_ot=p_tie, p_so=p_tie * (1 - p_ot_goal),
         goals_period=goals.reshape(G, n_sims, 2, 3).mean(axis=1),
-        total_hist=hist,
+        total_hist=hist, pp_drawn=n_drawn / n_sims,
     )
     if track_time:
         out["toi"] = toi.reshape(G, 9) / n_sims
