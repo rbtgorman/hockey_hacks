@@ -1,5 +1,6 @@
 DATA AUDIT, 2026-11-11 (read-only; the checks from docs/DATA_PIPELINE.md section 7)
 Summary written by hand after reading the output below. Nothing was fixed.
+Corrections and fixes made after the audit are marked in item 7 (2026-11-17).
 
 1 Completeness ........ OK. Every full season has all 1,312 regular-season games
                         (numbers 1-1312, none missing); 2026-27 has 1-285. All 5,877
@@ -27,11 +28,27 @@ Summary written by hand after reading the output below. Nothing was fixed.
                            playoff games that reached a 2nd overtime have no shifts after
                            the 1st overtime (up to 47 min in 2022030311). Playoff only;
                            profiles and the period page are regular season.
-                        b) 25 regular-season team-games (of 11,232) where the NHL's shift
-                           chart loses the goalie partway through a period (e.g.
-                           2022020567, 2025021031). Profiles count that time as "goalie
-                           pulled", so up to 20 min of 5-on-5 time goes missing in those
-                           games. 2024021158 has an OT goalie shift 241 s past the end.
+                           FIXED 2026-11-17 (53f1810): 2,453 rows re-parsed from cache.
+                        b) CORRECTED 2026-11-17. This said "25 regular-season team-games
+                           where the shift chart loses the goalie". That was wrong. The
+                           flag below is "goalie on the ice more than 5 min less than the
+                           game", and a long goalie pull trips it too. Checked against
+                           the play-by-play (situationCode says at every event whether
+                           each net has a goalie), 21 of the 25 were real pulls: the net
+                           was empty. The chart lost the goalie in 4 of them (2022020567
+                           home, the whole 3rd; 2025021031 both, from 43:56 through OT;
+                           2025020544 home, OT). A scan of every game for "goalie in"
+                           events with no goalie shift found 10 more that the 5-min flag
+                           missed (1-5 min each, mostly OT): 14 team-games in 12 games,
+                           all fixed from the HTML report (53f1810,
+                           results/checks/fix_shifts.txt). 2024021158 (OT shifts past
+                           the end) is not a lost goalie; its 3 shifts were clipped.
+                           The original text, kept for the record: "25 regular-season
+                           team-games (of 11,232) where the NHL's shift chart loses the
+                           goalie partway through a period (e.g. 2022020567,
+                           2025021031). Profiles count that time as 'goalie pulled', so
+                           up to 20 min of 5-on-5 time goes missing in those games.
+                           2024021158 has an OT goalie shift 241 s past the end."
 8 Shot-table checks ... OK. Every "must be 0" result is 0.
 
 Read-only data audit (diagnostics/check_data_audit.py), run 2026-11-11 14:07

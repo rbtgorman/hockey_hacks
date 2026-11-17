@@ -87,7 +87,7 @@ def insert_shots(cur, shots: Iterable[ShotRow]) -> int:
             raw_details_json
         ) VALUES %s
         ON CONFLICT (game_id, event_idx) DO NOTHING
-    """, rows)
+    """, rows, page_size=len(rows))  # one statement, so rowcount covers every row
     return cur.rowcount
 
 
@@ -118,7 +118,7 @@ def insert_contexts(cur, ctxs: Iterable[ContextRow]) -> int:
             raw_details_json
         ) VALUES %s
         ON CONFLICT (game_id, event_idx) DO NOTHING
-    """, rows)
+    """, rows, page_size=len(rows))  # one statement, so rowcount covers every row
     return cur.rowcount
 
 
@@ -185,7 +185,7 @@ def insert_shifts(cur, shifts) -> int:
             start_seconds, end_seconds, shift_number, raw_json
         ) VALUES %s
         ON CONFLICT (game_id, player_id, period, start_seconds) DO NOTHING
-    """, rows)
+    """, rows, page_size=len(rows))  # one statement, so rowcount covers every row
     return cur.rowcount
 
 
@@ -207,7 +207,7 @@ def insert_rosters(cur, rosters) -> int:
             is_starter = EXCLUDED.is_starter,
             is_scratch = EXCLUDED.is_scratch,
             position   = COALESCE(EXCLUDED.position, game_rosters.position)
-    """, rows)
+    """, rows, page_size=len(rows))  # one statement, so rowcount covers every row
     return cur.rowcount
 
 
@@ -222,7 +222,7 @@ def upsert_player_updates(cur, updates) -> int:
         ON CONFLICT (player_id) DO UPDATE SET
             full_name = COALESCE(EXCLUDED.full_name, players.full_name),
             position  = COALESCE(EXCLUDED.position, players.position)
-    """, rows)
+    """, rows, page_size=len(rows))  # one statement, so rowcount covers every row
     return cur.rowcount
 
 

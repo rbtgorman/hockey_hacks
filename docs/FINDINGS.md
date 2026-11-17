@@ -7,7 +7,7 @@ State of `main` at 40aa2f6 (2026-09-21). Hockey Hacks is a personal NHL expected
 - Every model trained on shots on goal (SOG) under-predicted 2024-25. The best, v2.3, had test O/E 1.070: 7% more goals than predicted.
 - Scoring didn't rise: league goals per team-game fell from 3.14 to 3.01. What changed is what counts as a shot on goal. From 2023-24, many pucks a goalie stops on their way wide are recorded as missed shots ([Johnson 2025][johnson]). Here, the missed share of unblocked attempts rose from .281 to .338 [not in repo].
 - Switching the target population to unblocked attempts cut the 2024-25 level miss from 7.0% to 1.4–3.1% (test O/E 1.014 and 1.031 in two v1-fenwick runs). A save relabelled as a miss is still an unblocked attempt, so the relabel doesn't change this population.
-- **That headline is provisional.** 'short' misses, a label that starts in 2023-24, are still in val and test, and removing them should raise O/E.
+- **That headline was provisional; settled 2026-11-02.** 'short' misses, a label that starts in 2023-24, were still in val and test. They're out of the shot table now (`71a1a15`; see "'short' misses" under Open questions, now resolved).
 - Three problems in my own pipeline were fixed along the way: a label leak, a units bug that all but disabled prior shrinkage, and a validation leak from season-pooled priors. No model reaches the 0.78 AUC target.
 
 ## The data problem
@@ -117,10 +117,11 @@ Merging wrist and snap into one type cost ranking on both splits and moved test 
 
 ## Open questions
 
-- **'short' misses.**
-  - What's reported: [HockeyStats.com][hs] says that from 2023-24 the API adds missed shots with reason 'short', "much closer to fanned attempts or flubs". They run about 0.65 per game in 2023-24 and 0.92 in 2024-25 and 2025-26, and the label itself is already drifting. HockeyStats.com excludes them from Corsi, Fenwick and xG.
-  - Where they sit here: my builder keeps them, so they're in val and test but not in training. Counts: [NEED: 'short' misses by season].
-  - Expected effect: removing them should raise val and test O/E, because the model scores these zero-goal attempts like real ones. Size: [NEED: O/E after removal].
+- **'short' misses. Resolved 2026-11-02 (`71a1a15`): dropped.**
+  - What's reported: [HockeyStats.com][hs] says that from 2023-24 the API adds missed shots with reason 'short', "much closer to fanned attempts or flubs". HockeyStats.com excludes them from Corsi, Fenwick and xG.
+  - Counts here: none in 2022-23, then 940 / 1,328 / 1,280 in 2023-24 to 2025-26, playoffs included (`results/checks/shot_drift.txt` on the PC). Regular season per game: 0.66, 0.92, 0.92, and 0.97 in 2026-27 through Nov 15. None was ever a goal.
+  - Effect: each carried about an average shot's xG, so the model expected goals that never came: 63.5 / 91.3 / 95.9 goals' worth in 2023-24 to 2025-26. Leaving them out raises goals ÷ xG from 1.010 to 1.017, 1.018 to 1.029 and 0.980 to 0.991 (`results/checks/shot_drift.txt`, section 1; the `71a1a15` commit message has the 2025-26 pair the wrong way round).
+  - What changed: `features/build_features_fenwick.py` drops them like teammate blocks and failed bank attempts, from the table and from every previous-event lookup. Check 11 lists any left and, since 2026-11-11, stops the build if one is (0 now). v1.3 and later never saw them. Old v1.2 rows for them are still in `shot_xg`, so always join `shot_xg` through `shot_features_fenwick`.
 - **Where the remaining miss sits** (`results/v1-fenwick/segments.csv`; deciles from the reliability tables in `results/v1_fenwick_train.log`; SE ≈ 1/√goals).
   - Deciles: test under-predicts the 5th–8th (O/E 1.08, 1.09, 1.10, 1.14) and sits at 0.97 in the top decile. Val's miss is in the 8th–9th (1.05, 1.07).
   - Both seasons (val / test): central shots are under-predicted (0–15°: 1.100 / 1.083; 15–30°: 1.038 / 1.086), all four 45°+ cells are over-predicted (0.93–0.95), and wrist-snap is under-predicted (1.034 / 1.069).
@@ -139,7 +140,7 @@ Merging wrist and snap into one type cost ranking on both splits and moved test 
    - Re-score SOG v2.3 so its O/E sits in `results/`.
    - Update the README.
 2. **Population fixes before any retrain.**
-   - Count 'short' misses by season. If they start in 2023-24, remove them from the table and its previous-event lookups, add a check, and re-score v1-fenwick.
+   - ~~Count 'short' misses by season. If they start in 2023-24, remove them from the table and its previous-event lookups, add a check, and re-score v1-fenwick.~~ Done (`71a1a15`), see Open questions.
    - Explain the check-5 spike.
    - Check tip-in + deflected O/E before any merge.
 3. **Roll forward.** Ingest 2025-26 and check SOG per team-game against Hockey-Reference's final figure. Then train 2023-24, validate 2024-25 and test 2025-26, all after the recording change. 2022-23 is used only to warm the priors.

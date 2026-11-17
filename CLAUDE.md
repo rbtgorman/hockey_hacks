@@ -77,6 +77,18 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 Updated 2026-11-17 (v1.4.1 live; fixing what the data audit found, before the simulator).
 
+- **Audit fixes done, all 3 groups** (group 3 on 2026-11-17, docs and loose ends).
+  `docs/DATA_PIPELINE.md` section 5 marks every gap fixed, checked or left for later,
+  and 4b writes up the shift fixes; its guards table is current. `docs/FINDINGS.md`:
+  'short' misses resolved (the `71a1a15` message swapped 2025-26's goals ÷ xG: it went
+  0.980 -> 0.991 without them, per `results/checks/shot_drift.txt`).
+  `results/checks/data_audit.txt` item 7 corrected (the "25 lost goalies" were 21 real
+  pulls + 4 losses) and the audit script's goalie flag commented. `v_shots_with_onice`
+  uses start < t <= end now (both `db/schema_stage_a.sql` and
+  `db/migration_stage_a_onice_fix.sql`, applied; differs from the old edge on 1.44% of
+  shots). `ingest/db.py` bulk inserts are one statement each (`page_size=len(rows)`),
+  so `cur.rowcount` is right; `ingest_log.shots_parsed` backfilled from the tables for
+  pbp (5,450 rows were low) and shifts (all 5,922); rosters were already right.
 - **Audit fixes, group 2 of 3 done** (2026-11-17, shift charts): new step
   `ingest/fix_shifts.py` in `refresh.sh` (after `run_shifts_html`, `--season`), log of
   the backfill in `results/checks/fix_shifts.txt`. (1) `parser_shifts.py` skips period
@@ -99,9 +111,6 @@ Updated 2026-11-17 (v1.4.1 live; fixing what the data audit found, before the si
   17 team ranks moved 1 place (3 tier colors); player 5-on-5 time up to +8 min;
   goalie TOI fixed (e.g. +23 min, and -13.8 min for the overlap). Nothing that feeds
   xG reads shifts, so no rebuild or rescore.
-  Found on the way, not fixed: `db.insert_shifts` returns `cur.rowcount` after
-  `execute_values`, which only counts the last page of 100, so `ingest_log.shots_parsed`
-  for shifts is low for every game (the rows themselves are all there).
 - **Audit fixes, group 1 of 3 done** (2026-11-11): problems now stop `export/refresh.sh`
   before anything is scored or exported. `features/build_features_fenwick.py` exits 1 if
   a must-be-zero check isn't 0 (`MUST_BE_ZERO`: missed-shot goals in check 3, checks 8,
@@ -238,23 +247,14 @@ Updated 2026-11-17 (v1.4.1 live; fixing what the data audit found, before the si
 
 ## Waiting on the owner
 
-- **Say go for group 3** (docs). Group 2 is pushed and explained; stopped before group 3.
-- Whether to fix `db.insert_shifts`' row count (only the last page of 100 is counted, so
-  `ingest_log.shots_parsed` for shifts is low; display only, no data is missing).
+- Read the group 3 explanation. Then the simulator plan changes (Next up 2) are next;
+  say go for those, and separately for building simulator v0.
 
 ## Next up
 
-1. **Audit fixes, group 3** (owner's list, 2026-11-11; group 2 done 2026-11-17), one
-   commit, then stop and explain what changed, which lines and why:
-   - Group 3, docs: in `docs/DATA_PIPELINE.md` mark gaps 2, 3, 4 and 8 checked with the
-     audit's numbers, and gaps 1, 6 and 9 fixed. Also write up group 2 there: playoff
-     OTs, the 14 lost goalies, and that the audit's 25 were mostly real pulls (its
-     5-minute goalie flag is too tight; `results/checks/data_audit.txt` says "loses the
-     goalie" for all 25). `docs/FINDINGS.md`: 'short' misses are
-     no longer open. Make the old on-ice view in `db/` use the profiles' start < t <= end
-     rule.
-   - Left for later, just noted: late corrections (gap 5), keying `shot_xg` on game and
-     event instead of shot_id (gap 7), the 0.23% strength disagreement.
+1. **Left from the audit, for later** (owner, 2026-11-11): late corrections (gap 5),
+   keying `shot_xg` on game and event instead of shot_id (gap 7), the 0.23% strength
+   disagreement (gap 3).
 2. **Simulator plan changes** the owner agreed on 2026-11-11. Put them in
    `docs/SIMULATOR.md`, then push:
    - Penalties: rate teams on power plays drawn and given up (when the shift charts show

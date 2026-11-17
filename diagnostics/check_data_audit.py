@@ -313,6 +313,9 @@ def report7(r: pd.DataFrame, ends: pd.DataFrame, sh: pd.DataFrame) -> None:
     r["no_shifts"] = r.source == "none"
     r["gap_flag"] = r.gap_s > 60
     r["sk_flag"] = (r.avg_sk < 4.5) | (r.avg_sk > 5.5)
+    # A long goalie pull trips this too: 21 of the 25 regular-season team-games it
+    # flagged on 2026-11-11 were real pulls, not a lost goalie. ingest/fix_shifts.py
+    # checks against the play-by-play's situationCode instead.
     r["g_flag"] = (r.goalie_s < r.L - 300) | (r.goalie_s > r.L)
     r["past_flag"] = r.past_end > 5
     agg = r.groupby(["season", "game_type", "source"]).agg(

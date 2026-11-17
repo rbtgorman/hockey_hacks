@@ -5,6 +5,12 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-17
 
+- PC: audit fixes group 3, docs and loose ends. DATA_PIPELINE: every gap marked
+  (fixed 1, 6, 9, 10, 11; checked 2, 3, 4, 5, 8; later 3, 5, 7), group 2 write-up (4b),
+  guards table current. FINDINGS: 'short' misses resolved. Audit file's "25 lost
+  goalies" corrected (21 were pulls). On-ice view uses start < t <= end (applied).
+  `db.py` insert counts fixed (only the last page of 100 was counted) and
+  `ingest_log.shots_parsed` backfilled for pbp and shifts. Audit fixes all done.
 - PC: audit fixes group 2, shift charts (`ingest/fix_shifts.py`, new refresh step).
   Playoff 2nd+ OTs kept by the API parser and backfilled from cache (15 games, 2,453
   rows). Lost goalies checked against the play-by-play's situationCode: only 14

@@ -49,13 +49,6 @@ STOP_AT = 3
 
 
 # ------------------------------------------------------------------ steps
-# Row counts come from the table, not from insert_shifts: its cur.rowcount only
-# covers execute_values' last page of 100 rows.
-def count_shifts(cur, sql_where: str, params: tuple) -> int:
-    cur.execute(f"SELECT COUNT(*) FROM shifts sh WHERE {sql_where}", params)
-    return cur.fetchone()[0]
-
-
 def season_filter(seasons: list[int] | None) -> tuple[str, tuple]:
     if not seasons:
         return "", ()
@@ -80,8 +73,7 @@ def fix_playoff_ot(cur, seasons) -> list[tuple[int, int]]:
             print(f"  {gid}: no cached shift chart, skipped")
             continue
         r = parse_shifts(json.loads(cache.read_text()), gid)
-        insert_shifts(cur, [s for s in r.shifts if s.period >= 5])
-        done.append((gid, count_shifts(cur, "sh.game_id = %s AND sh.period >= 5", (gid,))))
+        done.append((gid, insert_shifts(cur, [s for s in r.shifts if s.period >= 5])))
     return done
 
 
@@ -128,10 +120,8 @@ def fix_lost_goalies(cur, seasons):
                     WHERE sh.game_id = %s AND sh.team_id = %s
                       AND r.game_id = sh.game_id AND r.player_id = sh.player_id
                       AND r.position = 'G'""", (gid, tid))
-                row["deleted"] = cur.rowcount  # a single DELETE, so this count is right
-                insert_shifts(cur, h)
-                row["inserted"] = count_shifts(cur, """sh.game_id = %s AND sh.team_id = %s
-                    AND sh.raw_json->>'source' = 'htmlreport'""", (gid, tid))
+                row["deleted"] = cur.rowcount
+                row["inserted"] = insert_shifts(cur, h)
                 replaced.append(row)
             elif len(miss_html) >= STOP_AT:
                 stop.append(row)

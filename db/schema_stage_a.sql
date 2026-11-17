@@ -71,10 +71,12 @@ END $$;
 -- Sanity view — shots joined to on-ice skaters
 -- Useful for Stage B; validates the temporal join works
 --
--- Uses half-open interval [start_seconds, end_seconds) for the shift join:
--- the shift INCLUDES its start second but EXCLUDES its end second. Without
--- this, line changes get double-counted because both the leaving and arriving
--- players are recorded as "active" at the transition second.
+-- A shift covers second t when start_seconds < t <= end_seconds: it EXCLUDES its
+-- start second and INCLUDES its end second. That's the rule export/profiles.py
+-- uses, and the data audit (2026-11-11, check 3) found it agrees with the
+-- play-by-play's skater counts about 10x as often as the other edge. Either
+-- half-open rule stops line changes being double-counted. Changed from
+-- start <= t < end on 2026-11-17 (db/migration_stage_a_onice_fix.sql).
 -- =====================================================================
 CREATE OR REPLACE VIEW v_shots_with_onice AS
 SELECT
@@ -93,7 +95,7 @@ FROM shots s
 LEFT JOIN shifts sh
     ON sh.game_id = s.game_id
    AND sh.period  = s.period
-   AND sh.start_seconds <= s.game_seconds
-   AND sh.end_seconds   >  s.game_seconds   -- half-open: excludes the end second
+   AND sh.start_seconds <  s.game_seconds   -- start < t <= end, as in export/profiles.py
+   AND sh.end_seconds   >= s.game_seconds
 GROUP BY s.shot_id, s.game_id, s.period, s.game_seconds, s.is_goal,
          s.shooter_id, s.goalie_id, s.shooter_team_id, s.defending_team_id;
