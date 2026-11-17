@@ -154,7 +154,17 @@ Updated 2026-11-17 (v1.4.1 live; audit fixes done; simulator plan final, v0 not 
   2025-26), so rerunning the check means updating the page by hand. Chart colors are
   the site's orange (#f74902, 5-on-5) and blue (#3987e5, power play), checked with the
   dataviz palette validator against the card surface. Checked at 320, 375 and 1440 px.
-- **Game simulator: plan written, not built** (`docs/SIMULATOR.md`). The owner OK'd the
+- **Simulator v0, step 1 built** (2026-11-17, `sim/`): `data.py` (per game and team:
+  seconds, v1.4.1 xG and goals at each strength from the shift charts; power plays from
+  penalty calls netted by length and confirmed by a drop in the penalized team's skater
+  edge; two minors on one player at once = one 4-minute; cached in gitignored
+  `sim/cache/`; refuses 2026-27 without `allow_test`), `ratings.py` (six ratios to
+  league, recency halving every H team games, off-season `keep`, K in games, league
+  numbers from the last 1,312 games on earlier dates, home multipliers split
+  sqrt-symmetric), `engine.py` (vectorized event simulation, analytic 3-on-3 overtime and
+  shootout), `elo.py`, `evaluate.py`. Tests (numpy, PC only, not CI):
+  `tests/test_sim_engine.py`, `tests/test_sim_ratings.py` (leak test on made-up games).
+- **Game simulator: plan written** (`docs/SIMULATOR.md`). The owner OK'd the
   direction on 2026-11-11 with five changes, all in the plan now (2026-11-17): teams rated
   on power plays drawn and given up (from the shift charts, not raw penalty calls; double
   minors 4 min) with a check of simulated minutes per strength against the shift charts;

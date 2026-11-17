@@ -5,6 +5,10 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-17
 
+- PC: simulator v0 step 1 built in `sim/` (data, ratings, engine, Elo, scoring) with
+  engine-rule and leak tests (all pass). Power plays: netted calls confirmed by a drop in
+  the penalized team's skater edge (fixes 4-on-4 and pulled-goalie delayed calls), two
+  minors on one player = one 4-minute. 2026-27 not loaded.
 - PC: simulator plan, step 6: the layers get one test, the final version (v0 + whatever
   layers were kept on the build seasons) against v0 on the same 2026-27 games. (`520fe98`)
 - PC: refresh through Nov 16 (2 new games, 332 in 2026-27; every check passed, 0 parse

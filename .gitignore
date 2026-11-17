@@ -29,3 +29,6 @@ model/artifacts/
 # OS
 .DS_Store
 Thumbs.db
+
+# Simulator data cache (rebuilt from the database by sim/data.py)
+sim/cache/
