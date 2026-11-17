@@ -7,7 +7,7 @@ pushes. Commit hashes point to the details.
 
 - PC: refresh through Nov 16 (2 new games, 332 in 2026-27; every check passed, 0 parse
   warnings). report_test_to_date: log loss v1.4.1 0.22740, v1.4 0.22735, v1.3 0.22754, v1.2
-  0.22941; O/E 1.008; AUC 0.7812. Model tab and methods updated (60+ ft now 85).
+  0.22941; O/E 1.008; AUC 0.7812. Model tab and methods updated (60+ ft now 85). (`f69c07a`)
 - Cloud: new page `site/linemates.html` ("Do linemates score together?"): plain-words
   write-up of the linemate check with one chart (times as often as chance by share of
   ice time together, 5-on-5 vs power play, 95% ranges, hover and a table), linked from
