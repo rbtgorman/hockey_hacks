@@ -75,7 +75,7 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-11 (v1.4.1 live; fixing what the data audit found, before the simulator).
+Updated 2026-11-17 (v1.4.1 live; fixing what the data audit found, before the simulator).
 
 - **Audit fixes, group 1 of 3 done** (2026-11-11): problems now stop `export/refresh.sh`
   before anything is scored or exported. `features/build_features_fenwick.py` exits 1 if
@@ -89,7 +89,9 @@ Updated 2026-11-11 (v1.4.1 live; fixing what the data audit found, before the si
   `warning_sample`; the parser's new `ParseResult.shots_dropped`), backfilled for all
   5,877 games (0 warnings), and printed at the end of a refresh
   (`check_ingest --report-warnings`). CI now runs `tests/test_parser_actors.py` (which
-  also tests the dropped-shot count) and `tests/test_priors_fenwick.py`.
+  also tests the dropped-shot count) and `tests/test_priors_fenwick.py`. CI passed with both
+  new tests on the run for `e30484a` (owner checked). The first full refresh with the new
+  stop steps (2026-11-16) passed: exit 0, 0 parse warnings, 0 dropped shots.
 - **Data pipeline audit done** (2026-11-11). Code half (cloud):
   `docs/DATA_PIPELINE.md` maps every source, step, guard and known problem and ranks 10
   gaps. Data half (PC, read-only): `diagnostics/check_data_audit.py`, results with a
@@ -117,14 +119,15 @@ Updated 2026-11-11 (v1.4.1 live; fixing what the data audit found, before the si
   kept in `shot_xg`** (owner's call); the v1.4 rows were scored on the table before the fix.
   The scorer only replaces its own version's rows. The saved model is gitignored, so it's
   only on the PC; rerunning the trainer rebuilds it.
-- **Data is through 2026-11-09** (refreshed 2026-11-10: 285 games in 2026-27, 502,509
-  attempts in all). Only v1.4.1 scores the new games in `shot_xg`.
+- **Data is through 2026-11-15** (refreshed 2026-11-16: 330 games in 2026-27, 5,922 games
+  and 506,230 attempts in all). Only v1.4.1 scores the new games in `shot_xg`.
 - **Site's 2026-27 numbers come from `results/test_to_date/`** (`model/report_test_to_date.py`,
   log `results/test_to_date.log`): every saved model (v1.4.1, v1.4, v1.3, v1.2) rescored on
   the test season as it stands, report only. Rerun it after a refresh before touching the
-  copy. Training-time `results/<version>/` files stay frozen. Through Nov 9: log loss
-  v1.4.1 0.22955, v1.4 0.22951, v1.3 0.22951, v1.2 0.23147; O/E 1.014; AUC 0.7797. v1.4's
-  early edge over v1.3 is gone, and the copy says so.
+  copy. Training-time `results/<version>/` files stay frozen. Through Nov 15: log loss
+  v1.4.1 0.22758, v1.4 0.22752, v1.3 0.22773, v1.2 0.22959; O/E 1.010; AUC 0.7816. v1.4's
+  0.0002 edge over v1.3 was gone on Nov 9 and is back on Nov 15; the copy says it goes
+  back and forth.
 - **v1.3-fenwick** (`model/train_v1_3_fenwick.py`, log in `results/v1_3_fenwick_train.log`):
   trained on 2022-23 to 2025-26 with recency weights (half-life 1 season). Chosen on late
   2025-26 (log loss: recency h=1 0.22100, h=2 0.22113, era flag 0.22129, plain retrain
@@ -134,7 +137,7 @@ Updated 2026-11-11 (v1.4.1 live; fixing what the data audit found, before the si
   stats and calibration chart from `results/v1_4_1-fenwick/`, "What changed in this version:
   closing a leak" (`#v141`, the stoppage story, called the whistle on the page), then
   fine-tuning (`#v14`) and tip-ins (`#v13`, which the profile pages' xG note links to),
-  "Where it still struggles" (tip-ins 90, 60+ ft 86), and "Why xG doesn't know who's
+  "Where it still struggles" (tip-ins 88, 60+ ft 86), and "Why xG doesn't know who's
   shooting" (`#finishing`, the ~8% story). When 2026-27 fills in, refresh those numbers from
   `results/test_to_date/`.
 - **Rink check done, no fix** (2026-11-10, `diagnostics/check_rinks.py`,
@@ -210,14 +213,8 @@ Updated 2026-11-11 (v1.4.1 live; fixing what the data audit found, before the si
 
 ## Waiting on the owner
 
-- **Say go for group 2.** Stopped for the day on 2026-11-11 right after group 1
-  (`7f02682`, `9f77da4`). Group 2 is not started: no code, data or files touched for it.
-  The owner wants each group committed, explained in plain words, and stopped before
-  the next.
-- Two things from group 1 not yet seen working: the CI run for `7f02682` (`gh` on the
-  PC says "Bad credentials"; the owner can run `! gh auth login`), and a full
-  `export/refresh.sh` with the new stop steps (not run, so no new games were pulled;
-  data is still through 2026-11-09). The next refresh is that test.
+- Nothing right now. Group 2 has the owner's go (2026-11-17); stop after it and explain
+  what changed, which lines and why, before group 3.
 
 ## Next up
 

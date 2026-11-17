@@ -3,6 +3,14 @@
 What got done each working day, newest first. Claude adds to today's entry every time it
 pushes. Commit hashes point to the details.
 
+## 2026-11-17
+
+- PC: committed the 2026-11-16 refresh (that session hit the usage limit before committing):
+  45 new games, Nov 10-15, 330 in 2026-27. Reran check_ingest (passed, 5,922 games, 0 parse
+  warnings, 0 dropped shots) and the shot-table verify-only (checks 3, 8, 11, 12 all 0).
+  report_test_to_date through Nov 15: log loss v1.4.1 0.22758, v1.4 0.22752, v1.3 0.22773,
+  v1.2 0.22959; model tab and methods updated. CI for `e30484a` passed (owner checked).
+
 ## 2026-11-11
 
 - PC: done for the day. Group 2 not started. Not yet seen: CI for `7f02682` (gh auth
