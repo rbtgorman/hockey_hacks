@@ -77,6 +77,31 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 Updated 2026-11-17 (v1.4.1 live; fixing what the data audit found, before the simulator).
 
+- **Audit fixes, group 2 of 3 done** (2026-11-17, shift charts): new step
+  `ingest/fix_shifts.py` in `refresh.sh` (after `run_shifts_html`, `--season`), log of
+  the backfill in `results/checks/fix_shifts.txt`. (1) `parser_shifts.py` skips period
+  5+ only in regular-season games, like the HTML parser; the 15 playoff games past the
+  1st OT got 2,453 rows from the cached JSON. (2) Lost goalies are found with the
+  play-by-play: a non-faceoff, non-stoppage event whose situationCode has the goalie in
+  net, with no goalie shift (start < t <= end). The HTML report's goalie shifts replace
+  the API's for that team when they cover more of those events: 14 team-games in 12
+  games (2022020567 home lost the whole 3rd; 2025021031 both from 43:56 on; the rest
+  1-5 min, mostly OT; 2023020517 away had overlapping goalie shifts, 4,427 s in a 60-min
+  game). 20 team-games miss 1-2 events with the HTML matching the API to the second:
+  shift-edge timing, left alone. 3+ misses neither source covers stops the refresh
+  (none now). **The audit's "25 team-games lose the goalie" was wrong**: 21 were real
+  goalie pulls over 5 min (the play-by-play agrees the net was empty). (3) Shift ends
+  clipped to the period's last period-end event, never below the start: 3 rows, all
+  2024021158 OT. Stdlib helpers in `ingest/shift_checks.py`, tested in CI
+  (`tests/test_shift_checks.py`, plus a playoff-OT case in `test_parser_shifts.py`).
+  Profiles re-exported: team 5-on-5 time up 16-17 min in a season for CBJ and NYI
+  (2022-23) and CBJ and FLA (2025-26), under 3 min elsewhere, no 2026-27 team change;
+  17 team ranks moved 1 place (3 tier colors); player 5-on-5 time up to +8 min;
+  goalie TOI fixed (e.g. +23 min, and -13.8 min for the overlap). Nothing that feeds
+  xG reads shifts, so no rebuild or rescore.
+  Found on the way, not fixed: `db.insert_shifts` returns `cur.rowcount` after
+  `execute_values`, which only counts the last page of 100, so `ingest_log.shots_parsed`
+  for shifts is low for every game (the rows themselves are all there).
 - **Audit fixes, group 1 of 3 done** (2026-11-11): problems now stop `export/refresh.sh`
   before anything is scored or exported. `features/build_features_fenwick.py` exits 1 if
   a must-be-zero check isn't 0 (`MUST_BE_ZERO`: missed-shot goals in check 3, checks 8,
@@ -100,10 +125,10 @@ Updated 2026-11-17 (v1.4.1 live; fixing what the data audit found, before the si
   shots carry the shooter's team (gap 4 is a non-issue), one starter per team-game with
   no fallback, 30 re-downloaded games unchanged apart from one penalty's length (15 -> 5
   min), shot-table must-be-zero checks all 0. Strength from `situationCode` vs the shift
-  charts disagrees on 0.23% of unblocked shots. Two small shift issues: the API shift
-  parser drops periods 5+ (15 playoff games with 2+ overtimes have no shifts after the
-  1st OT), and in 25 regular-season team-games the NHL's shift chart loses the goalie
-  partway through a period, so profiles miss up to 20 min of 5-on-5 there. The owner
+  charts disagrees on 0.23% of unblocked shots. Two small shift issues, fixed in group 2: the API shift
+  parser dropped periods 5+ (15 playoff games with 2+ overtimes had no shifts after the
+  1st OT), and the shift chart lost the goalie in 14 regular-season team-games (the
+  audit's list of 25 was mostly real goalie pulls; see group 2). The owner
   wants to be able to explain every step, so no fixes until they pick.
 - **Game simulator: plan written, not built** (`docs/SIMULATOR.md`). The owner OK'd the
   direction on 2026-11-11 with five changes (Next up, item 2) but chose to audit the data
@@ -213,21 +238,19 @@ Updated 2026-11-17 (v1.4.1 live; fixing what the data audit found, before the si
 
 ## Waiting on the owner
 
-- Nothing right now. Group 2 has the owner's go (2026-11-17); stop after it and explain
-  what changed, which lines and why, before group 3.
+- **Say go for group 3** (docs). Group 2 is pushed and explained; stopped before group 3.
+- Whether to fix `db.insert_shifts`' row count (only the last page of 100 is counted, so
+  `ingest_log.shots_parsed` for shifts is low; display only, no data is missing).
 
 ## Next up
 
-1. **Audit fixes, groups 2 and 3** (owner's list, 2026-11-11), one group per commit, then
-   stop and explain what changed, which lines and why:
-   - Group 2, shift charts: the API shift parser skips period 5 only in regular-season
-     games (the shootout); in the playoffs it's a 2nd OT, so re-parse the 15 playoff
-     games. For the 25 team-games where the shift chart loses the goalie mid-period, use
-     the HTML report like the empty-chart games; if the HTML report lacks the goalie
-     too, stop and tell the owner. Clip shifts that run past their period's end
-     (2024021158). Re-export profiles and report how much 5-on-5 time changed.
+1. **Audit fixes, group 3** (owner's list, 2026-11-11; group 2 done 2026-11-17), one
+   commit, then stop and explain what changed, which lines and why:
    - Group 3, docs: in `docs/DATA_PIPELINE.md` mark gaps 2, 3, 4 and 8 checked with the
-     audit's numbers, and gaps 1, 6 and 9 fixed. `docs/FINDINGS.md`: 'short' misses are
+     audit's numbers, and gaps 1, 6 and 9 fixed. Also write up group 2 there: playoff
+     OTs, the 14 lost goalies, and that the audit's 25 were mostly real pulls (its
+     5-minute goalie flag is too tight; `results/checks/data_audit.txt` says "loses the
+     goalie" for all 25). `docs/FINDINGS.md`: 'short' misses are
      no longer open. Make the old on-ice view in `db/` use the profiles' start < t <= end
      rule.
    - Left for later, just noted: late corrections (gap 5), keying `shot_xg` on game and

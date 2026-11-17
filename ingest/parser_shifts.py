@@ -32,7 +32,9 @@ we ignore them and only parse the core shift data.
 
 Edge cases handled:
 - OT shifts have period 4+, and times still report within the period
-- Shootout "shifts" (period 5) are ignored — they're not real hockey time
+- Shootout "shifts" (period 5 of a regular-season game, game type 02) are ignored:
+  they're not real hockey time. In the playoffs period 5 is a 2nd overtime (20 min,
+  game_seconds 4800 + t) and is kept, as in parser_shifts_html.
 - startTime after endTime happens occasionally on bad records — skip those
 - Some players have player_id 0 or missing — skip those
 """
@@ -101,8 +103,9 @@ def parse_shifts(payload: dict, game_id: int) -> ShiftParseResult:
                 result.warnings.append(f"record {i} missing required fields")
                 continue
 
-            # Skip shootout rounds
-            if int(period) >= 5:
+            # Skip shootout rounds. Only the regular season has a shootout: in the
+            # playoffs period 5, 6, ... are more 20-minute overtimes.
+            if int(period) >= 5 and str(game_id)[4:6] == "02":
                 continue
 
             # Period times map to game_seconds as:
@@ -110,6 +113,7 @@ def parse_shifts(payload: dict, game_id: int) -> ShiftParseResult:
             #   period 2: 1200 + t
             #   period 3: 2400 + t
             #   period 4 (OT): 3600 + t
+            #   period 5+ (playoff OT): 3600 + (period - 4) * 1200 + t
             prior = 1200 * min(int(period) - 1, 3)
             if int(period) > 3:
                 prior = 3600 + (int(period) - 4) * 1200

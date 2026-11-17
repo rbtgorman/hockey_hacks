@@ -186,6 +186,21 @@ def main():
     if not assert_eq("wrong game_id filtered",
                      any(s for s in r.shifts if s.game_id != GAME_ID), False): failures += 1
 
+    # Playoffs: period 5 is a 2nd overtime, not a shootout, so it's kept.
+    po_id = 2024030157
+    po = {"data": [
+        {"id": 1, "gameId": po_id, "playerId": 8477492, "teamId": 21, "period": 4,
+         "startTime": "19:30", "endTime": "20:00"},
+        {"id": 2, "gameId": po_id, "playerId": 8477492, "teamId": 21, "period": 5,
+         "startTime": "01:51", "endTime": "02:56"},   # -> 4800 + 111 = 4911
+        {"id": 3, "gameId": po_id, "playerId": 8478048, "teamId": 22, "period": 6,
+         "startTime": "00:00", "endTime": "12:00"},   # -> 6000 .. 6720
+    ], "total": 3}
+    rp = parse_shifts(po, po_id)
+    got = sorted((s.period, s.start_seconds, s.end_seconds) for s in rp.shifts)
+    if not assert_eq("playoff 2nd and 3rd OT kept", got,
+                     [(4, 4770, 4800), (5, 4911, 4976), (6, 6000, 6720)]): failures += 1
+
     print(f"\n{'='*40}")
     if failures == 0:
         print("ALL SHIFT CHECKS PASSED")

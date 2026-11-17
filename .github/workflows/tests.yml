@@ -41,6 +41,11 @@ jobs:
       - name: HTML shift report parser
         run: python tests/test_parser_shifts_html.py
 
+      # ingest/shift_checks.py: is the goalie on, play-by-play vs shift chart
+      # (what ingest/fix_shifts.py uses to find goalies the chart lost).
+      - name: Goalie in net vs shift chart
+        run: python tests/test_shift_checks.py
+
       - name: Boxscore/landing parser
         run: python tests/test_parser_landing.py
 

@@ -1,0 +1,36 @@
+Shift fixes: every season 
+1. Playoff 2nd+ overtimes re-parsed: 15 games, 2453 shift rows added
+     2022030161: +175
+     2022030173: +53
+     2022030311: +842
+     2023030144: +26
+     2023030222: +107
+     2023030236: +203
+     2023030321: +13
+     2024030143: +43
+     2024030145: +51
+     2024030157: +242
+     2024030412: +128
+     2025030132: +221
+     2025030163: +154
+     2025030175: +95
+     2025030413: +100
+2. Lost goalies: 14 team-games took their goalie shifts from the HTML report; 20 with 1-2 shift-edge misses left as is
+     2022020477 away: goalie 3600 s -> 3811 s, 'goalie in' events with no goalie shift 7 -> 0 (rows -3 +4)
+     2022020567 home: goalie 2400 s -> 3600 s, 'goalie in' events with no goalie shift 55 -> 0 (rows -2 +3)
+     2022020627 home: goalie 3598 s -> 3666 s, 'goalie in' events with no goalie shift 4 -> 0 (rows -3 +4)
+     2023020347 away: goalie 3442 s -> 3598 s, 'goalie in' events with no goalie shift 9 -> 0 (rows -4 +4)
+     2023020517 away: goalie 4427 s -> 3600 s, 'goalie in' events with no goalie shift 4 -> 0 (rows -5 +3)
+     2023020684 away: goalie 3306 s -> 3591 s, 'goalie in' events with no goalie shift 14 -> 0 (rows -4 +4)
+     2023020692 away: goalie 3388 s -> 3517 s, 'goalie in' events with no goalie shift 7 -> 0 (rows -4 +4)
+     2025020544 home: goalie 3401 s -> 3681 s, 'goalie in' events with no goalie shift 12 -> 0 (rows -6 +6)
+     2025020616 home: goalie 3809 s -> 3866 s, 'goalie in' events with no goalie shift 3 -> 0 (rows -6 +6)
+     2025021031 home: goalie 2636 s -> 3740 s, 'goalie in' events with no goalie shift 52 -> 0 (rows -4 +4)
+     2025021031 away: goalie 2636 s -> 3740 s, 'goalie in' events with no goalie shift 52 -> 0 (rows -4 +4)
+     2025021204 home: goalie 3764 s -> 3900 s, 'goalie in' events with no goalie shift 4 -> 0 (rows -4 +4)
+     2025021204 away: goalie 3749 s -> 3885 s, 'goalie in' events with no goalie shift 4 -> 0 (rows -5 +5)
+     2025021215 away: goalie 3590 s -> 3598 s, 'goalie in' events with no goalie shift 1 -> 0 (rows -4 +4)
+3. Shifts clipped to their period's end: 3
+     2024021158 period 4 player 8478048: end 3900 -> 3659
+     2024021158 period 4 player 8481533: end 3900 -> 3659
+     2024021158 period 4 player 8482118: end 3900 -> 3659
