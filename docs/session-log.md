@@ -12,7 +12,7 @@ pushes. Commit hashes point to the details.
   all fixed from the HTML report; 3+ uncovered misses now stop the refresh. 3 OT shifts
   in 2024021158 clipped to the period end. Profiles re-exported: team 5-on-5 time +16-17
   min in 4 team-seasons, under 3 elsewhere. New CI test `tests/test_shift_checks.py`.
-  Waiting on the owner's go for group 3.
+  Waiting on the owner's go for group 3. (`53f1810`)
 - PC: committed the 2026-11-16 refresh (that session hit the usage limit before committing):
   45 new games, Nov 10-15, 330 in 2026-27. Reran check_ingest (passed, 5,922 games, 0 parse
   warnings, 0 dropped shots) and the shot-table verify-only (checks 3, 8, 11, 12 all 0).
