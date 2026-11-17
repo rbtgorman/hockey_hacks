@@ -1,6 +1,9 @@
 # Game simulator plan
 
-Status: plan only, waiting on the owner's OK. Nothing built yet.
+Status: plan only. The owner OK'd the direction on 2026-11-11 with five changes, now
+in this file (2026-11-17): penalties rated on power plays, an off-season pull toward
+average, one overall calibration rule, how the layers are tested, and one more item in
+"What v0 leaves out". Nothing built yet; v0 waits on the owner's go.
 
 The idea: rate every team from its xG, play each game out many times with those
 ratings, and count how often each team wins. Version 0 (v0) is team-level only. A goalie
@@ -19,33 +22,43 @@ Everything comes from games played **before** the game's date, regular season on
 | 5-on-5 defense | xG against at 5-on-5 |
 | Power play | xG for on the power play |
 | Penalty kill | xG against shorthanded |
-| Draws penalties | penalties drawn per 60 |
-| Takes penalties | penalties taken per 60 |
+| Draws power plays | power plays drawn per 60 |
+| Gives up power plays | power plays given up per 60 |
 
 - **xG** is v1.4.1 from `shot_xg`, joined through `shot_features_fenwick`, used as it is.
   Empty-net shots are left out (v0 has no empty nets).
 - **Time at each strength** comes from the shift charts (skaters on the ice, second by
   second). That gives the per-60 denominators for 5-on-5, the power play and the penalty
   kill.
-- **Penalties** come from `plays_context` (`penalty` events): minors and majors count;
-  misconducts don't, since they don't change the strength.
+- **Power plays, not penalty calls:** a team is rated on the power plays it draws and
+  gives up, counted from the shift charts (a stretch where one side has fewer skaters on
+  the ice). Raw penalty calls would overcount: fighting majors and matching minors
+  usually cancel out and change nothing on the ice. `plays_context` penalty events are
+  used only to tell how long each power play is meant to last (minor 2, double minor 4,
+  major 5 minutes).
 - **Recent games count more:** each game's weight halves every H games back, and older
   seasons carry over the same way. H is picked (below).
 - **Pulled toward the league average:** each rating gets K minutes of league-average play
   added before it's divided out, so a team with little history sits near average. One K
-  for 5-on-5 rates and one for special teams and penalties, both picked.
+  for 5-on-5 rates and one for special teams and power plays drawn and given up, both
+  picked.
+- **Off-season pull:** between seasons, every team's ratings move part of the way back
+  toward league average, like Elo's carry-over (rosters change over the summer). How far
+  (the share kept) is one more setting, picked with H and the Ks.
 - **Matchup:** a team's expected xG rate = league rate x (its attack / league) x (the
   opponent's defense / league), the same for power play against penalty kill.
-- **Home ice:** one multiplier on the home team's xG rates and one on its penalty draws,
+- **Home ice:** one multiplier on the home team's xG rates and one on its power plays drawn,
   fit on games before the date (not picked by hand).
 - **4-on-4 and 3-on-3** use the league rate for that strength, scaled by each team's
   5-on-5 attack and defense. Too little time to rate them on their own.
 
 **Simulating a game** (10,000 times per game):
 
-1. Three 20-minute periods. Both teams draw penalties at their matchup rates. A minor
-   lasts 2 minutes and ends early on a power-play goal; a major lasts 5. Overlapping
-   penalties give 5-on-3 and 4-on-4, at league rates scaled as above.
+1. Three 20-minute periods. Both teams draw power plays at their matchup rates. A minor
+   lasts 2 minutes and ends early on a power-play goal; a double minor lasts 4 (two
+   2-minute halves, and a goal ends only the half it's in); a major lasts 5 and doesn't
+   end on a goal. Overlapping power plays give 5-on-3 or 4-on-4, at league goal rates
+   scaled as above.
 2. Goals arrive at the xG rate for whatever strength is on the ice (Poisson: xG becomes
    goals one for one, with no finishing skill).
 3. Tied after 60: 5 minutes of 3-on-3, first goal wins. Still tied: a shootout, which the
@@ -67,7 +80,9 @@ On purpose, to keep v0 simple. Each one is a possible later step, not a promise:
 - Who's on the ice within a game (lines, matchups, deployment)
 - Playoffs (overtime there is full periods of 5-on-5 and there's no shootout)
 - Team shootout skill (every shootout uses the league home rate)
-- Anything that isn't xG and penalties: faceoffs, hits, and so on
+- Anything that isn't xG and power plays: faceoffs, hits, and so on
+- Strength of schedule: ratings aren't adjusted for the opponents a team has faced, so a
+  team that's played weak teams looks a little better than it is
 
 ## How it's tested
 
@@ -78,15 +93,21 @@ regular-season games. Lower is better. Every number gets a range from resampling
 predicted and actual wins in each, with resample ranges. Also checked: how often games go
 to overtime and a shootout, and goal totals against real totals.
 
+**Minutes at each strength:** simulated minutes per game at 5-on-5, on the power play and
+on the penalty kill, per team and league-wide, compared with the shift charts. If the
+simulator plays the wrong amount of special teams, the win chances are off even with good
+ratings.
+
 **Baselines,** held to the same before-the-date rule:
 
 - **Home-win rate:** every game gets the league's home-win rate from earlier seasons.
 - **Plain Elo:** win/loss only, with a home bonus and a pull back toward average between
   seasons. K, the home bonus and the carry-over are picked the same way and on the same
-  seasons as the simulator's settings, so it's a fair fight.
+  seasons as the simulator's settings, so it's a fair fight. (The simulator gets the same
+  kind of off-season pull.)
 
 **Build and pick on 2023-24 to 2025-26** (3,936 games). 2022-23 is only history, so
-the first games of 2023-24 have something to go on. A small grid over H and the two Ks,
+the first games of 2023-24 have something to go on. A small grid over H, the two Ks and the off-season pull,
 picked on combined log loss. One caveat: v1.4.1 learned from 2022-23 to 2025-26 shots,
 so xG is in-sample in the build seasons and they'll flatter it a bit. That's why the test
 has to be 2026-27.
@@ -111,7 +132,13 @@ call, and a narrow result is a real result.
 
 1. Its log loss beats the home-win rate, with the range on the gap entirely above zero;
 2. Its log loss beats Elo (range reported either way);
-3. No calibration group is off by more than its resample range.
+3. Calibration is right overall: fit a line of what happened against the predicted win
+   chance (on the log-odds scale). Its slope should be near 1 and its intercept near 0,
+   and the resample range on each must include that value.
+
+The ten calibration groups are still shown as the picture, but they're not a pass rule:
+asking every one of ten groups to land inside its range fails a perfectly calibrated
+model about 40% of the time, by luck alone.
 
 If it fails, it stays off the site and the write-up says so. No re-picking on 2026-27.
 
@@ -130,7 +157,10 @@ If it fails, it stays off the site and the write-up says so. No re-picking on 20
    on the build seasons.
 5. **Shooter layer:** the same idea for the skaters in the lineup (goals minus xG, pulled
    hard toward average). Kept only if it improves on top of whatever step 4 kept.
-6. **Test the layers** once, together, on the 2026-27 games after the first 800
-   (proposal: the owner may prefer to wait for 2027-28).
+6. **Test the layers** once, on the rest of 2026-27 after the first 800 games, against
+   v0 on those same games. Only what would be known when the site publishes a game's
+   numbers can go in: starting goalies and lineups are often confirmed late, so the
+   test uses the starter and lineup as they'd be known at publish time (for example,
+   the likely starter from recent games), not who actually played.
 7. **Site:** only after a passed test. Win chances, goal totals and per-period numbers for
    the period page, in plain words, with no betting language anywhere.

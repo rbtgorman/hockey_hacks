@@ -75,7 +75,7 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-17 (v1.4.1 live; fixing what the data audit found, before the simulator).
+Updated 2026-11-17 (v1.4.1 live; audit fixes done; simulator plan final, v0 not started).
 
 - **Audit fixes done, all 3 groups** (group 3 on 2026-11-17, docs and loose ends).
   `docs/DATA_PIPELINE.md` section 5 marks every gap fixed, checked or left for later,
@@ -140,9 +140,16 @@ Updated 2026-11-17 (v1.4.1 live; fixing what the data audit found, before the si
   audit's list of 25 was mostly real goalie pulls; see group 2). The owner
   wants to be able to explain every step, so no fixes until they pick.
 - **Game simulator: plan written, not built** (`docs/SIMULATOR.md`). The owner OK'd the
-  direction on 2026-11-11 with five changes (Next up, item 2) but chose to audit the data
-  first. Team-level v0 first, then goalie and shooter layers. Built and picked on 2023-24
-  to 2025-26, tested once on 2026-27 at 800 games against the home-win rate and plain Elo.
+  direction on 2026-11-11 with five changes, all in the plan now (2026-11-17): teams rated
+  on power plays drawn and given up (from the shift charts, not raw penalty calls; double
+  minors 4 min) with a check of simulated minutes per strength against the shift charts;
+  an off-season pull toward average, picked like the other settings; the calibration pass
+  rule is one overall slope/intercept check (ten groups stay as the picture); the goalie
+  and shooter layers are tested on 2026-27 after the first 800 games against v0 on the
+  same games, with only publish-time information; and "ratings aren't adjusted for
+  opponents" under what v0 leaves out. Team-level v0 first, then goalie and shooter
+  layers. Built and picked on 2023-24 to 2025-26, tested once on 2026-27 at 800 games
+  against the home-win rate and plain Elo.
 - **Live model:** v1.4.1-fenwick (`model/train_v1_4_1_fenwick.py`, log
   `results/v1_4_1_fenwick_train.log`, results in `results/v1_4_1-fenwick/`). It's v1.4's
   features, settings, recency weights and distance constraint refit on the stoppage-fixed
@@ -247,32 +254,14 @@ Updated 2026-11-17 (v1.4.1 live; fixing what the data audit found, before the si
 
 ## Waiting on the owner
 
-- Read the group 3 explanation. Then the simulator plan changes (Next up 2) are next;
-  say go for those, and separately for building simulator v0.
+- Say go for building simulator v0 (`docs/SIMULATOR.md`, Steps 1-2), when ready.
 
 ## Next up
 
 1. **Left from the audit, for later** (owner, 2026-11-11): late corrections (gap 5),
    keying `shot_xg` on game and event instead of shot_id (gap 7), the 0.23% strength
    disagreement (gap 3).
-2. **Simulator plan changes** the owner agreed on 2026-11-11. Put them in
-   `docs/SIMULATOR.md`, then push:
-   - Penalties: rate teams on power plays drawn and given up (when the shift charts show
-     one side short-handed), not on raw penalty calls; fighting majors and matching
-     minors usually cancel out. Double minors are 4 minutes. Check that simulated minutes
-     per game at 5-on-5, power play and penalty kill match the shift charts.
-   - Off-season: the team ratings get a pull back toward average between seasons, like
-     Elo, as one more setting picked on the build seasons.
-   - Calibration pass rule: one overall check (calibration slope near 1 and intercept
-     near 0, each range covering that value) instead of "every group within its range",
-     which fails a perfectly calibrated model about 40% of the time with ten groups. Keep
-     the ten groups as the picture and the other two pass rules as they are. Test at 800
-     games of 2026-27 stays.
-   - Goalie and shooter layers: test them on the rest of 2026-27 after the first 800
-     games, compared with v0 on the same games, using only what would be known when the
-     site publishes (starters and lineups come late).
-   - Add to "What v0 leaves out": ratings aren't adjusted for the opponents faced.
-3. **Game simulator v0**, only when the owner says go: follow `docs/SIMULATOR.md` (build
+2. **Game simulator v0**, only when the owner says go: follow `docs/SIMULATOR.md` (build
    in `sim/`, pick on 2023-24 to 2025-26, freeze `results/sim_v0/selection.json`,
    report). Don't look at simulator output on 2026-27 until it has 800 games, then test
    once.

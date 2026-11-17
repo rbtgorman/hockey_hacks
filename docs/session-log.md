@@ -5,6 +5,12 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-17
 
+- PC: simulator plan changes from 2026-11-11 written into `docs/SIMULATOR.md`: power
+  plays drawn/given up instead of penalty calls (double minors 4 min) plus a minutes-per-
+  strength check, off-season pull toward average as a picked setting, one overall
+  calibration pass rule (slope and intercept), layers tested on 2026-27 after game 800
+  vs v0 with publish-time info only, strength of schedule under "leaves out". v0 not
+  started, waiting on the owner's go.
 - PC: audit fixes group 3, docs and loose ends. DATA_PIPELINE: every gap marked
   (fixed 1, 6, 9, 10, 11; checked 2, 3, 4, 5, 8; later 3, 5, 7), group 2 write-up (4b),
   guards table current. FINDINGS: 'short' misses resolved. Audit file's "25 lost
