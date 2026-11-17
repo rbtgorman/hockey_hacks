@@ -5,6 +5,11 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-17
 
+- PC: read-only linemate points check (`diagnostics/check_linemate_points.py`, output
+  `results/checks/linemate_points.txt`, FINDINGS "Linemates' points"). Checks passed (5
+  stars' G/A match NHL.com; together never above TOI). Lift rises with link: all
+  strengths 1.03 -> 1.55, 5-on-5 1.05 -> 2.14, PP 0.73 -> 2.75; 20+ games-together
+  version matches; 2026-27 agrees. Seeded; two runs gave identical output.
 - PC: simulator plan changes from 2026-11-11 written into `docs/SIMULATOR.md`: power
   plays drawn/given up instead of penalty calls (double minors 4 min) plus a minutes-per-
   strength check, off-season pull toward average as a picked setting, one overall
