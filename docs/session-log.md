@@ -6,7 +6,7 @@ pushes. Commit hashes point to the details.
 ## 2026-11-17
 
 - PC: simulator plan, step 6: the layers get one test, the final version (v0 + whatever
-  layers were kept on the build seasons) against v0 on the same 2026-27 games.
+  layers were kept on the build seasons) against v0 on the same 2026-27 games. (`520fe98`)
 - PC: refresh through Nov 16 (2 new games, 332 in 2026-27; every check passed, 0 parse
   warnings). report_test_to_date: log loss v1.4.1 0.22740, v1.4 0.22735, v1.3 0.22754, v1.2
   0.22941; O/E 1.008; AUC 0.7812. Model tab and methods updated (60+ ft now 85). (`f69c07a`)
