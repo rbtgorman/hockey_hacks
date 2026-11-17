@@ -36,6 +36,14 @@
 
 # Team and player profiles read files in /data/, which change with every
 # update, so the pages and their shared script and styles are never stale.
+# The linemates page is a static write-up, but it follows the same no-stale rule.
+[[headers]]
+  for = "/linemates.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
 [[headers]]
   for = "/profiles.html"
   [headers.values]

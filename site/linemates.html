@@ -1,0 +1,381 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hockey Hacks: do linemates score together?</title>
+<meta name="description" content="When two teammates share a lot of ice time, how much more often do they both get a point? Four seasons of NHL games, explained in plain words.">
+<meta name="author" content="Robert Gorman">
+<meta name="theme-color" content="#111111">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Hockey Hacks: do linemates score together?">
+<meta property="og:description" content="When two teammates share a lot of ice time, how much more often do they both get a point? Four seasons of NHL games, explained in plain words.">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23f74902'/><rect x='22' y='54' width='12' height='26' fill='black'/><rect x='44' y='38' width='12' height='42' fill='black'/><rect x='66' y='22' width='12' height='58' fill='black'/></svg>">
+<style>
+  /* Tokens and base styles shared with the other pages so the site reads as one. */
+  :root { padding-bottom: env(safe-area-inset-bottom, 0px); }
+  body { margin: 0; }
+  [hidden] { display: none !important; }
+  /* One theme, dark in every color mode. */
+  :root {
+    color-scheme: dark;
+    --plane:       #1a1a1a;
+    --surface:     #242424;
+    --ink:         #f5f5f5;
+    --ink-2:       #c4c4c4;
+    --muted:       #8e8e8e;
+    --rule:        #383838;
+    --rule-soft:   #2f2f2f;
+    --axis:        #4a4a4a;
+    --s1:          #f74902;
+    --accent-fill: #f74902;
+    --on-accent:   #000000;
+    --white:       #ffffff;
+    --on-white-2:  #4a4a4a;
+    --ring:        rgba(255,255,255,0.12);
+    --chip:        rgba(255,255,255,0.07);
+    /* The two chart series. Checked with the dataviz palette validator against --surface:
+       lightness band, chroma, colorblind separation and 3:1 contrast all pass. */
+    --ev:          #f74902;   /* even strength (5-on-5) */
+    --pp:          #3987e5;   /* power play */
+  }
+
+  body {
+    background: var(--plane);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 56px; }
+  h1, h2, h3 { margin: 0; text-wrap: balance; letter-spacing: -0.015em; }
+  h1 { font-size: clamp(26px, 4.6vw, 38px); font-weight: 650; line-height: 1.12; }
+  h2 { font-size: 22px; font-weight: 650; line-height: 1.25; }
+  p { margin: 0; }
+  a { color: inherit; text-underline-offset: 3px; text-decoration-color: var(--axis); }
+  a:hover { text-decoration-color: currentColor; }
+  a:focus-visible { outline: 2px solid var(--s1); outline-offset: 2px; border-radius: 3px; }
+  code { font-family: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace; font-size: 0.86em; color: var(--ink); background: var(--chip); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+
+  /* ---- site navigation: same block as the other pages ---- */
+  .topnav { position: sticky; top: 0; z-index: 10; background: #111111; border-bottom: 4px solid var(--accent-fill); box-shadow: 0 3px 0 var(--white); padding-top: env(safe-area-inset-top, 0px); }
+  .topnav-in { max-width: 1120px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 22px; }
+  .brand { display: inline-flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 700; letter-spacing: -0.01em; text-decoration: none; }
+  .brand svg { width: 26px; height: 26px; flex: none; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; flex: 1 1 auto; }
+  .tab { display: flex; align-items: center; gap: 11px; min-height: 52px; padding: 8px 18px 8px 14px; border: 2px solid var(--white); border-radius: 12px; background: var(--white); color: #000; text-decoration: none; }
+  .tab:hover { border-color: var(--s1); }
+  .tab .ic { width: 24px; height: 24px; flex: none; color: var(--s1); }
+  .tab b { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 650; line-height: 1.2; }
+  .tab small { display: block; font-size: 12.5px; color: var(--on-white-2); line-height: 1.3; }
+  @media (max-width: 720px) {
+    .topnav { position: static; }
+    .tabs { width: 100%; gap: 6px; }
+    .tab { flex: 1 1 0; padding: 8px 10px; min-width: 0; min-height: 48px; justify-content: center; }
+    .tab b { font-size: 15px; text-align: center; }
+    .tab small, .tab .ic { display: none; }
+  }
+
+  header.masthead { display: flex; flex-direction: column; gap: 14px; padding-bottom: 22px; border-bottom: 2px solid var(--white); }
+  .kicker { font-size: 12.5px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--s1); font-weight: 650; }
+  .lede { font-size: clamp(16px, 2.1vw, 18px); color: var(--ink-2); max-width: 64ch; }
+  .meta-row { display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: center; font-size: 13px; color: var(--muted); }
+
+  section { margin-top: 44px; display: flex; flex-direction: column; gap: 14px; }
+  section > * { min-width: 0; }
+  .section-head { display: flex; flex-direction: column; gap: 4px; }
+  .section-head .hint { font-size: 14px; color: var(--muted); max-width: 70ch; }
+  [id] { scroll-margin-top: 96px; }
+  @media (max-width: 720px) { [id] { scroll-margin-top: 12px; } }
+
+  .prose { max-width: 68ch; color: var(--ink-2); font-size: 15.5px; display: flex; flex-direction: column; gap: 12px; }
+  .prose strong { color: var(--ink); font-weight: 600; }
+  .note { border-left: 3px solid var(--s1); background: var(--surface); border-radius: 0 8px 8px 0; padding: 12px 16px; color: var(--ink-2); font-size: 15px; max-width: 68ch; }
+  .note strong { color: var(--ink); font-weight: 600; }
+  .more { font-size: 13.5px; color: var(--ink-2); }
+
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .stat { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 18px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .stat .k { font-size: 12px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); font-weight: 600; }
+  .stat .v { font-size: 30px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
+  .stat .n { font-size: 14px; color: var(--ink-2); }
+
+  .defs { margin: 0; display: grid; grid-template-columns: 190px 1fr; gap: 10px 18px; max-width: 900px; font-size: 15px; color: var(--ink-2); }
+  .defs dt { color: var(--ink); font-weight: 600; }
+  .defs dd { margin: 0; }
+  @media (max-width: 640px) { .defs { grid-template-columns: 1fr; gap: 2px; } .defs dd { margin-bottom: 10px; } }
+
+  .card { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px 16px 12px; position: relative; display: flex; flex-direction: column; gap: 10px; max-width: 820px; }
+  .card .cap { font-size: 13px; color: var(--muted); }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13.5px; color: var(--ink-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 7px; }
+  .legend i { width: 18px; height: 3px; border-radius: 2px; display: inline-block; position: relative; }
+  .legend i::after { content: ""; position: absolute; left: 5px; top: -3.5px; width: 8px; height: 8px; border-radius: 50%; background: inherit; }
+  figure { margin: 0; }
+  svg { display: block; width: 100%; height: auto; overflow: visible; }
+  .tip { position: absolute; pointer-events: none; opacity: 0; transition: opacity .12s; background: var(--surface); border: 1px solid var(--ring); border-radius: 6px; padding: 6px 9px; font-size: 12.5px; line-height: 1.45; color: var(--ink); box-shadow: 0 4px 14px rgba(0,0,0,0.3); white-space: nowrap; z-index: 5; }
+  .tip b { font-weight: 600; }
+  .hit:focus { outline: none; }
+  .hit:focus-visible { stroke: var(--ink); stroke-width: 1.5; }
+
+  details { font-size: 13.5px; color: var(--ink-2); }
+  summary { cursor: pointer; color: var(--ink); font-weight: 600; padding: 4px 0; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; font-variant-numeric: tabular-nums; margin-top: 6px; }
+  th, td { text-align: right; padding: 6px 10px; border-bottom: 1px solid var(--rule-soft); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; border-bottom: 1px solid var(--rule); vertical-align: bottom; }
+
+  .found { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 12px; color: var(--ink-2); max-width: 70ch; font-size: 15.5px; }
+  .found strong { color: var(--ink); font-weight: 600; }
+  .checks { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; color: var(--ink-2); max-width: 70ch; font-size: 15px; }
+
+  footer { margin-top: 52px; padding-top: 20px; border-top: 1px solid var(--rule); font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 6px; }
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Site">
+  <div class="topnav-in">
+    <a class="brand" href="./"><svg viewBox="0 0 100 100" aria-hidden="true"><rect width="100" height="100" rx="18" fill="var(--s1)"/><rect x="22" y="54" width="12" height="26" fill="#000"/><rect x="44" y="38" width="12" height="42" fill="#000"/><rect x="66" y="22" width="12" height="58" fill="#000"/></svg>Hockey Hacks</a>
+    <div class="tabs">
+      <a class="tab" href="./">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/></svg>
+        <span><b>xG model</b><small>What this is, and is it any good</small></span>
+      </a>
+      <a class="tab" href="periods.html">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16M15 4v16M3 9.5h18"/></svg>
+        <span><b>Period scoring</b><small>Every team, period by period</small></span>
+      </a>
+      <a class="tab" href="profiles.html">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M8.5 3.5 3 6.5l2 4 2.2-1V20.5h9.6V9.5l2.2 1 2-4-5.5-3c-.6 1.6-1.9 2.6-3.5 2.6s-2.9-1-3.5-2.6Z"/></svg>
+        <span><b>Teams &amp; players</b><small>Profiles, season by season</small></span>
+      </a>
+      <a class="tab" href="methods.html">
+        <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r="0.6" fill="currentColor"/></svg>
+        <span><b>How it works</b><small>Every number explained</small></span>
+      </a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <header class="masthead">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <span class="kicker">Side question</span>
+      <h1>Do linemates score together?</h1>
+      <p class="lede">When two teammates spend most of their ice time together, do they both end up on the scoresheet more often? Yes, and the more time they share, the stronger it gets. Here's what I found in four seasons of games, in plain words.</p>
+    </div>
+    <div class="meta-row">
+      <span>Updated November 17, 2026</span>
+      <span>Every regular-season game, 2022-23 to 2025-26</span>
+      <span>Data: NHL public API</span>
+    </div>
+  </header>
+
+  <section id="headline" aria-label="The short version">
+    <div class="stats">
+      <div class="stat"><span class="k">Regular linemates, even strength</span><span class="v">2.14×</span><span class="n">They both get a point about twice as often as chance would give them.</span></div>
+      <div class="stat"><span class="k">Same power-play unit</span><span class="v">2.75×</span><span class="n">Nearly three times as often as chance.</span></div>
+      <div class="stat"><span class="k">On the same goal</span><span class="v">88%</span><span class="n">When even-strength linemates both got a point, 88% of the time it came on one goal: one scored and the other assisted.</span></div>
+    </div>
+  </section>
+
+  <section id="read">
+    <div class="section-head">
+      <h2>How to read the numbers</h2>
+    </div>
+    <dl class="defs">
+      <dt>Time together</dt>
+      <dd>How much of their ice time two teammates spend out there at the same moment. Out of all the time at least one of them is on the ice, how much of it are they both on? 0% means they're never out together. Regular linemates who change as a unit are above 55%.</dd>
+      <dt>Times as often as chance</dt>
+      <dd>Say one player gets a point in half his games and his linemate gets one in 40% of theirs. If the two had nothing to do with each other, they'd both get a point in 50% × 40% = 20% of games, just by chance. If they really both get one in 30% of games, that's 30 ÷ 20 = <strong style="color:var(--ink)">1.5 times as often as chance</strong>. 1× means no connection at all. Each pair is compared with its own scoring, so a top line can't look connected just because it scores a lot.</dd>
+      <dt>Point</dt>
+      <dd>A goal or either assist. Shootout goals don't count.</dd>
+      <dt>Even strength, power play</dt>
+      <dd>Even strength here means 5-on-5 with both goalies in. Power play means one side has more skaters, with both goalies in. Time together and points are counted separately for each.</dd>
+    </dl>
+  </section>
+
+  <section id="chart">
+    <div class="section-head">
+      <h2>The more they play together, the more their points come together</h2>
+      <p class="hint">Each dot is a group of teammate pairs, sorted by how much of their ice time they share. 1× is chance. The thin bar through each dot shows the range the number could reasonably be in.</p>
+    </div>
+    <div class="card">
+      <div class="legend" aria-hidden="true">
+        <span><i style="background:var(--ev)"></i>Even strength (5-on-5)</span>
+        <span><i style="background:var(--pp)"></i>Power play</span>
+      </div>
+      <figure id="fig-lift"></figure>
+      <p class="cap">From 1,605,125 pair-games: two teammates in one game, counted once. The power play only counts pairs where at least one of them had power-play time (1,373,253). Ranges are 95%, from resampling the games 1,000 times.</p>
+      <details>
+        <summary>See the numbers</summary>
+        <div class="tablewrap">
+          <table>
+            <thead>
+              <tr><th>Time together</th><th>Even strength</th><th>Range</th><th>Same goal</th><th>Power play</th><th>Range</th><th>Same goal</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>0–10% (rarely)</td><td>1.05×</td><td>1.02–1.07</td><td>10%</td><td>0.73×</td><td>0.66–0.80</td><td>13%</td></tr>
+              <tr><td>10–25%</td><td>1.26×</td><td>1.24–1.30</td><td>40%</td><td>1.96×</td><td>1.78–2.16</td><td>63%</td></tr>
+              <tr><td>25–40%</td><td>1.38×</td><td>1.34–1.42</td><td>55%</td><td>2.46×</td><td>2.20–2.75</td><td>80%</td></tr>
+              <tr><td>40–55%</td><td>1.47×</td><td>1.41–1.53</td><td>73%</td><td>2.37×</td><td>2.12–2.61</td><td>81%</td></tr>
+              <tr><td>55–100% (regular linemates)</td><td>2.14×</td><td>2.11–2.18</td><td>88%</td><td>2.75×</td><td>2.67–2.82</td><td>90%</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="cap" style="margin-top:8px">"Same goal" is the share of games where both got a point and at least one goal had both of them on it (one scored and the other assisted, or both assisted). Counting every situation together, the link goes from 1.03× to 1.55×.</p>
+      </details>
+    </div>
+  </section>
+
+  <section id="found">
+    <div class="section-head">
+      <h2>What it found</h2>
+    </div>
+    <ol class="found">
+      <li><strong>Teammates who are rarely out together aren't connected.</strong> At even strength, pairs who share less than 10% of their ice time both get a point 1.05 times as often as chance. That's basically chance.</li>
+      <li><strong>It grows step by step.</strong> At even strength it goes 1.26×, 1.38×, 1.47×, then 2.14× for regular linemates, as the time together goes up.</li>
+      <li><strong>The power play is the extreme.</strong> Teammates on the same unit both get a power-play point 2.75 times as often as chance. Teammates on different units come in under chance, at 0.73×. When one unit's on the ice the other is on the bench, so they're splitting the same minutes.</li>
+      <li><strong>It's the same goals.</strong> The share of both-point games where they were in on the same goal climbs from 10% to 88% at even strength, and 90% on the power play. It isn't "the whole team had a big night." One of them is setting up the other.</li>
+      <li><strong>Forwards with forwards and forwards with defensemen look about the same.</strong> Defense partners only show it once they're a regular pair: 1.84× at even strength when they're together more than 55% of the time.</li>
+      <li><strong>Stars hit a ceiling.</strong> MacKinnon and Rantanen in 2023-24 come out at only 1.13×. MacKinnon got a point in 84% of his games, which leaves almost no room to beat chance: the most this pair could possibly show is 1.19×. For pairs like that, the better number is how often their points came on the same goal, which was 85%.</li>
+    </ol>
+  </section>
+
+  <section id="checks">
+    <div class="section-head">
+      <h2>How I checked it</h2>
+    </div>
+    <ul class="checks">
+      <li>Season points match the NHL's official totals for five stars I checked by hand. McDavid 2022-23 comes out at 64 goals and 89 assists, 153 points, same as the record book.</li>
+      <li>No pair is ever counted as together for more time than either of them actually played.</li>
+      <li>The ranges are tight. For regular linemates at even strength it's 2.11× to 2.18×, so this isn't a fluke of which games happened to be in the data.</li>
+      <li>Pairs who only played a few games together can blur the numbers, so I reran it with only pairs who played 20 or more games together. Same answer: 2.13× instead of 2.14×.</li>
+      <li>This season so far (330 games) shows the same pattern: 2.04× for regular linemates at even strength. The power play is a bit lower so far (2.23×), maybe because teams shuffle their units early in the year.</li>
+    </ul>
+  </section>
+
+  <section id="why">
+    <div class="section-head">
+      <h2>Why it matters for this site</h2>
+    </div>
+    <div class="prose">
+      <p>If this site ever predicts player points, it can't predict each player on his own. It has to simulate the goals first, then hand out the goal and the assists to the players who were on the ice. That's what ties linemates' points together, and it's now written into the <a href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/SIMULATOR.md">plan for the game simulator</a>.</p>
+    </div>
+    <p class="more">The code is <a href="https://github.com/rbtgorman/hockey_hacks/blob/main/diagnostics/check_linemate_points.py"><code>diagnostics/check_linemate_points.py</code></a>, every table is in <a href="https://github.com/rbtgorman/hockey_hacks/blob/main/results/checks/linemate_points.txt"><code>results/checks/linemate_points.txt</code></a>, and the full write-up is in <a href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md#linemates-points-2026-11-17">the findings</a>.</p>
+  </section>
+
+  <footer>
+    <div>Data: NHL public API. Not affiliated with the NHL.</div>
+    <div>For information only, not betting advice. If gambling is a problem, call 1-800-GAMBLER (US).</div>
+    <div><a href="./">The xG model</a> · <a href="methods.html">How it works</a> · <a href="https://github.com/rbtgorman/hockey_hacks/blob/main/docs/FINDINGS.md">Full findings</a> · <a href="https://github.com/rbtgorman/hockey_hacks">Code on GitHub</a></div>
+  </footer>
+</div>
+
+<script>
+/* The numbers come straight from results/checks/linemate_points.txt (2022-23 to 2025-26,
+   "All pairs" at 5-on-5 and on the power play). The table above holds the same numbers,
+   so nothing is lost if this script doesn't run. */
+const BINS = ["0–10%", "10–25%", "25–40%", "40–55%", "55–100%"];
+const SHORT = ["<10", "10–25", "25–40", "40–55", "55+"];
+const SERIES = [
+  { key: "ev", name: "Even strength", end: "5-on-5", color: "var(--ev)",
+    lift: [1.05, 1.26, 1.38, 1.47, 2.14], lo: [1.02, 1.24, 1.34, 1.41, 2.11], hi: [1.07, 1.30, 1.42, 1.53, 2.18],
+    n: [817166, 517301, 118078, 29762, 122818], same: [10, 40, 55, 73, 88] },
+  { key: "pp", name: "Power play", end: "Power play", color: "var(--pp)",
+    lift: [0.73, 1.96, 2.46, 2.37, 2.75], lo: [0.66, 1.78, 2.20, 2.12, 2.67], hi: [0.80, 2.16, 2.75, 2.61, 2.82],
+    n: [1107481, 39920, 19887, 18535, 187430], same: [13, 63, 80, 81, 90] },
+];
+
+const NS = "http://www.w3.org/2000/svg";
+const fig = document.getElementById("fig-lift");
+const card = fig.closest(".card");
+const tip = document.createElement("div");
+tip.className = "tip";
+tip.setAttribute("role", "status");
+card.appendChild(tip);
+
+function el(parent, name, attrs, text) {
+  const n = document.createElementNS(NS, name);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (text != null) n.textContent = text;
+  parent.appendChild(n);
+  return n;
+}
+function label(parent, x, y, text, opts = {}) {
+  return el(parent, "text", {
+    x, y, fill: opts.fill || "var(--muted)", "font-size": opts.size || 12.5,
+    "text-anchor": opts.anchor || "middle", "font-family": "system-ui, sans-serif",
+  }, text);
+}
+const times = (v) => (v === 1 ? "1×" : (Math.round(v * 100) / 100).toString() + "×");
+
+function showTip(html, cx, cy) {
+  tip.innerHTML = html;
+  tip.style.opacity = 1;
+  const r = card.getBoundingClientRect();
+  const left = Math.min(Math.max(8, cx - r.left + 12), r.width - tip.offsetWidth - 8);
+  tip.style.left = left + "px";
+  tip.style.top = Math.max(4, cy - r.top - tip.offsetHeight - 12) + "px";
+}
+
+function draw() {
+  /* Drawn at the figure's real width, so text stays the same size on a phone and a desktop. */
+  const W = Math.round(Math.max(260, Math.min(780, fig.clientWidth)));
+  const narrow = W < 460;
+  // On a phone the legend above names both lines, so the line-end labels give their room to the bins.
+  const H = narrow ? 300 : 340, L = 44, R = narrow ? 14 : 92, T = 30, B = 54;
+  const lo = 0.5, hi = 3.0;
+  const x = (i) => L + i * (W - L - R) / (BINS.length - 1);
+  const y = (v) => T + (1 - (v - lo) / (hi - lo)) * (H - T - B);
+  const s = document.createElementNS(NS, "svg");
+  s.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  s.setAttribute("role", "img");
+  s.setAttribute("aria-label", "How often two teammates both get a point, compared with chance, by how much of their ice time they share. " +
+    "Even strength rises from 1.05 times chance for pairs who are rarely together to 2.14 times for regular linemates. " +
+    "Power play goes from 0.73 times for players on different units to 2.75 times for the same unit.");
+
+  for (let t = lo; t <= hi + 1e-9; t += 0.5) {
+    el(s, "line", { x1: L, x2: W - R, y1: y(t), y2: y(t), stroke: t === 1 ? "var(--axis)" : "var(--rule-soft)",
+                    "stroke-width": t === 1 ? 1.5 : 1, "stroke-dasharray": t === 1 ? "4 4" : "none" });
+    label(s, L - 8, y(t) + 4, times(t), { anchor: "end", size: narrow ? 11.5 : 12.5 });
+  }
+  label(s, W - R, y(1) - 7, "1× = chance", { anchor: "end", size: 12, fill: "var(--ink-2)" });
+
+  (narrow ? SHORT : BINS).forEach((b, i) => label(s, x(i), H - B + 20, b, { size: narrow ? 11.5 : 12.5 }));
+  label(s, L + (W - L - R) / 2, H - 10, narrow ? "Share of ice time together (%)" : "Share of their ice time spent together", { size: 13 });
+  label(s, 0, 13, "Times as often as chance", { anchor: "start", size: 12.5 });
+
+  SERIES.forEach((se) => {
+    se.lift.forEach((v, i) => el(s, "line", { x1: x(i), x2: x(i), y1: y(se.lo[i]), y2: y(se.hi[i]), stroke: se.color, "stroke-width": 1.5, opacity: 0.75 }));
+    el(s, "path", { d: se.lift.map((v, i) => `${i ? "L" : "M"}${x(i)},${y(v)}`).join(" "), fill: "none",
+                    stroke: se.color, "stroke-width": 2, "stroke-linejoin": "round", "stroke-linecap": "round" });
+  });
+  SERIES.forEach((se) => {
+    se.lift.forEach((v, i) => {
+      el(s, "circle", { cx: x(i), cy: y(v), r: 5, fill: se.color, stroke: "var(--surface)", "stroke-width": 2 });
+      const html = `<b>${se.name}, ${BINS[i]} together</b><br>${times(v)} as often as chance (range ${se.lo[i].toFixed(2)}–${se.hi[i].toFixed(2)})` +
+                   `<br>${se.same[i]}% of both-point games on the same goal<br>${se.n[i].toLocaleString("en-US")} pair-games`;
+      // A wider target than the dot, so it's easy to hover or tap; focusable for keyboards.
+      const hit = el(s, "circle", { cx: x(i), cy: y(v), r: 13, fill: "transparent", class: "hit", tabindex: 0,
+                                    "aria-label": `${se.name}, ${BINS[i]} of ice time together: ${times(v)} as often as chance` });
+      const fromEvent = (e) => showTip(html, e.clientX, e.clientY);
+      hit.addEventListener("mousemove", fromEvent);
+      hit.addEventListener("mouseenter", fromEvent);
+      hit.addEventListener("mouseleave", () => { tip.style.opacity = 0; });
+      hit.addEventListener("focus", () => { const b = hit.getBoundingClientRect(); showTip(html, b.left + b.width / 2, b.top + b.height / 2); });
+      hit.addEventListener("blur", () => { tip.style.opacity = 0; });
+    });
+    const last = se.lift.length - 1;
+    if (!narrow) label(s, x(last) + 12, y(se.lift[last]) + 4, se.end, { anchor: "start", size: 12.5, fill: "var(--ink-2)" });
+  });
+  fig.replaceChildren(s);
+}
+draw();
+addEventListener("resize", () => { clearTimeout(draw.t); draw.t = setTimeout(draw, 150); });
+</script>
+</body>
+</html>

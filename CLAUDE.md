@@ -147,6 +147,13 @@ Updated 2026-11-17 (v1.4.1 live; audit fixes done; simulator plan final, v0 not 
   2026-27 so far agrees. Fixed seed, two runs identical. Ranges hold each pair's rates at
   full-data values (0 estimates outside their range). SIMULATOR.md's shooter layer notes
   that simulated points should go to on-ice scorer + up to 2 assisters.
+  **On the site** since 2026-11-17: `site/linemates.html` ("Do linemates score together?",
+  not a nav tab; linked from a short `#linemates` section on the home page and from the
+  home and methods footers; cache header in `netlify.toml`). Numbers are typed in from
+  `results/checks/linemate_points.txt` (All pairs, 5-on-5 and power play, 2022-23 to
+  2025-26), so rerunning the check means updating the page by hand. Chart colors are
+  the site's orange (#f74902, 5-on-5) and blue (#3987e5, power play), checked with the
+  dataviz palette validator against the card surface. Checked at 320, 375 and 1440 px.
 - **Game simulator: plan written, not built** (`docs/SIMULATOR.md`). The owner OK'd the
   direction on 2026-11-11 with five changes, all in the plan now (2026-11-17): teams rated
   on power plays drawn and given up (from the shift charts, not raw penalty calls; double
