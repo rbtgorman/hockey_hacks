@@ -1,0 +1,50 @@
+SIMULATOR v0: POWER-PLAY TIME, SIMULATED VS. REAL (read-only check)
+========================================================================================
+Regular season 2023-24 to 2025-26, 3,936 games with shift charts (7,872 team-games). 2026-27 not loaded.
+Simulated: H 40, K5 10, Kst 15, keep 0.5, 1,000 simulations a game, regulation only.
+
+1. POWER-PLAY MINUTES PER TEAM-GAME
+  Real, regulation + overtime     4.662  (what step 2's report compared against)
+  Real, regulation only           4.626
+  Real, overtime only             0.036  (mostly 4-on-3)
+  Simulated, regulation           4.290
+
+2. POWER PLAYS PER TEAM-GAME
+  Counted calls, all              2.714  (sim cache: 2.714)
+  Counted calls, regulation       2.694
+  Counted calls, overtime         0.020
+  Simulated, regulation           2.687  (includes any dropped as a third penalty)
+  Calls left after netting that weren't counted: 0.156 per team-game
+
+3. AVERAGE LENGTH OF A POWER PLAY (minutes)
+  Real, regulation: power-play seconds inside counted windows / counted calls  1.698
+  Simulated: power-play minutes / power plays drawn                          1.597
+  Lone regulation power plays (no other call in the window), real:
+    2-minute: 17,959 calls, 1.762 min of power play each; first second on the power play 3.3 s after the call, first unbroken run 1.760 min
+    4-minute:    468 calls, 2.906 min of power play each; first second on the power play 3.0 s after the call, first unbroken run 2.897 min
+    5-minute:     34 calls, 4.887 min of power play each; first second on the power play 5.1 s after the call, first unbroken run 4.887 min
+
+4. REAL POWER-PLAY SECONDS OUTSIDE EVERY COUNTED POWER PLAY (minutes per team-game)
+  Short runs (under 10 s), regulation: 0.058 runs, 0.006 min
+  Short runs (under 10 s), overtime:   0.003 runs, 0.000 min
+  Long runs, ot , no call             11 runs (0.001 per team-game), 0.001 min, 33 s each
+  Long runs, reg, no call             40 runs (0.005 per team-game), 0.014 min, 170 s each
+  Long runs, reg, uncounted call     188 runs (0.024 per team-game), 0.033 min, 84 s each
+  Short runs by length (s): 1: 14, 2: 31, 3: 38, 4: 55, 5: 60, 6: 71, 7: 84, 8: 71, 9: 58
+
+5. LINE-CHANGE TIMING SCALE
+  Seconds with both goalies in and a side on 6 skaters (thrown out): 0.028 min a game in regulation, 0.000 in overtime
+
+6. PENALTY CALLS AGAINST A TEAM, BY ITS STRENGTH (counted calls, regulation)
+  even strength      19,355 calls in  6,486 team-hours = 2.98 per 60  (1.08 x the overall rate)
+  on the power play   1,263 calls in    607 team-hours = 2.08 per 60  (0.76 x the overall rate)
+  shorthanded           587 calls in    607 team-hours = 0.97 per 60  (0.35 x the overall rate)
+  overall            2.75 per 60; calls with no readable second before them: 0
+  The engine uses one rate whatever the strength.
+
+7. WHERE THE GAP GOES
+  Real (reg + OT) minus simulated: +0.372 min per team-game
+    overtime power play                 +0.036
+    regulation short runs (<10 s)       +0.006
+    regulation long runs outside        +0.048
+    rest (regulation, inside windows)   +0.283  (= real counted-PP time minus simulated)

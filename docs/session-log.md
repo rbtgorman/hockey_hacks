@@ -3,6 +3,16 @@
 What got done each working day, newest first. Claude adds to today's entry every time it
 pushes. Commit hashes point to the details.
 
+## 2026-11-18
+
+- PC: simulator review 1a, the power-play time gap (read-only check
+  `diagnostics/check_sim_pp_time.py`, `results/checks/sim_pp_time.txt`). Counts match
+  (2.69 a team-game); the gap is length (1.60 vs 1.70 min). Overtime PP 0.036 min,
+  outside counted PPs 0.054 (short runs 0.006), the rest inside: real calls against a
+  shorthanded team come at 0.35x the overall rate and against a PP team 0.76x, the
+  engine uses one rate. Scratch test with those rates: 4.29 -> 4.49 min. `sim/data.py`
+  refactor only (output identical). Waiting on the owner's call. (`HASH`)
+
 ## 2026-11-17
 
 - PC: end of day. Simulator step 2 work in progress committed (`sim/pick.py`, engine

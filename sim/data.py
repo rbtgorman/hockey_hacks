@@ -47,8 +47,11 @@ def state_code(own: np.ndarray, opp: np.ndarray) -> np.ndarray:
     return out
 
 
-def power_plays(pens, h_sk, a_sk, ok, home, away, T):
+def power_plays(pens, h_sk, a_sk, ok, home, away, T, events=None):
     """Power plays drawn by (home, away), by length, and the calls that didn't count.
+
+    If `events` is a list, each call left after netting is appended to it as
+    (second, team that drew it, minutes, counted?), for diagnostics.
 
     A power play is a penalty that leaves one side short-handed. Steps:
     1. Two 2-minute minors on one player at the same second are served back to back:
@@ -95,14 +98,38 @@ def power_plays(pens, h_sk, a_sk, ok, home, away, T):
             i = np.searchsorted(ok_idx, min(t, T - 1), side="right") - 1
             j = np.searchsorted(ok_idx, t + CONFIRM_AFTER, side="left")
             if i < 0 or j >= len(ok_idx) or ok_idx[j] > t + 30:
-                unconfirmed += len(left[team])
-                continue
-            drop = edge[team][ok_idx[i]] - edge[team][ok_idx[j]]
-            n_pp = min(len(left[team]), max(int(drop), 0))
+                n_pp = 0
+            else:
+                drop = edge[team][ok_idx[i]] - edge[team][ok_idx[j]]
+                n_pp = min(len(left[team]), max(int(drop), 0))
             unconfirmed += len(left[team]) - n_pp
-            for L in sorted(left[team], reverse=True)[:n_pp]:
-                drawn[other][PP_LENGTHS.index(L)] += 1
+            for r, L in enumerate(sorted(left[team], reverse=True)):
+                if r < n_pp:
+                    drawn[other][PP_LENGTHS.index(L)] += 1
+                if events is not None:
+                    events.append((t, other, L, r < n_pp))
     return drawn, unconfirmed
+
+
+def on_ice_counts(sh, gid, home, away, goalies):
+    """Skaters on the ice each second for home and away, both goalies in, and T.
+
+    sh: the game's shift rows (game_id, player_id, team_id, start, end). Index t is
+    second t (start < t <= end), for t = 0 .. T-1.
+    """
+    T = int(sh[:, 4].max()) + 2
+    cnt = {}
+    for team in (home, away):
+        part = sh[sh[:, 2] == team]
+        is_g = np.array([(gid, p) in goalies for p in part[:, 1]], bool)
+        for kind, m in (("sk", ~is_g), ("g", is_g)):
+            d = np.zeros(T + 1, np.int32)
+            keep = part[m, 4] > part[m, 3]
+            np.add.at(d, part[m][keep, 3] + 1, 1)
+            np.add.at(d, part[m][keep, 4] + 1, -1)
+            cnt[(team, kind)] = np.cumsum(d)[:T]
+    ok = (cnt[(home, "g")] > 0) & (cnt[(away, "g")] > 0)
+    return cnt[(home, "sk")], cnt[(away, "sk")], ok, T
 
 
 def _query(seasons):
@@ -183,20 +210,8 @@ def build(seasons):
             out["has_shifts"][k] = False
             issues["game with no shifts"] += 1
             continue
-        T = int(sh[:, 4].max()) + 2
         out["length"][k] = int(sh[:, 4].max())
-        cnt = {}
-        for team in (home, away):
-            part = sh[sh[:, 2] == team]
-            is_g = np.array([(gid, p) in goalies for p in part[:, 1]], bool)
-            for kind, m in (("sk", ~is_g), ("g", is_g)):
-                d = np.zeros(T + 1, np.int32)
-                keep = part[m, 4] > part[m, 3]
-                np.add.at(d, part[m][keep, 3] + 1, 1)
-                np.add.at(d, part[m][keep, 4] + 1, -1)
-                cnt[(team, kind)] = np.cumsum(d)[:T]
-        h_sk, a_sk = cnt[(home, "sk")], cnt[(away, "sk")]
-        ok = (cnt[(home, "g")] > 0) & (cnt[(away, "g")] > 0)
+        h_sk, a_sk, ok, T = on_ice_counts(sh, gid, home, away, goalies)
         st_home = np.where(ok, state_code(h_sk, a_sk), -1)
         st_away = np.where(ok, state_code(a_sk, h_sk), -1)
         for side, st in ((0, st_home), (1, st_away)):

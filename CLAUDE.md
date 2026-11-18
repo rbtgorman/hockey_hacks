@@ -75,7 +75,8 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-17 (v1.4.1 live; simulator v0 step 1 built, step 2 in progress, nothing frozen).
+Updated 2026-11-18 (v1.4.1 live; simulator v0 step 1 built, step 2 in progress, nothing frozen;
+review item 1a done, waiting on the owner's call).
 
 - **Audit fixes done, all 3 groups** (group 3 on 2026-11-17, docs and loose ends).
   `docs/DATA_PIPELINE.md` section 5 marks every gap fixed, checked or left for later,
@@ -175,6 +176,23 @@ Updated 2026-11-17 (v1.4.1 live; simulator v0 step 1 built, step 2 in progress, 
   near Elo; v0's calibration slope about 1.25 (chances too bunched); overtime 17%
   predicted vs 22% real (no score effects); goals 5.59 vs 5.74 a game (extra-attacker
   goals fall outside every strength); power-play time 4.30 vs 4.66 min per team-game.
+- **Simulator review 1a done: the power-play time gap** (2026-11-18, read-only,
+  `diagnostics/check_sim_pp_time.py`, `results/checks/sim_pp_time.txt`; middle setting
+  H 40, K5 10, Kst 15, keep 0.5). Counts match: 2.69 power plays per team-game, sim and
+  real. The gap (4.29 sim vs 4.66 real) is length: 1.60 vs 1.70 min a power play. Parts:
+  overtime power play 0.036 min (the sim has none), real power-play seconds outside
+  every counted power play 0.054 (short runs under 10 s only 0.006, so line-change
+  timing is tiny; 6-skater seconds 0.028 min a game; long runs mostly inside calls
+  power_plays() didn't count), and 0.283 inside counted power plays. Cause of the last:
+  real calls against a team are 2.98 per 60 at even strength, 2.08 on the power play,
+  0.97 shorthanded (1.08 / 0.76 / 0.35 x overall), while the engine uses one rate, so it
+  makes too many 5-on-3s and 4-on-4s. A scratch test with those multipliers (engine copy
+  in the scratchpad only, not committed): 4.29 -> 4.49 min, length 1.67, count 2.70,
+  goals and OT share unchanged. Also: real 4-on-4 is 0.76 min a game vs 0.31-0.40
+  simulated, because netted (coincidental) calls are never simulated. `sim/data.py`:
+  per-second counting moved to `on_ice_counts()`, and `power_plays(..., events=)` can
+  list its calls; output identical to the cache (xG sums differ by 2e-15 only, float
+  order: the shots query has no ORDER BY), so no rebuild needed for that.
 - **Game simulator: plan written** (`docs/SIMULATOR.md`). The owner OK'd the
   direction on 2026-11-11 with five changes, all in the plan now (2026-11-17): teams rated
   on power plays drawn and given up (from the shift charts, not raw penalty calls; double
@@ -292,19 +310,18 @@ Updated 2026-11-17 (v1.4.1 live; simulator v0 step 1 built, step 2 in progress, 
 
 ## Waiting on the owner
 
-- Nothing new. Step 2 needs the review items below (Next up 1) done before anything is
-  frozen; then the owner reads the step-2 report.
+- **1a decision**: add penalty-call rates that depend on the called team's strength to
+  the engine (even / power play / shorthanded multipliers, from the league window like
+  the other league numbers)? That would close about 0.20 of the 0.37 min gap. And
+  should coincidental (netted) calls be simulated as 4-on-4 time, or left out?
+- Step 2 needs the review items below (Next up 1) done before anything is frozen; then
+  the owner reads the step-2 report.
 
 ## Next up
 
 1. **Owner's review of simulator v0 before freezing** (2026-11-17), in this order:
-   a. Explain the power-play time gap (4.30 simulated vs 4.66 real minutes per
-      team-game) before freezing anything. Compare power plays per team-game, sim vs
-      real, regulation only. Compare the average length of a counted power play, real
-      vs sim. Find real power-play seconds that fall outside every counted power play,
-      split into short runs (under 10 s) and long ones. Short runs are probably
-      line-change timing: a second with 4 skaters reads as a power play, while a second
-      with 6 gets thrown out, so count 6-skater seconds to see how often the timing slips.
+   a. Done 2026-11-18 (see Where things stand); waiting on the owner's call on the
+      strength-dependent call rates.
    b. Two scrum cases in `power_plays()` (`sim/data.py`), to confirm on made-up
       penalties. First: 2+2 on one player vs 2 on an opponent gets joined into a 4
       before netting; it should net first, leaving a 2-minute power play. Second: a
