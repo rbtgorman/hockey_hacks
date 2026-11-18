@@ -11,7 +11,7 @@ pushes. Commit hashes point to the details.
   outside counted PPs 0.054 (short runs 0.006), the rest inside: real calls against a
   shorthanded team come at 0.35x the overall rate and against a PP team 0.76x, the
   engine uses one rate. Scratch test with those rates: 4.29 -> 4.49 min. `sim/data.py`
-  refactor only (output identical). Waiting on the owner's call. (`HASH`)
+  refactor only (output identical). Waiting on the owner's call. (`1fee049`)
 
 ## 2026-11-17
 
