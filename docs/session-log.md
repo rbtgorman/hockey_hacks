@@ -20,7 +20,7 @@ pushes. Commit hashes point to the details.
   rules end earlier power plays; "before" window stops at either team's last power
   play; old vs new side by side before any rebuild) and the tests; recorded in
   CLAUDE.md with how the review is run and the test-to-date job left from the refresh.
-  Step 4 not started, no code on disk. End of day.
+  Step 4 not started, no code on disk. End of day. (`ac3f9e2`)
 - PC: owner's call on review 1a: strength-dependent penalty-call rates go in (with the
   1b fix); offsetting calls stay out of v0, added to "What v0 leaves out" in
   `docs/SIMULATOR.md`. Recorded in CLAUDE.md. (`d39914a`)
