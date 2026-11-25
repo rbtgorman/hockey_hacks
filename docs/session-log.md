@@ -5,6 +5,8 @@ pushes. Commit hashes point to the details.
 
 ## 2026-11-25
 
+- PC: CI (review 1d): sim engine and ratings tests added to the reporting-tests job,
+  `sim` added to compileall; both pass on the PC.
 - PC: owner's call on review 1a: strength-dependent penalty-call rates go in (with the
   1b fix); offsetting calls stay out of v0, added to "What v0 leaves out" in
   `docs/SIMULATOR.md`. Recorded in CLAUDE.md.

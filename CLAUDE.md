@@ -310,7 +310,7 @@ review item 1a done and decided 2026-11-25).
 
 ## Waiting on the owner
 
-- Step 1b's real-game check, then the CI push (1d): the owner checks the CI run.
+- The CI run for the sim tests (1d), then step 1b's real-game check.
 - Step 2 needs the review items below (Next up 1) done before anything is frozen; then
   the owner reads the step-2 report.
 
@@ -335,8 +335,9 @@ review item 1a done and decided 2026-11-25).
    c. Any change to `sim/data.py`: rebuild the cache (`load(..., refresh=True)`) and
       rerun the step-2 search (`.venv/bin/python -m sim.pick`, about 30 min on 4 workers;
       stop it by PID, not `pkill -f`).
-   d. CI: add `tests/test_sim_engine.py` and `tests/test_sim_ratings.py` to the
-      reporting-tests job, and add `sim` to the compileall line.
+   d. CI: done 2026-11-25, `tests/test_sim_engine.py` and `tests/test_sim_ratings.py` in
+      the reporting-tests job, `sim` in the compileall line (both pass on the PC); the
+      owner checks the run.
    e. Step-2 report: v0 vs Elo directly, with the range on the gap. Only then freeze
       `results/sim_v0/selection.json`.
 2. **Simulator step 3**, later: test v0 once on 2026-27 at 800 games (not before).

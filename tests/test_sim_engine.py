@@ -1,4 +1,4 @@
-"""Test sim/engine.py follows the rules of a game. Needs numpy, so it runs on the PC, not in CI.
+"""Test sim/engine.py follows the rules of a game. Needs numpy; runs in CI's reporting-tests job.
 
 Run: .venv/bin/python tests/test_sim_engine.py
 """

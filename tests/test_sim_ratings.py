@@ -2,8 +2,8 @@
 
 Made-up games, no database. Everything on or after a cut-off date is scrambled; every
 game on or before that date must get exactly the same league numbers, team totals and
-Elo chance as before (same-day games must not see each other). Needs numpy, so it runs
-on the PC, not in CI.
+Elo chance as before (same-day games must not see each other). Needs numpy; runs in
+CI's reporting-tests job.
 
 Run: .venv/bin/python tests/test_sim_ratings.py
 """
