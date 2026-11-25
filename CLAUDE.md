@@ -75,8 +75,8 @@ Cloud sessions can't see those, so anything that matters goes here too.
 
 ## Where things stand
 
-Updated 2026-11-18 (v1.4.1 live; simulator v0 step 1 built, step 2 in progress, nothing frozen;
-review item 1a done, waiting on the owner's call).
+Updated 2026-11-25 (v1.4.1 live; simulator v0 step 1 built, step 2 in progress, nothing frozen;
+review item 1a done and decided 2026-11-25).
 
 - **Audit fixes done, all 3 groups** (group 3 on 2026-11-17, docs and loose ends).
   `docs/DATA_PIPELINE.md` section 5 marks every gap fixed, checked or left for later,
@@ -310,20 +310,24 @@ review item 1a done, waiting on the owner's call).
 
 ## Waiting on the owner
 
-- **1a decision**: add penalty-call rates that depend on the called team's strength to
-  the engine (even / power play / shorthanded multipliers, from the league window like
-  the other league numbers)? That would close about 0.20 of the 0.37 min gap. And
-  should coincidental (netted) calls be simulated as 4-on-4 time, or left out?
+- Step 1b's real-game check, then the CI push (1d): the owner checks the CI run.
 - Step 2 needs the review items below (Next up 1) done before anything is frozen; then
   the owner reads the step-2 report.
 
 ## Next up
 
 1. **Owner's review of simulator v0 before freezing** (2026-11-17), in this order:
-   a. Done 2026-11-18 (see Where things stand); waiting on the owner's call on the
-      strength-dependent call rates.
-   b. Two scrum cases in `power_plays()` (`sim/data.py`), to confirm on made-up
-      penalties. First: 2+2 on one player vs 2 on an opponent gets joined into a 4
+   a. Done 2026-11-18 (see Where things stand). **Owner's call (2026-11-25):** (1) yes to
+      penalty-call rates that depend on the penalized team's strength (even, power play,
+      shorthanded), from the same rolling league window as the other league numbers;
+      each team's "average team" call counts use the same three rates, so the ratings
+      and the engine count calls the same way. Goes in with the 1b fix (step 4 of the
+      review). (2) Offsetting (netted) calls stay out of v0: listed under "What v0
+      leaves out" in `docs/SIMULATOR.md`; the step-2 report notes it next to the 4-on-4
+      minutes.
+   b. Two scrum cases in `power_plays()` (`sim/data.py`). Confirmed on made-up
+      penalties in the cloud review: both come out as described below; what's left is
+      real games. First: 2+2 on one player vs 2 on an opponent gets joined into a 4
       before netting; it should net first, leaving a 2-minute power play. Second: a
       major plus a minor on one player counts as 5 minutes, but the team is short 7.
       Check real ones on the shift charts, count them, and fix what's worth fixing, with

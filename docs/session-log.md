@@ -3,6 +3,12 @@
 What got done each working day, newest first. Claude adds to today's entry every time it
 pushes. Commit hashes point to the details.
 
+## 2026-11-25
+
+- PC: owner's call on review 1a: strength-dependent penalty-call rates go in (with the
+  1b fix); offsetting calls stay out of v0, added to "What v0 leaves out" in
+  `docs/SIMULATOR.md`. Recorded in CLAUDE.md.
+
 ## 2026-11-18
 
 - PC: simulator review 1a, the power-play time gap (read-only check

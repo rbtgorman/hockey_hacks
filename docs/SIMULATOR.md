@@ -83,6 +83,9 @@ On purpose, to keep v0 simple. Each one is a possible later step, not a promise:
 - Anything that isn't xG and power plays: faceoffs, hits, and so on
 - Strength of schedule: ratings aren't adjusted for the opponents a team has faced, so a
   team that's played weak teams looks a little better than it is
+- Offsetting penalties (matching minors that cancel out, so neither team gets a power
+  play). In real games they make most of the 4-on-4 time, about 0.76 min a game, while
+  v0 makes only 0.3-0.4 min from overlapping power plays (owner, 2026-11-25)
 
 ## How it's tested
 
