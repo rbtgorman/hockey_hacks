@@ -215,8 +215,10 @@ review item 1a done and decided 2026-11-25).
   kept in `shot_xg`** (owner's call); the v1.4 rows were scored on the table before the fix.
   The scorer only replaces its own version's rows. The saved model is gitignored, so it's
   only on the PC; rerunning the trainer rebuilds it.
-- **Data is through 2026-11-16** (refreshed 2026-11-17: 332 games in 2026-27, 5,924 games
-  and 506,404 attempts in all). Only v1.4.1 scores the new games in `shot_xg`.
+- **Data is through 2026-11-24** (refreshed 2026-11-25: 385 games in 2026-27, 5,977 games
+  and 510,725 attempts in all). Only v1.4.1 scores the new games in `shot_xg`. The
+  model tab's test-to-date numbers below are still from Nov 16 (report_test_to_date not
+  rerun yet).
 - **Site's 2026-27 numbers come from `results/test_to_date/`** (`model/report_test_to_date.py`,
   log `results/test_to_date.log`): every saved model (v1.4.1, v1.4, v1.3, v1.2) rescored on
   the test season as it stands, report only. Rerun it after a refresh before touching the
