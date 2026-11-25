@@ -76,7 +76,7 @@ Cloud sessions can't see those, so anything that matters goes here too.
 ## Where things stand
 
 Updated 2026-11-25 (v1.4.1 live; simulator v0 step 1 built, step 2 in progress, nothing frozen;
-review item 1a done and decided 2026-11-25).
+review 1a decided, 1b checked and its counting rule OK'd 2026-11-25; step 4 not started).
 
 - **Audit fixes done, all 3 groups** (group 3 on 2026-11-17, docs and loose ends).
   `docs/DATA_PIPELINE.md` section 5 marks every gap fixed, checked or left for later,
@@ -312,13 +312,26 @@ review item 1a done and decided 2026-11-25).
 
 ## Waiting on the owner
 
-- OK of the new counting rule for missed power plays (review 1b), then step 4: the fixes.
+- Nothing new: step 4 (the fixes) starts next session on the owner's go. Step 4 hadn't
+  started on 2026-11-25, so no code is waiting on disk.
 - Step 2 needs the review items below (Next up 1) done before anything is frozen; then
   the owner reads the step-2 report.
 
 ## Next up
 
-1. **Owner's review of simulator v0 before freezing** (2026-11-17), in this order:
+1. **Owner's review of simulator v0 before freezing** (2026-11-17). **How we work on it
+   (owner, 2026-11-25):** one step at a time; after each step report what was done, the
+   commit and what's next, then wait for the owner's "go". Ask before starting the
+   step-2 search and before freezing `results/sim_v0/selection.json`. Never load
+   2026-27 for the simulator or pass `allow_test`; the simulator work only reads data.
+   The review's steps: 4 = the fixes together (case A, the new counting rule with the
+   side-by-side run first, the strength-based call rates with an engine test; all sim
+   tests pass); 5 = rebuild the cache once and rerun `diagnostics/check_sim_pp_time.py`,
+   say what's left of the 0.37-min gap, and show the three call rates (even, power
+   play, short-handed) next to the old 1.08, 0.76 and 0.35; 6 = ask, then run the
+   search once and write the step-2 report (v0 vs Elo vs home-win rate with ranges,
+   calibration slope and intercept, overtime and shootout share, goals a game, minutes
+   at each strength, 4-on-4 noted as leaving out offsetting calls). Items:
    a. Done 2026-11-18 (see Where things stand). **Owner's call (2026-11-25):** (1) yes to
       penalty-call rates that depend on the penalized team's strength (even, power play,
       shorthanded), from the same rolling league window as the other league numbers;
@@ -340,7 +353,26 @@ review item 1a done and decided 2026-11-25).
       1-10 s after (35), the earlier power play running out within 10 s (43), the
       goalie pulled 10-30 s after (40), the shift chart early (19), penalty waiting
       for a box spot (8), another call soon after (11), other (13). **Owner: count
-      them in principle**; waiting on the owner's OK of the counting rule.
+      them** (counting rule OK'd 2026-11-25). The rule: a call left after netting counts
+      when the shift charts show the penalized team more short-handed than it would
+      have been without it. "Before" = the team's best skater edge in the 15 s before
+      the call; "without the call" = before + 1 for each counted power play against
+      it that has ended by the check; check 10 s after the call, or the last second
+      before a goal by the drawing team or another call if sooner (at least 1 s
+      after), or 10 s after its first earlier penalty ends if it's already 2 down,
+      or the first second with both goalies in inside the call's window if a goalie
+      is out; count it if the edge at the check is lower. The call-rate table uses
+      the same "before". **Owner's four conditions:** (1) sort penalties by time
+      before processing them; (2) use the engine's goal rules to decide when an
+      earlier power play ends (a minor ends on a goal by the power-play team, a major
+      doesn't); (3) the 15-second "before" window also stops at the end of either
+      team's last power play, not only at the previous call; (4) before rebuilding
+      anything, run the old and new rules side by side: newly counted with real
+      power-play time about 207, newly counted with none about 0, dropped about 0;
+      explain any that differ. Tests on made-up penalties: one per kind the rule now
+      catches (goal at the call's second, goal 1-10 s after, earlier power play runs
+      out, goalie pulled, shift chart early, waiting for a box spot, another call
+      soon after), plus two that must stay uncounted.
    c. Any change to `sim/data.py`: rebuild the cache (`load(..., refresh=True)`) and
       rerun the step-2 search (`.venv/bin/python -m sim.pick`, about 30 min on 4 workers;
       stop it by PID, not `pkill -f`).
@@ -359,8 +391,10 @@ live xG, for good**, finishing priors included. "Goals minus xG" and "goals save
 expected" only mean something if xG doesn't know who's shooting or who's in net. That skill
 becomes a separate layer later, for the game simulator.
 
-Still open, lower priority: refresh the model tab's 2026-27 test numbers as the season
-goes (refresh.sh, then report_test_to_date). The EDGE goalie comparison from FINDINGS is
+Still open, lower priority: **left from the 2026-11-25 refresh:** rerun
+`model/report_test_to_date.py` (data is through Nov 24) and update the model tab's
+2026-27 numbers in `site/index.html` and `site/methods.html`. After that, keep refreshing
+them as the season goes (refresh.sh, then report_test_to_date). The EDGE goalie comparison from FINDINGS is
 now part of the simulator's goalie layer.
 
 Loose ends: there's no scheduled GitHub Actions refresh yet (`export/refresh.sh` runs by
