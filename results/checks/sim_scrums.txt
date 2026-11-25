@@ -1,0 +1,240 @@
+SIMULATOR v0: SCRUM PENALTIES AND MISSED POWER PLAYS IN power_plays() (read-only check)
+========================================================================================
+Regular season 2023-24 to 2025-26, 3,936 games with shift charts (7,872 team-games). 2026-27 not loaded.
+
+1. THE SCRUM CASES
+Case A: 2+2 on one player vs a 2 on the other team, same second
+  385 times (0.0978 a game)
+  power_plays() gives 2-min PP for called team, not counted; 4-min PP for other team, counted: 238
+  power_plays() gives no power play: 94
+  power_plays() gives 2-min PP for called team, not counted; 2-min PP for called team, not counted; 4-min PP for other team, not counted: 13
+  power_plays() gives 2-min PP for called team, not counted; 4-min PP for other team, not counted: 12
+  power_plays() gives 2-min PP for other team, counted: 8
+  power_plays() gives 2-min PP for called team, counted: 8
+  power_plays() gives 4-min PP for other team, counted: 6
+  power_plays() gives 2-min PP for other team, not counted: 2
+  power_plays() gives 2-min PP for called team, not counted: 2
+  power_plays() gives 4-min PP for other team, not counted: 1
+  power_plays() gives 2-min PP for called team, counted; 2-min PP for called team, not counted; 2-min PP for called team, not counted; 4-min PP for other team, not counted: 1
+  On the ice, 282 with 9 minutes of game left: the called team is below its skater edge from
+  just before the call for 2.08 of the next 9 minutes on average; even with both sides under 5 skaters 0.18 min
+  Share of each minute the called team is short / at the same edge / up:
+    minute 1: 0.70 / 0.27 / 0.03
+    minute 2: 0.62 / 0.34 / 0.04
+    minute 3: 0.09 / 0.82 / 0.09
+    minute 4: 0.11 / 0.79 / 0.10
+    minute 5: 0.11 / 0.80 / 0.09
+    minute 6: 0.11 / 0.80 / 0.08
+    minute 7: 0.12 / 0.78 / 0.10
+    minute 8: 0.11 / 0.78 / 0.10
+    minute 9: 0.12 / 0.76 / 0.11
+  e.g. game 2023020005 second 2653, called team home: power_plays() gives 2-min PP for called team, not counted; 4-min PP for other team, counted
+       ice from 3 s before (home v away: seconds): 5v5:4 4v5:12 5v5:467
+  e.g. game 2023020023 second 2931, called team home: power_plays() gives 2-min PP for called team, not counted; 4-min PP for other team, counted
+       ice from 3 s before (home v away: seconds): 5v5:4 4v5:48 5v5:431
+  e.g. game 2023020031 second 2531, called team home: power_plays() gives 2-min PP for called team, not counted; 4-min PP for other team, counted
+       ice from 3 s before (home v away: seconds): 5v5:4 4v5:120 5v5:114 5v4:11 5v5:176 5v4:58
+
+Case B: 5 + 2 on one player, the other team has no major at that second
+  8 times (0.0020 a game)
+  power_plays() gives 5-min PP for other team, counted: 4
+  power_plays() gives 2-min PP for other team, not counted; 5-min PP for other team, counted: 3
+  power_plays() gives 2-min PP for other team, counted; 5-min PP for other team, counted: 1
+  On the ice, 6 with 9 minutes of game left: the called team is below its skater edge from
+  just before the call for 5.74 of the next 9 minutes on average; even with both sides under 5 skaters 0.39 min
+  Share of each minute the called team is short / at the same edge / up:
+    minute 1: 0.93 / 0.07 / 0.00
+    minute 2: 0.96 / 0.04 / 0.00
+    minute 3: 0.83 / 0.17 / 0.00
+    minute 4: 0.87 / 0.13 / 0.00
+    minute 5: 1.00 / 0.00 / 0.00
+    minute 6: 0.50 / 0.39 / 0.06
+    minute 7: 0.40 / 0.47 / 0.13
+    minute 8: 0.17 / 0.77 / 0.06
+    minute 9: 0.07 / 0.68 / 0.18
+  e.g. game 2023020188 second 1844, called team home: power_plays() gives 2-min PP for other team, counted; 5-min PP for other team, counted
+       ice from 3 s before (home v away: seconds): 4v4:4 3v4:9 3v5:11 5v5:25 4v5:62 4v4:120 4v5:193 5v5:38 5v4:21
+  e.g. game 2023020420 second 2809, called team home: power_plays() gives 2-min PP for other team, not counted; 5-min PP for other team, counted
+       ice from 3 s before (home v away: seconds): 5v5:1 noG:3 4v5:384 5v5:95
+  e.g. game 2024020254 second 2883, called team home: power_plays() gives 2-min PP for other team, not counted; 5-min PP for other team, counted
+       ice from 3 s before (home v away: seconds): 5v5:4 4v5:386 3v5:34 4v5:59
+
+Case B5: 5 + 2 on one player, the other team has a major too (fights)
+  301 times (0.0765 a game)
+  power_plays() gives 2-min PP for other team, counted: 190
+  power_plays() gives no power play: 83
+  power_plays() gives 2-min PP for other team, not counted; 5-min PP for called team, not counted: 8
+  power_plays() gives 2-min PP for other team, not counted: 7
+  power_plays() gives 2-min PP for other team, not counted; 4-min PP for called team, counted: 5
+  power_plays() gives 2-min PP for other team, counted; 2-min PP for other team, counted: 3
+  power_plays() gives 2-min PP for called team, counted: 3
+  power_plays() gives 2-min PP for other team, not counted; 5-min PP for called team, counted: 1
+  power_plays() gives 2-min PP for other team, not counted; 4-min PP for called team, not counted: 1
+  On the ice, 261 with 9 minutes of game left: the called team is below its skater edge from
+  just before the call for 2.00 of the next 9 minutes on average; even with both sides under 5 skaters 0.24 min
+  Share of each minute the called team is short / at the same edge / up:
+    minute 1: 0.64 / 0.32 / 0.03
+    minute 2: 0.57 / 0.37 / 0.05
+    minute 3: 0.10 / 0.76 / 0.14
+    minute 4: 0.10 / 0.71 / 0.19
+    minute 5: 0.10 / 0.71 / 0.19
+    minute 6: 0.12 / 0.74 / 0.13
+    minute 7: 0.13 / 0.73 / 0.12
+    minute 8: 0.13 / 0.77 / 0.09
+    minute 9: 0.11 / 0.79 / 0.09
+  e.g. game 2023020005 second 620, called team away: power_plays() gives 2-min PP for other team, counted
+       ice from 3 s before (home v away: seconds): 5v5:4 5v4:120 5v5:359
+  e.g. game 2023020006 second 2592, called team home: power_plays() gives nothing
+       ice from 3 s before (home v away: seconds): 5v5:483
+  e.g. game 2023020006 second 2592, called team away: power_plays() gives nothing
+       ice from 3 s before (home v away: seconds): 5v5:483
+
+2. THE LONG UNCOUNTED-CALL RUNS (188 in results/checks/sim_pp_time.txt)
+  188 runs here, by the call they sit in:
+    A           0 runs,    0.0 min in all
+    B           0 runs,    0.0 min in all
+    B5          0 runs,    0.0 min in all
+    neither   188 runs,  262.5 min in all
+
+3. MISSED POWER PLAYS: uncounted calls, alone at their second, regulation, with 10+ power-play
+   seconds for the drawing team in the call's window
+  Drawing team already on a power play before the call: 136 calls
+    1 power-play goal at the call's second: 51
+    2 power-play goal 1-10 s after the call: 11
+    3 called team already 2 down or at 3 (penalty waits for a box spot): 8
+    4 another call 1-30 s later: 4
+    5 edge already down before the call, nothing counted explains it (shift chart early): 19
+    6 earlier power play runs out within 10 s of the call: 43
+  Drawing team not on a power play before the call: 84 calls
+    2 power-play goal 1-10 s after the call: 24
+    4 another call 1-30 s later: 7
+    7 no second with both goalies in 10-30 s after the call: 40
+    8 drawing team's power play starts more than 30 s after the call: 3
+    9 other: 10
+
+  Examples (ice from 20 s before the call, home v away: seconds; then goals and penalties, seconds from the call)
+  [kind 1] game 2023020035 second 1871, 2-min call drawn by away (already on a power play before the call, 100 s left on the earlier power play)
+     ice: 5v5:1 4v5:76 5v5:103
+       -20s penalty home MIN 2
+        +0s goal away
+        +0s penalty home MIN 2
+       +56s goal away
+  [kind 1] game 2023020047 second 2166, 2-min call drawn by home (already on a power play before the call, 4 s left on the earlier power play)
+     ice: 5v4:60 4v4:81 4v5:24 4v4:15
+      -116s penalty away MIN 2
+        +0s goal home
+        +0s penalty away BEN 2
+       +39s penalty home MIN 2
+  [kind 2] game 2023020659 second 1748, 2-min call drawn by home (already on a power play before the call, 31 s left on the earlier power play)
+     ice: 5v4:21 5v3:9 5v4:111 5v5:39
+       -89s penalty away MIN 2
+        +0s penalty away MIN 2
+        +9s goal home
+  [kind 2] game 2023021063 second 1611, 2-min call drawn by away (already on a power play before the call)
+     ice: 4v5:21 3v5:8 4v5:99 5v5:52
+        +0s penalty home MIN 2
+        +8s goal away
+       +92s goal home
+  [kind 2] game 2023020178 second 2985, 2-min call drawn by away (not on a power play before the call)
+     ice: 5v5:21 4v5:6 5v5:92 4v5:61
+        +0s penalty home MIN 2
+        +6s goal away
+       +98s penalty home MIN 2
+  [kind 2] game 2023020227 second 2846, 2-min call drawn by home (not on a power play before the call)
+     ice: 5v5:21 5v4:9 5v5:61 5v4:57 5v5:32
+        +0s penalty away MIN 2
+        +9s goal home
+       +70s penalty away MIN 2
+      +127s goal home
+  [kind 3] game 2023020255 second 2315, 2-min call drawn by away (already on a power play before the call, 30 s left on the earlier power play)
+     ice: 3v5:19 noG:2 3v5:30 4v5:120 5v5:9
+       -90s penalty home MIN 2
+       -42s penalty home MIN 2
+        +0s penalty home MIN 2
+       +30s goal away
+  [kind 3] game 2023020532 second 2145, 2-min call drawn by home (already on a power play before the call, 42 s left on the earlier power play)
+     ice: 4v3:86 5v3:28 5v4:66
+      -121s goal away
+       -78s penalty away MIN 2
+       -55s penalty home MIN 2
+       -27s penalty away MIN 2
+        +0s penalty away MIN 2
+  [kind 4] game 2023020017 second 1846, 2-min call drawn by away (already on a power play before the call, 9 s left on the earlier power play)
+     ice: 4v5:21 3v5:9 4v5:9 4v4:41 4v3:44 4v4:17 5v4:39
+      -111s penalty home MIN 2
+        +0s penalty home MIN 2
+       +18s penalty away MIN 2
+       +59s penalty away MIN 2
+      +103s goal home
+  [kind 4] game 2023020089 second 2092, 2-min call drawn by home (already on a power play before the call, 71 s left on the earlier power play)
+     ice: 5v4:21 5v3:4 4v3:27 4v4:89 4v5:4 5v5:35
+       -49s penalty away MIN 2
+        +0s penalty away MIN 2
+        +4s penalty home MIN 2
+       +31s goal home
+  [kind 4] game 2023020434 second 627, 2-min call drawn by home (not on a power play before the call)
+     ice: 4v5:14 5v5:7 5v4:4 4v4:10 noG:9 4v3:97 4v4:4 5v4:19 5v5:16
+       -56s penalty home MIN 2
+        -7s goal away
+        +0s penalty away MIN 2
+        +4s penalty home MIN 2
+       +23s penalty away MIN 2
+  [kind 4] game 2023020437 second 2287, 2-min call drawn by home (not on a power play before the call)
+     ice: 5v5:21 5v4:3 4v4:39 4v3:78 4v4:3 5v4:33 5v5:3
+        +0s penalty away MIN 2
+        +3s penalty home MIN 2
+       +42s penalty away MIN 2
+  [kind 5] game 2023020096 second 1566, 2-min call drawn by away (already on a power play before the call)
+     ice: 5v5:7 4v5:2 noG:12 4v5:92 5v5:59 5v4:8
+        +0s penalty home MIN 2
+       +92s goal away
+  [kind 5] game 2023020148 second 98, 2-min call drawn by home (already on a power play before the call)
+     ice: 5v5:18 5v4:66 5v5:96
+        +0s penalty away BEN 2
+       +63s goal home
+  [kind 6] game 2023020021 second 1943, 2-min call drawn by away (already on a power play before the call, 5 s left on the earlier power play)
+     ice: 4v5:21 3v5:5 4v5:115 5v5:39
+      -115s penalty home MIN 2
+        +0s penalty home MIN 2
+  [kind 6] game 2023020032 second 463, 2-min call drawn by home (already on a power play before the call, 5 s left on the earlier power play)
+     ice: 5v4:21 5v3:5 5v4:115 5v5:39
+      -115s penalty away MIN 2
+       -62s goal away
+        +0s penalty away MIN 2
+  [kind 7] game 2023020056 second 3488, 2-min call drawn by home (not on a power play before the call)
+     ice: 5v5:21 noG:44 5v4:68 noG:1
+       -27s goal away
+        +0s penalty away MIN 2
+       +44s goal away
+  [kind 7] game 2023020086 second 3509, 2-min call drawn by away (not on a power play before the call)
+     ice: 5v4:21 noG:66 4v5:25 noG:1
+       -85s goal home
+       -85s penalty home MIN 2
+       -85s penalty away MIN 2
+       -85s penalty away MIN 2
+       -85s penalty away MIS 10
+       -85s penalty away MIS 10
+       -25s penalty home MAJ 5
+       -25s penalty away MAJ 5
+        +0s penalty home MIN 2
+  [kind 8] game 2023020320 second 3084, 2-min call drawn by home (not on a power play before the call)
+     ice: noG:21 4v4:59 5v4:61 5v5:39
+       -61s penalty home MIN 2
+        +0s penalty away MIN 2
+  [kind 8] game 2025020479 second 3561, 2-min call drawn by home (not on a power play before the call)
+     ice: noG:34 5v5:1 7v6:25 3v3:65 4v3:16 noG:1
+        +0s penalty away MIN 2
+       +13s goal home
+      +104s penalty away MIN 2
+      +120s goal home
+  [kind 9] game 2023020291 second 1825, 2-min call drawn by home (not on a power play before the call, 8 s left on the earlier power play)
+     ice: 4v4:21 4v3:8 4v4:69 4v3:43 4v4:39
+      -112s penalty away MIN 2
+      -112s penalty home MAJ 5
+      -112s penalty home GAM 10
+       -81s goal away
+        +0s penalty away MIN 2
+       +77s penalty away MIN 2
+  [kind 9] game 2023020685 second 3338, 2-min call drawn by home (not on a power play before the call)
+     ice: 5v5:21 5v4:1 5v5:53 5v4:66 5v5:38 noG:1
+        +0s penalty away MIN 2

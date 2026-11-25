@@ -312,7 +312,7 @@ review item 1a done and decided 2026-11-25).
 
 ## Waiting on the owner
 
-- The CI run for the sim tests (1d), then step 1b's real-game check.
+- OK of the new counting rule for missed power plays (review 1b), then step 4: the fixes.
 - Step 2 needs the review items below (Next up 1) done before anything is frozen; then
   the owner reads the step-2 report.
 
@@ -327,13 +327,20 @@ review item 1a done and decided 2026-11-25).
       review). (2) Offsetting (netted) calls stay out of v0: listed under "What v0
       leaves out" in `docs/SIMULATOR.md`; the step-2 report notes it next to the 4-on-4
       minutes.
-   b. Two scrum cases in `power_plays()` (`sim/data.py`). Confirmed on made-up
-      penalties in the cloud review: both come out as described below; what's left is
-      real games. First: 2+2 on one player vs 2 on an opponent gets joined into a 4
-      before netting; it should net first, leaving a 2-minute power play. Second: a
-      major plus a minor on one player counts as 5 minutes, but the team is short 7.
-      Check real ones on the shift charts, count them, and fix what's worth fixing, with
-      a test.
+   b. Real-game check done 2026-11-25 (`diagnostics/check_sim_scrums.py`,
+      `results/checks/sim_scrums.txt`). Case A, 2+2 on one player vs a 2 on the other
+      team at the same second: 385 times, `power_plays()` gives a 4-minute power play
+      244 times, the ice shows 2 minutes and no 4-on-4. **Owner: fix it** (net first,
+      then join a player's leftover 2+2 into a 4), tests on made-up penalties for 2+2 vs 2
+      (one 2-minute) and 2+2 alone (one 4-minute). Case B, a major plus a minor on one
+      player with no major against: 8 times. **Owner: leave it** (in "What v0 leaves
+      out"). Fights with an extra minor (301) were already right. Neither case is in the
+      188 uncounted-call runs. Those are missed power plays, 220 calls with 10+ s of
+      power play in their window: a power-play goal at the call's second (51), a goal
+      1-10 s after (35), the earlier power play running out within 10 s (43), the
+      goalie pulled 10-30 s after (40), the shift chart early (19), penalty waiting
+      for a box spot (8), another call soon after (11), other (13). **Owner: count
+      them in principle**; waiting on the owner's OK of the counting rule.
    c. Any change to `sim/data.py`: rebuild the cache (`load(..., refresh=True)`) and
       rerun the step-2 search (`.venv/bin/python -m sim.pick`, about 30 min on 4 workers;
       stop it by PID, not `pkill -f`).

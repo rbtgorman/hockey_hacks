@@ -10,6 +10,12 @@ pushes. Commit hashes point to the details.
 - PC: in-season refresh through Nov 24 (385 games in 2026-27, 5,977 in all): exit 0,
   must-be-zero checks 0, 0 parse warnings, 0 dropped shots. Test-to-date report not
   rerun. (`1210f48`)
+- PC: review 1b, real games (`diagnostics/check_sim_scrums.py`,
+  `results/checks/sim_scrums.txt`): case A (2+2 vs 2) gives a 4-min power play 244
+  times where the ice shows 2, to fix; case B (5+2) 8 times, left, in "What v0 leaves
+  out". The 188 uncounted-call runs are neither: missed power plays (power-play goal at
+  the call, earlier power play running out, goalie pulled, shift chart early). Counting
+  rule proposed, waiting on the owner.
 - PC: owner's call on review 1a: strength-dependent penalty-call rates go in (with the
   1b fix); offsetting calls stay out of v0, added to "What v0 leaves out" in
   `docs/SIMULATOR.md`. Recorded in CLAUDE.md. (`d39914a`)
