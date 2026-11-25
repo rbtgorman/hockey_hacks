@@ -9,7 +9,7 @@ pushes. Commit hashes point to the details.
   `sim` added to compileall; both pass on the PC. (`11a442d`)
 - PC: in-season refresh through Nov 24 (385 games in 2026-27, 5,977 in all): exit 0,
   must-be-zero checks 0, 0 parse warnings, 0 dropped shots. Test-to-date report not
-  rerun.
+  rerun. (`1210f48`)
 - PC: owner's call on review 1a: strength-dependent penalty-call rates go in (with the
   1b fix); offsetting calls stay out of v0, added to "What v0 leaves out" in
   `docs/SIMULATOR.md`. Recorded in CLAUDE.md. (`d39914a`)
