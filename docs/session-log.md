@@ -15,7 +15,7 @@ pushes. Commit hashes point to the details.
   times where the ice shows 2, to fix; case B (5+2) 8 times, left, in "What v0 leaves
   out". The 188 uncounted-call runs are neither: missed power plays (power-play goal at
   the call, earlier power play running out, goalie pulled, shift chart early). Counting
-  rule proposed, waiting on the owner.
+  rule proposed, waiting on the owner. (`eb1dfb6`)
 - PC: owner's call on review 1a: strength-dependent penalty-call rates go in (with the
   1b fix); offsetting calls stay out of v0, added to "What v0 leaves out" in
   `docs/SIMULATOR.md`. Recorded in CLAUDE.md. (`d39914a`)
